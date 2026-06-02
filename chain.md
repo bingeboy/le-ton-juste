@@ -52,12 +52,15 @@ flowchart TD
     TA["IO Thick Air<br/>Dual JFET Clean Boost"]
     DIRT["IO Old Dirt<br/>Distortion"]
     MUTE["Mute Switch<br/>→ Rack Tuner"]
+    WEIRD["Experimental Pedals<br/>(Rainbow Machine / POG)"]
   end
 
   subgraph RACK["Rack"]
     PRE["Alembic FX-1<br/>Tube Preamp"]
-    QV["Alesis QuadraVerb<br/>Multi-FX Processor"]
-    REV["Custom Spring Reverb<br/>w/ Low-Z Output Buffer"]
+    MIX["3-Channel Parallel Mixer<br/>(OPA2134 Active Summing)"]
+    QV["Alesis QuadraVerb<br/>(Parallel Loop 1)"]
+    REV["Custom Spring Reverb<br/>(Parallel Loop 2)"]
+    MOTOR["MOTOR Pedal / Future<br/>(Parallel Loop 3)"]
     TUNER["Sabine RT-1601<br/>Rack Tuner (silent path)"]
   end
 
@@ -73,11 +76,14 @@ flowchart TD
   G --> BUF_SEND
   BUF_SEND --> TA
   TA --> DIRT
-  DIRT --> BUF_RET
+  DIRT --> WEIRD
+  WEIRD --> BUF_RET
   BUF_RET --> PRE
-  PRE --> QV
-  QV --> REV
-  REV --> MC
+  PRE --> MIX
+  MIX -- Loop 1 --> QV --> MIX
+  MIX -- Loop 2 --> REV --> MIX
+  MIX -- Loop 3 --> MOTOR --> MIX
+  MIX --> MC
   MC -->|"4Ω tap / parallel"| SP1
   MC -->|"4Ω tap / parallel"| SP2
   MUTE -.->|"split to tuner"| TUNER
