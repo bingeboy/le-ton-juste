@@ -15,6 +15,7 @@ Reference and design tool for a clean, hi-fi guitar signal chain inspired by Jer
 | Distortion | IO Old Dirt | Distortion pedal |
 | Multi-FX | Alesis QuadraVerb | Rack reverb/delay/modulation |
 | Reverb | Custom spring reverb tank | In design — rackmount, low-Z output buffer |
+| Tuner | Sabine RT-1601 | 1U rackmount chromatic tuner, passive mute-switch split |
 
 ## Documentation Structure
 

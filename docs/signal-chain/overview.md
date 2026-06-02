@@ -19,6 +19,7 @@ This rig follows the "Wall of Sound" hi-fi approach: **every stage before the po
 | Preamp | Alembic FX-1 | Tube EQ, Fender-style coloration, channel switching | Instrument | Line |
 | Multi-FX | Alesis QuadraVerb | Reverbs, delays, modulation (post-preamp) | Line | Line |
 | Reverb | Custom Spring Reverb | Analog spring reverb with low-Z buffer | Line | Line (low-Z) |
+| Tuner | Sabine RT-1601 | Rack tuner on passive mute-switch split (not in signal path) | Split from pedalboard out | — |
 | Power Amp | McIntosh MC100 | Clean, transparent amplification | Line (~0.75V) | Speaker (100W @ 8Ω) |
 | Speakers | JBL E120-8 x2 | Extended hi-fi response, aluminum dome | Speaker | — |
 

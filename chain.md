@@ -15,6 +15,7 @@ flowchart TD
     PRE["Alembic FX-1<br/>Tube Preamp"]
     QV["Alesis QuadraVerb<br/>Multi-FX Processor"]
     REV["Custom Spring Reverb<br/>w/ Low-Z Output Buffer"]
+    TUNER["Sabine RT-1601<br/>Rack Tuner (silent path)"]
   end
 
   subgraph AMP["Power Amp"]
@@ -57,7 +58,7 @@ flowchart TD
     PRE["Alembic FX-1<br/>Tube Preamp"]
     QV["Alesis QuadraVerb<br/>Multi-FX Processor"]
     REV["Custom Spring Reverb<br/>w/ Low-Z Output Buffer"]
-    TUNER["Rack Tuner"]
+    TUNER["Sabine RT-1601<br/>Rack Tuner (silent path)"]
   end
 
   subgraph AMP["Power Amp"]
