@@ -25,6 +25,15 @@ Reference and design tool for a clean, hi-fi Jerry Garcia / Bob Weir guitar sign
 - No large binary files — PDFs in `manuals/` and `parts/` are exceptions.
 - Never commit secrets, API keys, or personal info.
 
+#### Branching (hard rules)
+
+- **Never commit to `master` directly.** All work happens on feature branches.
+- Branch naming: `feature/<short-desc>` or `fix/<short-desc>`.
+- Push the branch, open a Pull Request on GitHub, merge via the GitHub UI.
+- `master` has classic branch protection enabled — direct pushes are rejected.
+- After merging a PR, delete the feature branch (both local and remote).
+- Keep `master` clean and deployable at all times.
+
 ### Signal Chain Philosophy
 
 - Clean headroom is everything. Power amp never clips.
