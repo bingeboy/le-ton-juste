@@ -5,18 +5,13 @@ The Alembic FX-1 is a Fender Showman-derived tube preamp. Tube choice significan
 ## Current Inventory
 
 ### NOS GE 5751 5 Star Gray Plate 3 Mica
+The **classic "baller" tube** for Jerry tones. (To be installed after testing).
 
-The **classic "baller" tube** for Jerry tones.
+### JJ ECC83S / 12AX7 (New)
+**Cheap Test Tubes:** For initial power-up and circuit verification. Reliable and robust.
 
-| Parameter | Value |
-|---|---|
-| Type | 5751 (low-gain dual triode, 12AX7 substitute) |
-| Gain Factor | ~70 (vs. 100 for 12AX7) |
-| Construction | Gray plate, 3 mica spacers, 5 Star rating (GE's highest QA grade) |
-| Era | 1950s–1960s NOS |
-| Character | Smooth, articulate, lower noise than 12AX7 |
-
-**Why it works:** The lower gain (70 vs 100) means more headroom before clipping. The gray plate and 3-mica construction yields a smoother, more musical harmonic structure. Jerry's clean tone was all about headroom and articulation — the 5751 delivers.
+### NOS JAN-Sylvania 5751 (New)
+**NOS Final Tubes:** To be added once the rig is fully stable. Known for bright, detailed high-end.
 
 ## Tube Options for the Alembic FX-1
 
