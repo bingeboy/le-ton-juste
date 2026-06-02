@@ -53,3 +53,4 @@ Reference and design tool for a clean, hi-fi Jerry Garcia / Bob Weir guitar sign
 | Distortion | IO Old Dirt |
 | Multi-FX | Alesis QuadraVerb |
 | Reverb | Custom spring reverb tank (in design, rackmount, low-Z buffer) |
+| Tuner | Sabine RT-1601 (1U rackmount chromatic, passive mute-switch split) |

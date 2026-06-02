@@ -12,13 +12,11 @@ The QuadraVerb is a multi-effects processor that provides digital reverb, delay,
 
 Between the Alembic FX-1 output and the custom reverb tank input. Time-based effects after the preamp keep the preamp's tube EQ from coloring the effect tails.
 
-### Routing Options
+## Routing
 
-1. **Series:** Preamp → QuadraVerb → Reverb Tank → MC100 (simplest)
-2. **Parallel/wet-dry:** Preamp splits to dry path AND QuadraVerb → mixed post-QuadraVerb (cleaner dry signal but requires a mixer)
-3. **FX Loop:** If the Alembic FX-1 has an effects loop, the QuadraVerb goes in the loop (post-preamp-EQ, pre-master-output)
+**Series:** Preamp main output → QuadraVerb → Custom Reverb Tank → MC100.
 
-**Recommended starting point:** Series (option 1). It's simple, and the QuadraVerb's mix control allows blending dry/wet internally.
+The QuadraVerb takes the Alembic's main line-level output. It does not use the Alembic's effects loop (send/return). All time-based effects sit after the preamp's master output, keeping the chain linear and clean.
 
 ### QuadraVerb Setup for Clean Jerry Tone
 
@@ -55,3 +53,39 @@ The custom reverb tank sits **last before the McIntosh MC100**, matching Jerry G
 Rackmount (1U or 2U). Spring tank mounted internally with shock isolation. Front panel: Dwell, Mix, Tone. Rear panel: In, Out, Send (to external tank), Return (from external tank).
 
 See [reverb-tank/design.md](../reverb-tank/design.md) for full design document.
+
+---
+
+## Sabine RT-1601 — Rack Tuner
+
+### Signal Path
+
+The Sabine RT-1601 is **not in the main signal path.** It receives signal via a passive mute switch split placed after the pedalboard, before the Alembic FX-1:
+
+```
+Pedalboard (Dirt out) → Mute Switch (normal: pass through) → Alembic FX-1 → ...
+                                   ↓
+                              Sabine RT-1601 (when muted)
+```
+
+When the mute switch is stomped, the signal is routed to the Sabine and the output to the Alembic is disconnected (silent). The Sabine's own buffer is never in the audio path during play.
+
+### Why Not In-Line
+
+The Sabine RT-1601 has a pass-through design (input and output are directly connected unless muted) with a 250kΩ input impedance. While functional, its buffer from the 1990s is not audiophile-grade. Keeping it on a passive split preserves the hi-fi signal chain.
+
+### Rack Integration
+
+The Sabine occupies 1U of rack space. It sits next to the Alembic FX-1 and above/below the QuadraVerb, connected to the mute switch footswitch on the pedalboard via a dedicated ¼" TS cable run.
+
+### Sabine RT-1601 Quick Specs
+
+| Parameter | Value |
+|---|---|
+| Form Factor | 1U rackmount |
+| Tuning | Chromatic, auto-sensing, 7 octaves |
+| Accuracy | ±1 cent |
+| Inputs | 2x ¼" TS (front + rear, parallel) |
+| Outputs | 2x ¼" TS (front + rear, pass-through) |
+| Mute | Front panel button + external footswitch jack |
+| Power | 9VDC 225mA, center-negative |

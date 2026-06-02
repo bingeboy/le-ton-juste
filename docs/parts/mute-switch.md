@@ -40,6 +40,23 @@ Rack Output → Mute Switch → Power Amp
 
 **Recommendation: Option A.** The tuner gets the cleanest signal from post-pedalboard.
 
+## Target Tuner: Sabine RT-1601
+
+The mute switch's tuner output feeds a **Sabine RT-1601** 1U rackmount chromatic tuner. The Sabine is not in the main signal path — it only receives signal when the mute switch is engaged, preserving the hi-fi chain.
+
+### Sabine RT-1601 Specs
+
+| Parameter | Value |
+|---|---|
+| Type | 1U rackmount chromatic auto-tuner |
+| Input Impedance | 250kΩ (¼" TS, front + rear wired parallel) |
+| Accuracy | ±1 cent (quartz crystal oscillator) |
+| Range | 7 octaves, A0–C6 |
+| Power | 9VDC, 225mA, center-negative |
+| Built-in Mute | Front panel button + external footswitch jack |
+
+The Sabine has its own built-in mute, but for this rig we use the external passive mute switch instead — keeps the Sabine's buffer completely out of the signal path when not tuning.
+
 ## Circuit Design
 
 ### Passive A/B/Y Mute
