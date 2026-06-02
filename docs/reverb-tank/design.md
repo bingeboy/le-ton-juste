@@ -1,119 +1,107 @@
-# Custom Spring Reverb Tank — Design Document
+# Ghost Spring — Transformer-Coupled Single Spring Reverb
 
-## Concept
+## 1. Concept & Vision
+One spring. One voice. Fully solid-state for transparency, but transformer-coupled to the tank input for the organic "bloom" character that made the original Fender 6G15 Reverb Unit sound like nothing else. The transformer is the secret — it creates a resonant interaction with the spring's inductance that no direct-drive circuit can replicate.
 
-A rackmount spring reverb unit that sits **last in the signal chain before the McIntosh MC100 power amp**. Based on the Fender 6G15 Reverb Unit topology (which Jerry Garcia used between his Alembic F-2B and McIntosh MC2300), but modernized for rack format with a solid-state low-impedance output buffer.
+This is the hi-fi case for simplicity: fewer components means fewer things to color the signal. All tube character comes from the Alembic FX-1 upstream. Everything downstream stays out of the way.
 
-## Signal Path
+---
 
+## 2. Architecture
+
+### Topology
 ```
-Line In (from QuadraVerb/Preamp)
-    ↓
-Input Buffer (high-Z in, low-Z out)
-    ↓
-Dwell Control (how hard springs are driven)
-    ↓
-Spring Driver Stage
-    ↓
-Spring Tank (Accutronics/Belton)
-    ↓
-Recovery Preamp (brings transducer output to line level)
-    ↓
-Tone Control (wet signal only)
-    ↓
-Mix Control (dry/wet blend)
-    ↓
-Output Buffer (low-impedance, ~100Ω out)
-    ↓
-Line Out (to McIntosh MC100)
+Solid State (100%)
+├── OPA2134 input buffer (FET-input, unity gain, high-Z)
+├── Dwell → BD139 discrete driver → REB3S transformer → tank
+├── OPA2134 recovery preamp → 300Hz HPF → Tone → Mix
+├── OPA2134 output buffer (low-Z, <100Ω)
+└── ±15V internal linear power supply
 ```
 
-## Design Decisions
+### Input/Output
+- **Input:** High-impedance (~1MΩ) via OPA2134 FET-input buffer — no loading on the QuadraVerb output
+- **Output:** Low-impedance (<100Ω) via OPA2134 output buffer — drives long cable runs and MC100 RCA input cleanly
+- **Signal path:** 100% analog
 
-### Tube vs. Solid State
+### Key Components
+- **Op-amps:** OPA2134 (FET-input, transparent, high slew rate — same as the rest of the rig's DIY philosophy)
+- **Driver transistor:** BD139 (high-current NPN, drives transformer primary)
+- **Driver transformer:** Accutronics REB3S (dedicated spring reverb driver transformer, 8Ω secondary matches tank)
+- **Spring tank:** Accutronics 9AB3C1B (Long, 3-spring, long decay, 8Ω input / 2550Ω output)
+- **Power supply:** ±15V internal linear (toroidal 15VA, LM7815/LM7915)
 
-The Fender 6G15 uses a 12AT7 driver and 12AX7 recovery — both tubes. For this build:
+### Why the 9AB3C1B
+Three springs vs. two: denser, more uniform reverb tail with less of the metallic "ping" two-spring tanks can produce on hard attacks. The closest equivalent to the tank used in the original Fender 6G15 — Jerry Garcia's reverb unit of choice.
 
-**Solid state option (recommended for this rig):**
-- Cleaner, more transparent
-- Lower noise floor
-- Easier to achieve the low-impedance output buffer requirement
-- No tube maintenance or microphonics
-- Can use high-quality op-amps (NE5532, OPA2134) for the recovery and buffer stages
+---
 
-**Tube option (more authentic to Jerry):**
-- Adds subtle harmonic coloration from the recovery stage
-- Requires a power transformer and high-voltage supply
-- More complex build
-- The 6G15 circuit is well-documented and proven
+## 3. The Transformer: Why It Matters
+The original Fender 6G15 drove the spring through an output transformer. The transformer's inductance forms a resonant circuit with the spring tank's input impedance, creating:
+- A slight peak at ~2–3kHz on the attack transient (the "drip")
+- Softer low-frequency drive vs. direct coupling (natural mud rejection without a filter)
+- Galvanic isolation between the drive circuit and spring
 
-**Recommendation:** Start with solid state for the output buffer, and evaluate whether a tube driver/recovery stage adds desirable coloration. The output buffer MUST be solid state to achieve the low-impedance requirement.
+The **Accutronics REB3S** is a transformer designed specifically for this application — used in boutique spring reverb units, correctly matched to 8Ω tanks.
 
-### Spring Tank Selection
+---
 
-| Parameter | Common Values | Recommended |
+## 4. Circuit Innovations
+
+### Post-Recovery HPF (The "Bloom" Filter)
+Unlike most DIY spring reverb designs that filter *before* the driver, this unit high-passes the wet signal *after recovery* at ~300Hz:
+- Full-frequency transient enters the spring → the physical "thump" of the attack is preserved
+- The reverb *tail* is filtered → low-end boom clears up as the sound decays
+- Result: more natural-feeling attacks, cleaner tails
+
+### Bright Cap on Mix Pot
+A 47–100pF silver mica capacitor across the Mix pot maintains high-frequency detail at low reverb mix settings — the reverb tails stay "glassy" even when nearly blended out.
+
+---
+
+## 5. Signal Flow
+
+```mermaid
+graph LR
+    subgraph "Ghost Spring Reverb Unit"
+    In[Line In] --> IB[Input Buffer / OPA2134]
+
+    IB --> Dwell[Dwell Pot]
+    Dwell --> Drive[BD139 Driver Stage]
+    Drive --> XFMR[REB3S Driver Transformer]
+    XFMR -- 8Ω --> Tank((Accutronics 9AB3C1B))
+
+    Tank -- 2550Ω --> Rec[Recovery Preamp / OPA2134]
+    Rec --> HPF[300Hz Wet HPF]
+    HPF --> Tone[Tone Pot / High Shelf]
+    Tone --> Mix{Mix Pot / Bright Cap}
+
+    IB -- Dry Path --> Mix
+    Mix --> OB[Output Buffer / OPA2134]
+    OB --> Out[Line Out to MC100]
+    end
+```
+
+---
+
+## 6. Front Panel Controls
+
+| Control | Type | Function |
 |---|---|---|
-| Type | Accutronics 4AB3C1B (long decay) or 8EB2C1B (medium decay) | 8EB2C1B or 9EB2C1B |
-| Input Impedance | 8Ω (type 8) or 10Ω (type 9) | Type 8 or 9 |
-| Output Impedance | 2250Ω (type E), 2575Ω (type B) | Type E or B |
-| Decay | Short (1), Medium (2), Long (3) | Medium (2) for Jerry tone |
-| Mounting | Horizontal open-side down | Rack chassis floor mount with grommets |
+| **Dwell** | 10k linear pot | Drive level into transformer — spring saturation |
+| **Mix** | 100k audio pot + bright cap | Dry/wet blend |
+| **Tone** | 100k audio pot | High-shelf EQ on wet signal only |
 
-### Output Buffer Requirements
+---
 
-The MC100 has ~100kΩ input impedance (RCA). The output buffer should:
-- Output impedance: <100Ω (for driving cables and the MC100 input)
-- Drive capability: Clean signal up to +20dBu
-- Unity gain or slight boost to compensate for reverb circuit insertion loss
-- Low noise: -90dB or better
-- Optional balanced output (XLR) for future flexibility
+## 7. Power Supply
+- **Type:** Internal linear supply
+- **Transformer:** Toroidal 15VA (low magnetic interference)
+- **Regulation:** ±15V DC (LM7815/LM7915) for maximum op-amp headroom
 
-### Panel Layout
+---
 
-**Front Panel (1U or 2U):**
-- Dwell (10k linear pot)
-- Tone (100k audio pot with capacitor high-shelf or low-pass)
-- Mix (100k audio pot — dry to wet blend)
-- Power LED
-
-**Rear Panel:**
-- 1/4" TS Input
-- 1/4" TS Output
-- Optional: 1/4" TS Send/Return (for using an external tank)
-- Optional: XLR balanced output
-- IEC Power inlet (with fuse)
-- Power switch (if not on front panel)
-
-## Gain Staging
-
-```
-Line In (~1V / +0dBu)
-    → Input Buffer (unity gain)
-    → Dwell control (attenuates to control spring drive)
-    → Driver (current gain, drives 8Ω tank input)
-    → [Spring Tank — mechanical gain ~30-40dB loss]
-    → Recovery Preamp (~35-40dB gain, brings back to line level)
-    → Tone (passive or active)
-    → Mix (dry + processed wet)
-    → Output Buffer (unity gain, low-Z out)
-    → Line Out (~1V / +0dBu)
-```
-
-## Form Factor
-
-**Rackmount chassis:** 1U (1.75") or 2U (3.5") aluminum enclosure.
-- 1U is tight — requires PCB-based construction and careful layout
-- 2U gives room for the spring tank internal mounting, tube circuits if desired, and better ventilation
-- Standard 19" rack width, depth TBD based on tank length
-
-The spring tank can be:
-1. **Internally mounted** — simplest, but may pick up mechanical vibration from the rack
-2. **Externally mounted** — requires a separate enclosure for the tank with send/return cables; better isolation
-
-**Recommendation:** Internal mount in a 2U chassis with heavy-duty grommet isolation. 2U provides enough depth to mount a 17" tank.
-
-## References
-
-- Fender 6G15 Reverb Unit schematic (available at fenderguru.com and other sources)
-- Accutronics/Belton reverb tank datasheets
-- Classic op-amp textbook circuits for recovery and buffer stages
+## 8. Mechanical
+- **Tank mount:** Horizontal, open-side down, on four soft rubber isolation grommets
+- **Enclosure:** 2U aluminum rackmount chassis
+- **Front panel:** Custom aluminum via Front Panel Express (3 knobs, IEC inlet, power switch, 2× 1/4" jacks)
