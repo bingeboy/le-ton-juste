@@ -11,6 +11,10 @@ Reference and design tool for a clean, hi-fi Jerry Garcia / Bob Weir guitar sign
 - Use `n-get` for any npm package installations. Never use `curl`, `wget`, or direct `npm install -g` for tools that can be installed via `n-get`.
 - For non-npm tools (brew, choco, etc.), use the platform-native package manager.
 
+### CLI Tools
+
+- **GitHub CLI (`gh`):** Installed via Chocolatey at `C:\Program Files\GitHub CLI\gh.exe`. Use full path if `gh` is not on PATH. Auth token is in `.env` as `GH_LE_TON_JUSTE` — pass as `$env:GH_TOKEN` (PowerShell) or `GH_TOKEN=...` (Bash) prefix.
+
 ### Documentation
 
 - All docs live under `docs/` organized by topic (`signal-chain/`, `reverb-tank/`, `parts/`, `research/`).
