@@ -13,7 +13,7 @@ flowchart TD
 
   subgraph RACK["Rack"]
     PRE["Alembic FX-1<br/>Tube Preamp"]
-    QV["Alesis QuadraVerb<br/>Multi-FX Processor"]
+    QV["Alesis QuadraVerb<br/>Delay + Modulation"]
     REV["Custom Spring Reverb<br/>w/ Low-Z Output Buffer"]
     TUNER["Sabine RT-1601<br/>Rack Tuner (silent path)"]
   end
@@ -93,6 +93,6 @@ flowchart TD
 
 1. **Buffer immediately.** Place a high-quality buffer (Thick Air stage 1, or dedicated OBEL buffer) as close to the guitar as possible to combat cable capacitance and preserve high-end.
 2. **Gain stages before preamp.** Thick Air → Old Dirt provide clean boost and dirt that hit the Alembic's tube front-end. The Alembic is run clean — edge of breakup at most.
-3. **Time effects after preamp.** QuadraVerb and reverb tank sit after the Alembic so reverb tails aren't colored by the preamp's EQ/gain stage.
+3. **Time effects after preamp.** QuadraVerb and reverb tank sit after the Alembic so reverb tails aren't colored by the preamp's EQ/gain stage. With a dedicated spring reverb in the chain, the QuadraVerb handles delay and modulation (slapback, tap-tempo delay, chorus/flanger) — its reverb programs are retired.
 4. **Reverb last before power amp.** The spring tank with low-impedance buffer is the final device before the MC100, just like Jerry's Fender Reverb Unit placement between F-2B and MC2300.
 5. **Clean power, always.** The MC100 should never clip. All tone and dynamics come from preceding gain stages.
