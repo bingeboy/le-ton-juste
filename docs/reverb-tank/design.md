@@ -20,7 +20,7 @@ Solid State (100%)
 ```
 
 ### Input/Output
-- **Input:** High-impedance (~1MΩ) via OPA2134 FET-input buffer — no loading on the QuadraVerb output
+- **Input:** High-impedance (~1MΩ) via OPA2134 FET-input buffer — no loading on the Lehle Parallel M output
 - **Output:** Low-impedance (<100Ω) via OPA2134 output buffer — drives long cable runs and MC100 RCA input cleanly
 - **Signal path:** 100% analog
 
