@@ -89,7 +89,7 @@ All capacitors in the signal path **must be film type** (WIMA MKS2 or MKP series
 ### Power Supply Capacitors
 | Ref | Value | Type | Location | Why |
 |---|---|---|---|---|
-| C13–C14 | 2200µF / 35V | Nichicon KW (low-ESR) | Main filter after bridge rectifier | Primary AC ripple filtering. 2200µF per rail is sized so that at 20mA load, ripple voltage stays below 1Vrms — keeping well within the LM7815/7915 input range. Low-ESR specified to minimize heat dissipation and maintain regulation at audio-frequency load variations. |
+| C13–C14 | 2200µF / **50V** | Nichicon KW (low-ESR) | Main filter after bridge rectifier | Primary AC ripple filtering. 2200µF per rail keeps ripple below 1Vrms at 20mA load. **Upgraded from 35V to 50V rating** — the unregulated rail sits at ~21V, so 35V was 1.67× margin. 50V gives 2.4× margin. Capacitor lifespan increases significantly when operated well below rated voltage, and the cost difference is negligible. |
 | C15–C16 | 100µF / 35V | Nichicon KW | LM7815/7915 output | Regulator output stability cap. The LM78xx/79xx series requires a capacitor on the output to prevent oscillation. 100µF also provides local energy storage for the op-amp stages. |
 | C17–C18 | 100nF / 63V | WIMA MKS2 film | In parallel with C15–C16 | HF bypass on the regulator output. The electrolytic caps above are ineffective above ~100kHz; the film caps handle RF suppression and keep the supply quiet across the full audio band and beyond. |
 
@@ -123,9 +123,51 @@ Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-3902
 | Ref | Part | Spec | Why |
 |---|---|---|---|
 | T1 | Antek AN-0115 (or equivalent toroidal) | 15VA, dual 15VAC secondary | Toroidal transformers have ~10× lower magnetic field leakage than standard E-I laminate transformers. This is critical in a reverb unit — the spring tank is a sensitive magnetic transducer and will pick up 60Hz hum from a nearby transformer. The toroidal's closed-core geometry keeps the field contained. 15VA is sized at 5× the actual load (~3VA) for cool, quiet operation. |
-| BR1 | Vishay W02G | 1A / 200V bridge rectifier | Converts transformer AC to pulsating DC. 200V rating is derated 2× from the peak voltage (~42V peak from dual 15VAC) for long-term reliability. |
-| U4 | LM7815 (TO-220) | +15V linear regulator | Sets the positive supply rail. Linear regulators produce zero switching noise — essential for a hi-fi circuit. Switching regulators (buck converters, etc.) inject kHz-range noise that passes through the op-amp supply rejection and appears as distortion. The LM7815 is proven, inexpensive, and stable. Mount to the chassis with a small insulating pad for heatsinking. |
+| BR1 | W04G | 2A / 400V bridge rectifier *(upgraded from W02G 1A)* | Converts transformer AC to pulsating DC. Upgraded to 2A for 10× current margin at 200mA load — the rectifier is the one PSU component that fails silently and takes the whole supply down. 400V rating is derated 10× from the 42V peak. Costs $0.10 more than the W02G. |
+| U4 | LM7815 (TO-220) | +15V linear regulator | Sets the positive supply rail. Linear regulators produce zero switching noise — essential for a hi-fi circuit. Switching regulators (buck converters, etc.) inject kHz-range noise that passes through the op-amp supply rejection and appears as distortion. The LM7815 is proven, inexpensive, and stable. Mount to chassis with mica insulating pad and thermal compound. |
 | U5 | LM7915 (TO-220) | −15V linear regulator | Same rationale as U4. The negative rail powers the inverting inputs and negative supply pins of all op-amps. |
+
+---
+
+## Protection & Reliability Upgrades
+
+### Mains Protection
+
+| Ref | Part | Spec | Why |
+|---|---|---|---|
+| MOV1 | Littelfuse V275LA20AP | 275V Metal Oxide Varistor | Clamps mains voltage spikes — lightning nearby, switching transients from other rack gear — before they reach the transformer. Wired directly across the mains input (L to N). When a spike exceeds 275V the MOV conducts and absorbs the energy. Costs $0.75 and protects the entire circuit from the most common real-world fault condition. |
+| NTC1 | Ametherm MS32 5006 | 5Ω NTC inrush limiter | Every time the power switch is flipped, the filter caps charge from zero causing a large inrush current spike through BR1 and T1. Over years of power cycles this stresses the rectifier and transformer. The NTC thermistor starts at 5Ω cold (limiting inrush) and drops to near-zero resistance when warm (no effect on normal operation). Wired in series with the mains after the fuse. |
+| F1 (IEC) | Schurter 5110.1052 | EMI-filtered IEC inlet with fuse holder | Upgraded from plain 4301.0527. Built-in LC filter suppresses mains-borne noise from other rack gear (digital effects, switching supplies) before it reaches the transformer. A reverb unit with 214× gain in the recovery stage is sensitive to supply noise — keeping the mains clean at the entry point is the right place to solve this. |
+
+### DC Rail Protection
+
+| Ref | Part | Spec | Why |
+|---|---|---|---|
+| F2 | Bourns MF-R050 | 500mA polyfuse — +15V rail | Acts like a circuit breaker on the positive DC rail. If a fault on the PCB draws more than 500mA the polyfuse trips, protecting the LM7815 and transformer. Resets automatically after cooling — no tools, no fuse replacement required. Same concept as a panel breaker. |
+| F3 | Bourns MF-R050 | 500mA polyfuse — −15V rail | Same as F2 on the negative rail. |
+| R_bleed1 | 10kΩ / 1W metal film | Across C13 (+15V filter cap) | When the unit is powered off, the filter caps hold ~21V charge. Without bleed resistors they stay charged for minutes — a shock hazard during servicing. The 10kΩ/1W resistor drains the cap in ~5 seconds. 1W rating required (P = V²/R = 441/10k = 44mW peak — 250mW standard resistor runs too hot). |
+| R_bleed2 | 10kΩ / 1W metal film | Across C14 (−15V filter cap) | Same as R_bleed1 on the negative rail. |
+
+### Input Protection
+
+| Ref | Part | Spec | Why |
+|---|---|---|---|
+| C_in | 1µF / 63V WIMA MKS2 film | Input coupling cap — before U1 | Blocks DC from reaching the circuit. A failing pedal or preamp with a DC offset on its output would otherwise reach U1's input directly through R1. The existing C1 is after the input buffer — C_in sits at the jack itself, first in the signal path. |
+| D_clamp+ | 1N4148 | Input → +15V rail | Overvoltage clamp. If the input exceeds +15.6V, this diode conducts and clamps the voltage. R1 (1MΩ) limits clamp current to safe microamps even at extreme input voltages. Protects U1's input from any source accidentally connected to the input jack. |
+| D_clamp− | 1N4148 | −15V rail → Input | Same clamp on the negative side. Together with D_clamp+ they form a hard limit — input can never exceed the supply rails at U1's gate. |
+| TVS1 | SMBJ15CA | Bidirectional TVS at input jack | Catches ESD events that 1N4148 diodes are too slow to handle. When you plug in a cable while other gear is running, a static discharge travels down the cable faster than the clamping diodes can respond. The TVS clamps in nanoseconds. Wired directly across the input jack tip to sleeve. |
+
+### Serviceability
+
+| Item | Spec | Why |
+|---|---|---|
+| Molex KK connectors (throughout) | 2-pin for transformer, tank RCA × 2, jacks × 2 — 3-pin for pots × 3 | Every internal wire connection uses a Molex KK connector at the PCB end. If any component fails — transformer, tank, pot, jack — it can be unplugged and swapped without a soldering iron. This is the single biggest serviceability improvement. Without connectors, replacing the tank requires desoldering 4 wires from a live board. With connectors it's a 30-second swap. |
+| Sorbothane grommets (tank mount) | 4× M3 Shore 30–40, Sorbothane | Upgraded from standard rubber. Sorbothane is a viscoelastic polymer that damps vibration across a wider frequency range than rubber — footsteps, rack fan vibration, and amp vibration that standard grommets transmit into the springs become inaudible. |
+| Thermal compound | Shin-Etsu X-23 or equivalent | Applied between LM7815/7915 tab, mica pad, and chassis. Halves the thermal resistance of the mica pad alone. Regulators run cooler, last longer. Apply a thin layer — less than 0.1mm. |
+| Conformal coating | MG Chemicals 422B spray | Applied over the completed, tested PCB. Seals the board against moisture and environmental contamination. At 214× recovery gain, moisture absorption into the perfboard substrate raises leakage current between pads and manifests as noise. One pass of conformal coating eliminates this permanently. Apply after all testing is complete — it makes rework harder. |
+| Colored heat-shrink (internal wiring) | Red = +15V, Blue = −15V, Black = GND, White = signal high-Z, Gray = signal line-level | Color coding means any technician can read the wiring without a schematic. Critical for a unit that will be serviced years from now by someone who didn't build it. |
+| Power LED + bezel | 5mm LED (blue or amber) + panel-mount bezel, 10kΩ current-limiting resistor from +15V rail | Visual confirmation that the unit is powered. Saves significant troubleshooting time when the unit appears silent — knowing immediately whether the PSU is alive narrows the fault immediately. Wire from +15V rail through 10kΩ resistor to LED anode, cathode to GND. |
+| Ground lift switch | SPDT mini toggle (rear panel) + 10Ω resistor + 100nF cap in series | Rack environments often develop ground loops — 60Hz hum that varies with what else is plugged in. The ground lift switch disconnects the direct audio-ground-to-chassis connection and inserts a 10Ω + 100nF RC network instead. This breaks ground loops without lifting the safety earth. Flip it one way for direct connection, the other way for lifted. Essential to have on the rear panel rather than requiring chassis opening to address hum. |
 
 ---
 

@@ -41,13 +41,24 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 | BD139 NPN transistor TO-126 | BD139 | 1 | ~$0.55 |
 | LM7815CT/NOPB +15V regulator TO-220 | LM7815CT/NOPB | 1 | ~$0.75 |
 | LM7915CT/NOPB −15V regulator TO-220 | LM7915CT/NOPB | 1 | ~$0.75 |
-| W02G-E4/51 bridge rectifier 1A/200V | W02G-E4/51 | 1 | ~$0.45 |
+| W04G bridge rectifier 2A/400V *(upgraded from W02G)* | W04G | 1 | ~$0.55 |
+| 1N4148 small-signal diode (input clamp pair) | 1N4148 | 2 | ~$0.10 each = $0.20 |
+| SMBJ15CA bidirectional TVS diode (input ESD protection) | SMBJ15CA | 1 | ~$0.50 |
+
+### Protection Components
+
+| Item | Mfr Part # | Qty | Est. Price |
+|---|---|---|---|
+| Littelfuse V275LA20AP MOV — mains surge clamp 275V | V275LA20AP | 1 | ~$0.75 |
+| Ametherm MS32 5006 NTC thermistor — inrush limiter | MS32 5006 | 1 | ~$3.00 |
+| Bourns MF-R050 polyfuse 500mA — +15V rail | MF-R050 | 1 | ~$0.75 |
+| Bourns MF-R050 polyfuse 500mA — −15V rail | MF-R050 | 1 | ~$0.75 |
 
 ### Capacitors — Signal Path (WIMA MKS2 film)
 
 | Item | Mfr Part # | Qty | Est. Price |
 |---|---|---|---|
-| 1µF/63V film | MKS2C041001B00KSSD | 1 | ~$0.50 |
+| 1µF/63V film (C_in input coupling + C1 driver coupling) | MKS2C041001B00KSSD | 2 | ~$0.50 each = $1.00 |
 | 470nF/63V film | MKS2C034700K00KSSD | 1 | ~$0.35 |
 | 100nF/63V film (HPF + op-amp decoupling) | MKS2C031001A00KSSD | 8 | ~$0.25 each = $2.00 |
 | 47pF silver mica (bright cap) | CD15ED470JO3F | 1 | ~$0.40 |
@@ -56,7 +67,7 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 
 | Item | Mfr Part # | Qty | Est. Price |
 |---|---|---|---|
-| 2200µF/35V low-ESR (main PSU filter) | UKW1V222MHD | 2 | ~$1.20 each = $2.40 |
+| 2200µF/**50V** low-ESR (main PSU filter) *(upgraded from 35V)* | UKW1H222MHD | 2 | ~$1.50 each = $3.00 |
 | 100µF/25V audio grade (reg output + emitter bypass) | UKW1E101MED | 3 | ~$0.35 each = $1.05 |
 | 10µF/25V (bulk rail decoupling) | UKW1E100MDD | 2 | ~$0.25 each = $0.50 |
 
@@ -75,6 +86,13 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 | 68Ω | MFR-25FBF52-68R | 5 | ~$0.40 |
 | 1kΩ | MFR-25FBF52-1K | 5 | ~$0.40 |
 
+### Resistors — High Wattage (1W — bleed + ground lift)
+
+| Value | Mfr Part # | Qty | Est. Price |
+|---|---|---|---|
+| 10kΩ / 1W metal film (PSU bleed resistors — 1 per rail) | FMP100JR-52-10K | 2 | ~$0.30 each = $0.60 |
+| 10Ω / 0.5W metal film (ground lift RC network) | MFR-25FBF52-10R | 2 | ~$0.10 each = $0.20 |
+
 ### Potentiometers (Vishay/Spectrol 296 — MIL-PRF-39023)
 
 | Item | Mfr Part # | Qty | Est. Price |
@@ -82,25 +100,40 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 | 10kΩ linear (Dwell) | 296UAL103B2 | 1 | ~$10 |
 | 100kΩ linear (Mix + Tone) | 296UAL104B2 | 2 | ~$10 each = $20 |
 
+### Serviceability — Molex KK Connectors
+*Use these at every internal wire connection so components can be swapped without desoldering*
+
+| Item | Mfr Part # | Qty | Est. Price |
+|---|---|---|---|
+| Molex KK 2-pin housing (transformer secondary × 2, tank RCA × 2, jacks × 2) | 22-01-3027 | 8 | ~$0.25 each = $2.00 |
+| Molex KK 3-pin housing (front panel pots × 3) | 22-01-3037 | 3 | ~$0.25 each = $0.75 |
+| Molex KK crimp terminals (bag of 50) | 08-50-0114 | 1 bag | ~$3.00 |
+
 ### Hardware & Connectors
 
 | Item | Mfr Part # | Qty | Est. Price |
 |---|---|---|---|
 | Switchcraft 112A ¼" TS jack | 112A | 2 | ~$3.20 each = $6.40 |
 | DIP-8 machine-pin IC socket | A-108-A-LPT | 2 | ~$0.50 each = $1.00 |
-| Schurter IEC inlet with fuse holder | 4301.0527 | 1 | ~$8.00 |
-| TE SPST rocker switch 6A/250V | 1825232-1 | 1 | ~$2.00 |
+| Schurter EMI-filtered IEC inlet with fuse holder *(upgraded from 4301.0527)* | 5110.1052 | 1 | ~$15.00 |
+| TE SPST rocker switch 6A/250V (mains power) | 1825232-1 | 1 | ~$2.00 |
+| SPDT mini toggle switch (ground lift, rear panel) | 100SP1T1B1M1QEH | 1 | ~$3.50 |
+| 5mm LED — blue or amber (power indicator) | — | 1 | ~$0.50 |
+| 5mm LED panel-mount bezel | — | 1 | ~$1.00 |
 | TO-220 heatsink | V7477X | 2 | ~$1.50 each = $3.00 |
 | TO-220 mica insulating pad | 4880SG | 2 | ~$0.30 each = $0.60 |
+| Thermal compound (Shin-Etsu X-23 or equivalent) | — | 1 small tube | ~$5.00 |
 | Triad F-219X toroidal transformer 15VA dual 15VAC | F-219X | 1 | ~$28 |
 | Vector T44 FR4 perfboard | T44 | 1 | ~$8.00 |
 | Würth M3 nylon standoff 10mm | 971100311 | 4 | ~$0.50 each = $2.00 |
 | Würth M3 stainless screw | 900151030030 | 10 | ~$0.20 each = $2.00 |
 | Belden 8451 shielded wire 24AWG | 8451 | 1 roll | ~$15 |
+| Colored heat-shrink assortment (red/blue/black/white/gray) | — | 1 pack | ~$5.00 |
 | Kester 44 solder 63/37 0.031" | 24-6337-0027 | 1 roll | ~$18 |
 | Kester 951 flux pen | 2331-ZX | 1 | ~$8.00 |
+| MG Chemicals 422B conformal coating spray | 422B | 1 can | ~$15.00 |
 
-**Mouser Subtotal: ~$145–165**
+**Mouser Subtotal: ~$190–215**
 
 ---
 
@@ -117,13 +150,23 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 Design a custom 2U aluminum panel with:
 - 3× ¼" D-shaft pot holes (DWELL / MIX / TONE)
 - 2× ¼" jack holes (IN / OUT)
+- 1× 5mm LED hole (power indicator)
 - 1× IEC cutout (rear)
-- 1× rocker switch hole (rear)
+- 1× rocker switch hole (mains, rear)
+- 1× mini toggle hole (ground lift, rear)
 - Engraved labels
 
 | Item | Qty | Est. Price |
 |---|---|---|
 | Custom 2U aluminum front panel | 1 | ~$35 |
+
+---
+
+## Supplier 5 — Amazon / McMaster-Carr
+
+| Item | Qty | Est. Price |
+|---|---|---|
+| Sorbothane isolation grommets M3, Shore 30–40 (tank mounting) | 4 | ~$10–12 |
 
 ---
 
@@ -137,10 +180,11 @@ Design a custom 2U aluminum panel with:
 | Supplier | Est. Cost |
 |---|---|
 | Amplified Parts | ~$53 |
-| Mouser | ~$145–165 |
+| Mouser | ~$190–215 |
 | Hammond (chassis) | ~$50 |
 | Front Panel Express | ~$35 |
+| Sorbothane grommets | ~$12 |
 | Knobs | ~$15 |
-| **Total** | **~$298–318** |
+| **Total** | **~$355–380** |
 
-> OPA2134PA price confirmed at $7.64 (Mouser, June 2026). All other prices are estimates — the Mouser BOM tool will show exact current prices when you upload `mouser-bom.csv`.
+> OPA2134PA price confirmed at $7.64 (Mouser, June 2026). All other prices are estimates — verify in the Mouser BOM tool before ordering. Upgraded total reflects full reliability/protection package.
