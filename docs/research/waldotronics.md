@@ -66,17 +66,72 @@ Key data points relevant to OBEL implementation:
 
 ---
 
-## Rosebud Guitar
+## Rosebud Guitar — Doug Irwin (1990)
 
-Waldotronics page is photo-only — no textual specs published. Images show the guitar from what appears to be a Hall of Fame display.
+Waldotronics page is photo-only — no textual specs. Weight listed as 9.6 lbs.
 
-Known from external sources:
-- **Builder:** Steve Cripe (not Doug Irwin)
-- **Weight:** 9.6 lbs (per waldotronics.com)
-- **Period:** 1993–1995 (Jerry's last guitar)
-- **Finish:** Cherry red, double-cut body similar to Les Paul Special
-- **Electronics:** OBEL + JFET buffer (same philosophy as Tiger/Wolf)
-- **Pickups:** DiMarzio
+*Note: Rosebud was built by Doug Irwin, NOT Steve Cripe. Steve Cripe built Lightning Bolt.*
+
+- **Builder:** Doug Irwin
+- **Weight:** 9.6 lbs (waldotronics.com) — lighter than Tiger (9 lbs 6 oz)
+- **Period:** 1990–1995
+- **Body:** Carved cocobola top/back, flamed maple core (hollowed for weight reduction) — near-identical shape to Tiger
+- **Neck:** Maple with vermilion stripe, 24-fret ebony fingerboard
+- **Pickups:** 3× DiMarzio Super II split-coil humbuckers (Strat layout: neck/mid/bridge)
+- **Controls:** 1 volume, 2 tone, 5-way selector — same as Tiger
+- **MIDI:** Roland GK-2 guitar synth interface housed in body cavity
+- **OBEL:** Same effects loop design as Tiger and Wolf — TRS jack send/return before volume control
+- **Hardware:** All brass, hand-fabricated by Irwin (tailpiece, switchplate, pickup plate, jack plates) except Schaller bridge and tuners
+- **Name origin:** Dancing skeleton inlay on the ebony cover plate ("Rosebud")
+
+---
+
+## Lightning Bolt — Steve Cripe (1993)
+
+- **Builder:** Steve Cripe (yacht builder turned luthier)
+- **Body:** Black walnut core, East Indian rosewood top/back, rock maple contrast strips
+- **Neck:** East Indian rosewood and maple
+- **Name origin:** Lightning bolt inlay designed by Cripe
+- **First played:** August 7, 1993 (Jerry Garcia Band)
+- **Last played:** June 4, 1995 — Shoreline Amphitheater
+- **Current location:** Rock and Roll Hall of Fame
+- **Builder's fate:** Cripe died June 18, 1996 in a workshop explosion
+
+---
+
+## Wolf Jr — Doug Irwin
+
+- **Builder:** Doug Irwin — last guitar he built for Jerry
+- **Design:** Headless (Steinberger-inspired)
+- **Used in concert:** Never — Jerry never played it live
+- **Current location:** Rock and Roll Hall of Fame (retained by GD Productions after legal settlement with Irwin)
+
+---
+
+## Modulus Blackknife — Built for Jerry Garcia (c. 1993)
+
+Bob Weir played this guitar extensively. Auctioned at Sotheby's 2021 "From the Vault: Property from the Grateful Dead and Friends" sale.
+
+- **Model:** Modulus Blackknife
+- **Construction:** Five-piece laminate body (mahogany + cocobolo), graphite neck-through-body
+- **Bridge:** Brass
+- **Pickups:** 2× DiMarzio humbuckers (bridge + middle), 1× DiMarzio single coil (neck)
+- **Controls:** 5-way switch, mini switches, 3 knobs, 2 outputs
+- **MIDI:** Roland GK-2 system
+- **Note:** Body has tape explaining the controls (Jerry's setup notation)
+
+Jerry also played a **1985 Modulus Blackknife** briefly (June 1–3, 1985) per waldotronics.com.
+
+---
+
+## Notable Auction Results
+
+| Guitar | Sale | Price | Notes |
+|---|---|---|---|
+| Tiger | 2026 (SF auction) | **$11.56 million** | Bought by Chicago guitar collector. Obliterated $1–2M pre-sale estimate. |
+| Modulus Blackknife | 2021 Sotheby's "From the Vault" | — | Built for Jerry, played by Weir |
+| TB1000A #715/164 neck | 2007 Bonhams | — | Travis Bean neck from Jerry's main 1976 TB |
+| TB1000A #164 neck | 2021 Sotheby's | — | Original TB neck |
 
 ---
 
