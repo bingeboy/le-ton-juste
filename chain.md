@@ -57,10 +57,9 @@ flowchart TD
 
   subgraph RACK["Rack"]
     PRE["Alembic FX-1<br/>Tube Preamp"]
-    MIX["3-Channel Parallel Mixer<br/>(OPA2134 Active Summing)"]
-    QV["Alesis QuadraVerb<br/>(Parallel Loop 1)"]
-    REV["Custom Spring Reverb<br/>(Parallel Loop 2)"]
-    MOTOR["MOTOR Pedal / Future<br/>(Parallel Loop 3)"]
+    LPM["Lehle Parallel M<br/>Single Parallel Loop"]
+    QV["Alesis QuadraVerb<br/>Delay + Modulation (in loop)"]
+    REV["Ghost Spring Reverb<br/>Transformer-Coupled (series)"]
     TUNER["Sabine RT-1601<br/>Rack Tuner (silent path)"]
   end
 
@@ -79,11 +78,10 @@ flowchart TD
   DIRT --> WEIRD
   WEIRD --> BUF_RET
   BUF_RET --> PRE
-  PRE --> MIX
-  MIX -- Loop 1 --> QV --> MIX
-  MIX -- Loop 2 --> REV --> MIX
-  MIX -- Loop 3 --> MOTOR --> MIX
-  MIX --> MC
+  PRE --> LPM
+  LPM -- loop --> QV --> LPM
+  LPM --> REV
+  REV --> MC
   MC -->|"4Ω tap / parallel"| SP1
   MC -->|"4Ω tap / parallel"| SP2
   MUTE -.->|"split to tuner"| TUNER
@@ -93,6 +91,6 @@ flowchart TD
 
 1. **Buffer immediately.** Place a high-quality buffer (Thick Air stage 1, or dedicated OBEL buffer) as close to the guitar as possible to combat cable capacitance and preserve high-end.
 2. **Gain stages before preamp.** Thick Air → Old Dirt provide clean boost and dirt that hit the Alembic's tube front-end. The Alembic is run clean — edge of breakup at most.
-3. **Time effects after preamp.** QuadraVerb and reverb tank sit after the Alembic so reverb tails aren't colored by the preamp's EQ/gain stage. With a dedicated spring reverb in the chain, the QuadraVerb handles delay and modulation (slapback, tap-tempo delay, chorus/flanger) — its reverb programs are retired. **Known limitation:** the QuadraVerb is currently in series, meaning the dry signal passes through 16-bit A/D conversion. The parallel mixer (`docs/signal-chain/parallel-mixer.md`) is the planned fix — priority next build after the reverb tank.
+3. **Time effects after preamp.** QuadraVerb runs in a parallel loop via the **Lehle Parallel M** — dry signal never touches A/D conversion. Ghost Spring stays in series after the Lehle (fully analog, Mix pot handles blend). QuadraVerb handles delay and modulation only — reverb programs retired.
 4. **Reverb last before power amp.** The spring tank with low-impedance buffer is the final device before the MC100, just like Jerry's Fender Reverb Unit placement between F-2B and MC2300.
 5. **Clean power, always.** The MC100 should never clip. All tone and dynamics come from preceding gain stages.
