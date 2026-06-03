@@ -210,7 +210,7 @@ Standard item — available on Amazon, Mouser, or any hardware supplier. Search 
 
 ---
 
-## Build Notes for Dan Jams LLC
+## Build Notes
 
 1. **Grounding:** Use a single-point star ground connected to the chassis at one point. All circuit grounds (op-amp ground pins, pot grounds, jack grounds) run back to this single point. Do not daisy-chain grounds — ground loops cause hum.
 
