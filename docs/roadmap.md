@@ -11,16 +11,14 @@ Transformer-coupled single spring reverb unit. Full design, parts spec, and sche
 
 ---
 
-## 2. Rack Parallel Mixer
-**Status: Designed, not yet built**
+## 2. Lehle Parallel M
+**Status: Ready to purchase (~$180 used)**
 
-3-channel active summing mixer (OPA2134) that moves the QuadraVerb and Ghost Spring into parallel loops, keeping the dry signal fully analog and untouched through the entire rack. This is the single biggest remaining upgrade to the hi-fi signal path.
+Single parallel loop unit that puts the QuadraVerb in a parallel loop, keeping the dry signal completely off the QuadraVerb's A/D converters. The Ghost Spring stays in series after the Lehle — it's fully analog with its own Mix pot, no parallel treatment needed.
 
-**Why it matters:** Currently both the QuadraVerb and Ghost Spring are in series — the dry signal passes through digital converters (QuadraVerb) and the spring tank mix pot (Ghost Spring). The parallel mixer eliminates both compromises.
+**Chain:** Alembic FX-1 → Lehle Parallel M (QuadraVerb in loop) → Ghost Spring → MC100
 
-**Result:** The dry guitar sits completely isolated and transparent. Reverb and delay bloom independently around it — the separation between the note and the space that defines the early 80s Dead live sound.
-
-See `docs/signal-chain/parallel-mixer.md` for the design and commercial alternatives.
+Buy used on Reverb.com or Music Go Round. See `docs/parallel-mixer/design.md` for setup instructions.
 
 ---
 
