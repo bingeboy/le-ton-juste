@@ -5,7 +5,7 @@ Priority order for remaining builds and upgrades. Each item builds on the previo
 ---
 
 ## 1. Ghost Spring Reverb Tank
-**Status: In progress — being built by Dan Jams LLC**
+**Status: In progress — build pending**
 
 Transformer-coupled single spring reverb unit. Full design, parts spec, and schematic complete. See `docs/reverb-tank/`.
 
