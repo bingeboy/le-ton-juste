@@ -13,7 +13,6 @@ flowchart TD
 
   subgraph RACK["Rack"]
     PRE["Alembic FX-1<br/>Tube Preamp"]
-    QV["Alesis QuadraVerb<br/>Delay + Modulation"]
     TUNER["Sabine RT-1601<br/>Rack Tuner (silent path)"]
   end
 
@@ -29,8 +28,7 @@ flowchart TD
   G -->|"GS-6 15ft"| TA
   TA -->|"GS-6 patch"| DIRT
   DIRT -->|"GS-6 8ft"| PRE
-  PRE -->|"1/4 TS"| QV
-  QV -->|"1/4 TS"| MC
+  PRE -->|"1/4 TS"| MC
   MC -->|"Canare 4S11 / 4Ω tap"| SP1
   MC -->|"Canare 4S11 / 4Ω tap"| SP2
 ```
