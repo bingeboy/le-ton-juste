@@ -8,7 +8,7 @@
 | Front panel (Front Panel Express) | 1 | Custom aluminum — 3 knobs, 2× 1/4" jacks, IEC, switch | ~$35 |
 | IEC power inlet with fuse holder | 1 | Fused at 500mA slow-blow | ~$3 |
 | Power switch (rocker) | 1 | Rear or front panel | ~$2 |
-| Rubber feet | 4 | For standalone use | ~$3 |
+| Rack ears / mounting hardware | 1 set | For 2U rackmount installation — verify included with chassis, otherwise source separately | ~$0–10 |
 
 ## Spring Tank
 
