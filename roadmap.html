@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Ghost Spring Tank — build roadmap: Lehle Parallel M, OBEL buffer, mute switch, rack compressor options.">
+  <title>Roadmap — Ghost Spring Tank</title>
+  <style>
+    :root {
+      --bg:      #0e0c08;
+      --surface: #16130d;
+      --border:  #2a2318;
+      --tan:     #d4a96a;
+      --warm:    #e8c88a;
+      --text:    #e8dfd0;
+      --muted:   #8a7a6a;
+      --code-bg: #120f0a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @keyframes bg-breathe {
+      0%   { background-color: #0e0c08; }
+      50%  { background-color: #0c0e08; }
+      100% { background-color: #0e0c08; }
+    }
+    @keyframes vignette-pulse {
+      0%, 100% { opacity: 0.7; }
+      50%       { opacity: 0.9; }
+    }
+    @keyframes scanline-drift {
+      from { background-position: 0 0; }
+      to   { background-position: 0 100vh; }
+    }
+    @keyframes border-seep {
+      0%,100% { border-color: #2a2318; }
+      33%     { border-color: #2a1e18; }
+      66%     { border-color: #222a18; }
+    }
+
+    body {
+      background-color: var(--bg);
+      animation: bg-breathe 24s ease-in-out infinite;
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px);
+      pointer-events: none;
+      z-index: 9998;
+      animation: scanline-drift 12s linear infinite;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.75) 100%);
+      pointer-events: none;
+      z-index: 9997;
+      animation: vignette-pulse 18s ease-in-out infinite;
+    }
+
+    a { color: var(--tan); text-decoration: none; }
+    a:hover { color: var(--warm); }
+
+    .page-nav {
+      padding: 1.1rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      animation: border-seep 20s ease-in-out infinite;
+    }
+    .nav-logo { font-size: 0.88rem; font-weight: 700; color: var(--tan); text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+    .nav-links { display: flex; gap: 1.1rem; flex-wrap: wrap; font-size: 0.82rem; }
+    .nav-links a { color: var(--muted); }
+    .nav-links a:hover { color: var(--tan); }
+    .nav-links a.active { color: var(--tan); }
+    .nav-sep { margin-left: auto; }
+
+    .page-hero {
+      padding: 3rem 0 2.5rem;
+      border-bottom: 1px solid var(--border);
+      animation: border-seep 20s ease-in-out infinite;
+    }
+    .page-hero h1 { font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 700; color: var(--tan); letter-spacing: -0.01em; margin-bottom: 0.5rem; }
+    .page-hero p { color: var(--muted); max-width: 540px; margin-bottom: 0; }
+
+    section { padding: 3rem 0; border-bottom: 1px solid var(--border); animation: border-seep 20s ease-in-out infinite; }
+    section:last-of-type { border-bottom: none; }
+
+    h2 { font-size: 0.7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 1.25rem; }
+    h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.6rem; letter-spacing: -0.01em; color: var(--text); }
+    h4 { font-size: 0.78rem; font-weight: 600; color: var(--tan); margin: 1.75rem 0 0.5rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+    p { color: var(--muted); margin-bottom: 1rem; max-width: 620px; }
+    ul { color: var(--muted); padding-left: 1.25rem; margin-bottom: 1rem; max-width: 620px; }
+    ul li { margin-bottom: 0.3rem; }
+    strong { color: var(--text); }
+
+    /* Roadmap items */
+    .roadmap-item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+      background: var(--surface);
+      animation: border-seep 20s ease-in-out infinite;
+    }
+
+    .item-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .item-number {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      padding-top: 0.3rem;
+      min-width: 24px;
+    }
+
+    .item-title-group { flex: 1; }
+
+    .item-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+    }
+
+    .item-status {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 0.2rem 0.6rem;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    .status-inprogress {
+      background: rgba(212, 169, 106, 0.12);
+      color: var(--tan);
+      border: 1px solid rgba(212, 169, 106, 0.3);
+    }
+
+    .status-ready {
+      background: rgba(46, 160, 67, 0.1);
+      color: #3fb950;
+      border: 1px solid rgba(46, 160, 67, 0.25);
+    }
+
+    .status-planned {
+      background: rgba(138, 122, 106, 0.1);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .status-hold {
+      background: rgba(192, 57, 43, 0.08);
+      color: #e74c3c;
+      border: 1px solid rgba(192, 57, 43, 0.25);
+    }
+
+    .item-body p { color: var(--muted); margin-bottom: 0.75rem; max-width: none; font-size: 0.9rem; }
+    .item-body p:last-child { margin-bottom: 0; }
+    .item-body ul { max-width: none; font-size: 0.9rem; }
+
+    /* Table for compressor options */
+    .table-wrap { overflow-x: auto; margin-bottom: 1rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.855rem; }
+    th { text-align: left; padding: 0.5rem 0.9rem; background: var(--bg); color: var(--muted); font-size: 0.66rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid var(--border); }
+    td { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    td:first-child { color: var(--tan); font-weight: 600; }
+
+    .chain-note {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.82rem;
+      line-height: 1.8;
+      margin: 0.75rem 0 0;
+      color: var(--muted);
+      animation: border-seep 20s ease-in-out infinite;
+    }
+    .chain-note .hi { color: var(--tan); }
+
+    footer { padding: 2.5rem 0; text-align: center; color: var(--muted); font-size: 0.8rem; }
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--tan); }
+  </style>
+</head>
+<body>
+
+<nav class="page-nav">
+  <a href="index.html" class="nav-logo">👻 Ghost Spring Tank</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="rig.html">The Rig</a>
+    <a href="design.html">Design</a>
+    <a href="parts.html">Parts</a>
+    <a href="roadmap.html" class="active">Roadmap</a>
+  </div>
+  <div class="nav-sep"></div>
+  <div class="nav-links">
+    <a href="https://github.com/bingeboy/le-ton-juste" target="_blank">GitHub</a>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <h1>Roadmap</h1>
+  <p>Remaining builds and upgrades in priority order. Each item builds on the previous. Ghost Spring first, then Lehle, then OBEL, then the rest.</p>
+</div>
+
+<section id="builds">
+  <h2>Build Queue</h2>
+  <h3>Priority Order</h3>
+
+  <!-- 1. Ghost Spring -->
+  <div class="roadmap-item">
+    <div class="item-header">
+      <div class="item-number">01</div>
+      <div class="item-title-group">
+        <div class="item-title">Ghost Spring Reverb Tank</div>
+        <span class="item-status status-inprogress">In Progress — Build Pending</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p>Transformer-coupled single spring reverb unit. Full design, parts spec, schematic, and enclosure layout complete. Order parts and hand off to builder. Total cost ~$298–318.</p>
+      <p><a href="design.html">Circuit Design →</a> &nbsp; <a href="parts.html">Parts &amp; Ordering →</a></p>
+    </div>
+  </div>
+
+  <!-- 2. Lehle Parallel M -->
+  <div class="roadmap-item">
+    <div class="item-header">
+      <div class="item-number">02</div>
+      <div class="item-title-group">
+        <div class="item-title">Lehle Parallel M</div>
+        <span class="item-status status-ready">Ready to Purchase — ~$180 Used</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p>Single parallel loop unit. Puts the QuadraVerb in a parallel loop — the dry signal path never touches the QuadraVerb's A/D converters. Ghost Spring stays in series after the Lehle; it's fully analog with its own Mix pot.</p>
+      <p>Buy used on Reverb.com or Music Go Round. Search "Lehle Parallel M."</p>
+      <div class="chain-note">Alembic FX-1 → <span class="hi">Lehle Parallel M</span> (QuadraVerb in loop) → Ghost Spring → MC100</div>
+    </div>
+  </div>
+
+  <!-- 3. OBEL Buffer -->
+  <div class="roadmap-item">
+    <div class="item-header">
+      <div class="item-number">03</div>
+      <div class="item-title-group">
+        <div class="item-title">OBEL Buffer</div>
+        <span class="item-status status-planned">Planned</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p>On-Board Effects Loop buffer — either a Waldotronics OBEL Buffer pedal or a DIY JFET build. Moves the volume pot downstream of the pedalboard effects so turning down doesn't kill reverb and delay tails. Keeps the guitar's high-impedance pickup output isolated from pedal loading.</p>
+      <p>Complements the rack parallel mixer — OBEL protects the guitar-to-preamp path, the Lehle protects the preamp-to-amp path. Jerry Garcia ran both on Tiger, Wolf, and Rosebud.</p>
+      <ul>
+        <li><strong>Waldotronics OBEL Buffer:</strong> Commercial pedal, purpose-built, drop-in</li>
+        <li><strong>DIY JFET build:</strong> J201 or 2N5457 source follower — same topology as the guitar's output buffer on Irwin-built instruments</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 4. Mute Switch + Tuner -->
+  <div class="roadmap-item">
+    <div class="item-header">
+      <div class="item-number">04</div>
+      <div class="item-title-group">
+        <div class="item-title">Mute Switch + Tuner Routing</div>
+        <span class="item-status status-planned">Planned — Depends on OBEL</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p>Passive mute switch on the pedalboard that silently splits signal to the Sabine RT-1601 rack tuner when stomped. Most cleanly implemented as part of the OBEL loop — the wiring design is straightforward once the OBEL buffer is in place.</p>
+      <p>Currently the Sabine RT-1601 sits in the rack receiving a passive split from before the Alembic FX-1. The mute footswitch design formalizes this into a clean rack-integrated solution.</p>
+    </div>
+  </div>
+
+  <!-- 5. Rack Compressor -->
+  <div class="roadmap-item">
+    <div class="item-header">
+      <div class="item-number">05</div>
+      <div class="item-title-group">
+        <div class="item-title">Rack Compressor</div>
+        <span class="item-status status-hold">Under Consideration — Do Not Add Yet</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p>A rack compressor post-Alembic FX-1 would add the bloom and sustain character that gives notes a viola or horn-like swell — slow attack lets the pick transient through, medium-slow release sustains the tail. The goal is musical bloom, not squash.</p>
+
+      <p><strong>Hold off until Ghost Spring and Lehle are in place and the chain is settled.</strong> Dial in the Alembic's EQ first — compressor after EQ in the decision sequence.</p>
+
+      <div class="chain-note">Alembic FX-1 → <span class="hi">Compressor</span> → Lehle Parallel M → Ghost Spring → MC100</div>
+
+      <h4>Options</h4>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Unit</th><th>Price Used</th><th>Character</th><th>Notes</th></tr>
+          <tr>
+            <td>dbx 160A</td>
+            <td>~$300–400</td>
+            <td>Warm, transparent, "over easy" knee</td>
+            <td><strong>Top recommendation.</strong> 1U, industry standard for live/studio. Precise ratio/attack/release. Fits the rack aesthetic perfectly.</td>
+          </tr>
+          <tr>
+            <td>dbx 165A</td>
+            <td>~$250–350</td>
+            <td>Same 160A lineage + integrated limiter</td>
+            <td>Good if you want an automatic ceiling on peaks going into the Lehle/Ghost Spring.</td>
+          </tr>
+          <tr>
+            <td>Summit Audio DCL-200</td>
+            <td>~$700–900</td>
+            <td>Tube optical — warm, smooth, slow attack</td>
+            <td>Higher-end. The tube stage complements the Alembic FX-1's character. More colored but in a musical way.</td>
+          </tr>
+          <tr>
+            <td>UA 1176LN (or Black Lion clone)</td>
+            <td>~$800–1200 orig / ~$400 clone</td>
+            <td>Fast FET — punchy attack control</td>
+            <td>Better for bite and presence than bloom. Less ideal for the viola/horn goal but excellent if you want a more aggressive compressed sound.</td>
+          </tr>
+          <tr>
+            <td>Boss CS-2 (pedal)</td>
+            <td>~$80–120</td>
+            <td>Guitar-voiced, simple, warm</td>
+            <td>Lower-fi option. Specifically voiced for guitar dynamics. Goes before the Alembic at instrument level.</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="font-size:0.85rem;"><strong>dbx 160A is the move</strong> for this rig — professional grade, transparent at low ratios, 1U rack, strong used market. Wait until Ghost Spring and Lehle are dialed in before deciding.</p>
+    </div>
+  </div>
+
+</section>
+
+<footer>
+  <p>Ghost Spring Tank · <a href="https://github.com/bingeboy/le-ton-juste" target="_blank">le-ton-juste on GitHub</a></p>
+</footer>
+
+</body>
+</html>

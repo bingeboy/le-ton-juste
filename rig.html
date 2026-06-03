@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Ghost Spring Tank — full rig breakdown: Alembic FX-1, McIntosh MC100, JBL E120-8, pedals, QuadraVerb, Lehle Parallel M.">
+  <title>The Rig — Ghost Spring Tank</title>
+  <style>
+    :root {
+      --bg:      #0e0c08;
+      --surface: #16130d;
+      --border:  #2a2318;
+      --tan:     #d4a96a;
+      --warm:    #e8c88a;
+      --text:    #e8dfd0;
+      --muted:   #8a7a6a;
+      --code-bg: #120f0a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @keyframes bg-breathe {
+      0%   { background-color: #0e0c08; }
+      50%  { background-color: #0c0e08; }
+      100% { background-color: #0e0c08; }
+    }
+    @keyframes vignette-pulse {
+      0%, 100% { opacity: 0.7; }
+      50%       { opacity: 0.9; }
+    }
+    @keyframes scanline-drift {
+      from { background-position: 0 0; }
+      to   { background-position: 0 100vh; }
+    }
+    @keyframes border-seep {
+      0%,100% { border-color: #2a2318; }
+      33%     { border-color: #2a1e18; }
+      66%     { border-color: #222a18; }
+    }
+
+    body {
+      background-color: var(--bg);
+      animation: bg-breathe 24s ease-in-out infinite;
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px);
+      pointer-events: none;
+      z-index: 9998;
+      animation: scanline-drift 12s linear infinite;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.75) 100%);
+      pointer-events: none;
+      z-index: 9997;
+      animation: vignette-pulse 18s ease-in-out infinite;
+    }
+
+    a { color: var(--tan); text-decoration: none; }
+    a:hover { color: var(--warm); }
+
+    .page-nav {
+      padding: 1.1rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      animation: border-seep 20s ease-in-out infinite;
+    }
+    .nav-logo { font-size: 0.88rem; font-weight: 700; color: var(--tan); text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+    .nav-links { display: flex; gap: 1.1rem; flex-wrap: wrap; font-size: 0.82rem; }
+    .nav-links a { color: var(--muted); }
+    .nav-links a:hover { color: var(--tan); }
+    .nav-links a.active { color: var(--tan); }
+    .nav-sep { margin-left: auto; }
+
+    .page-hero {
+      padding: 3rem 0 2.5rem;
+      border-bottom: 1px solid var(--border);
+      animation: border-seep 20s ease-in-out infinite;
+    }
+    .page-hero h1 { font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 700; color: var(--tan); letter-spacing: -0.01em; margin-bottom: 0.5rem; }
+    .page-hero p { color: var(--muted); max-width: 540px; margin-bottom: 0; }
+
+    section { padding: 3rem 0; border-bottom: 1px solid var(--border); animation: border-seep 20s ease-in-out infinite; }
+    section:last-of-type { border-bottom: none; }
+
+    h2 { font-size: 0.7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 1.25rem; }
+    h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.6rem; letter-spacing: -0.01em; color: var(--text); }
+    h4 { font-size: 0.78rem; font-weight: 600; color: var(--tan); margin: 1.75rem 0 0.5rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+    p { color: var(--muted); margin-bottom: 1rem; max-width: 620px; }
+    ul { color: var(--muted); padding-left: 1.25rem; margin-bottom: 1rem; max-width: 620px; }
+    ul li { margin-bottom: 0.3rem; }
+    strong { color: var(--text); }
+
+    .chain {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.5rem;
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.84rem;
+      line-height: 2;
+      margin-bottom: 1.5rem;
+      animation: border-seep 20s ease-in-out infinite;
+    }
+    .chain-arrow { color: var(--tan); }
+    .chain-node { color: var(--text); }
+    .chain-label { color: var(--muted); font-size: 0.75rem; }
+    .chain-node.hi { color: var(--tan); }
+
+    .spec-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      animation: border-seep 20s ease-in-out infinite;
+    }
+    .spec-row { display: flex; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    .spec-row:last-child { border-bottom: none; }
+    .spec-key { color: var(--muted); width: 160px; flex-shrink: 0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; padding-top: 0.1rem; }
+    .spec-val { color: var(--text); }
+
+    .component {
+      border-top: 1px solid var(--border);
+      padding-top: 2.5rem;
+      margin-top: 2.5rem;
+    }
+    .component:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+
+    .component-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 0.35rem;
+    }
+
+    .component-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--tan);
+      margin-bottom: 0.5rem;
+    }
+
+    .table-wrap { overflow-x: auto; margin-bottom: 1.5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th { text-align: left; padding: 0.55rem 1rem; background: var(--surface); color: var(--muted); font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid var(--border); }
+    td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    td:first-child { color: var(--tan); }
+
+    footer { padding: 2.5rem 0; text-align: center; color: var(--muted); font-size: 0.8rem; }
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--tan); }
+  </style>
+</head>
+<body>
+
+<nav class="page-nav">
+  <a href="index.html" class="nav-logo">👻 Ghost Spring Tank</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="rig.html" class="active">The Rig</a>
+    <a href="design.html">Design</a>
+    <a href="parts.html">Parts</a>
+    <a href="roadmap.html">Roadmap</a>
+  </div>
+  <div class="nav-sep"></div>
+  <div class="nav-links">
+    <a href="https://github.com/bingeboy/le-ton-juste" target="_blank">GitHub</a>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <h1>The Rig</h1>
+  <p>Full component breakdown — preamp, power amp, speakers, pedals, effects rack. Built around the hi-fi philosophy: all tone shaping upstream, transparent amplification downstream.</p>
+</div>
+
+<!-- SIGNAL CHAIN OVERVIEW -->
+<section id="chain">
+  <h2>Signal Chain</h2>
+  <h3>Current State</h3>
+  <p>Guitar to power amp — every device in the chain right now.</p>
+
+  <div class="chain">
+    <div><span class="chain-node">🎸 Guitar</span></div>
+    <div><span class="chain-arrow">  ↓  </span><span class="chain-label">Mogami/Canare GS-6 · 15ft</span></div>
+    <div><span class="chain-node">IO Thick Air</span> <span class="chain-label">Dual JFET clean boost — always on, stage 1 as buffer</span></div>
+    <div><span class="chain-arrow">  ↓  </span></div>
+    <div><span class="chain-node">IO Old Dirt</span> <span class="chain-label">Distortion — gain staging into preamp</span></div>
+    <div><span class="chain-arrow">  ↓  </span><span class="chain-label">GS-6 · 8ft</span></div>
+    <div><span class="chain-node">Alembic FX-1</span> <span class="chain-label">Tube preamp · Fender Showman topology · all EQ here</span></div>
+    <div><span class="chain-arrow">  ↓  </span></div>
+    <div><span class="chain-node">McIntosh MC100</span> <span class="chain-label">100W solid-state mono · autoformer output · no coloration</span></div>
+    <div><span class="chain-arrow">  ↓  </span><span class="chain-label">Canare 4S11 · 4Ω tap</span></div>
+    <div><span class="chain-node">2× JBL E120-8</span> <span class="chain-label">Parallel · 4Ω load · 150W each</span></div>
+  </div>
+
+  <h3>Future State</h3>
+  <p>Once the Ghost Spring is built and the Lehle Parallel M is in place.</p>
+
+  <div class="chain">
+    <div><span class="chain-node">🎸 Guitar</span> <span class="chain-label">+ OBEL buffer (planned)</span></div>
+    <div><span class="chain-arrow">  ↓  </span></div>
+    <div><span class="chain-node">IO Thick Air → IO Old Dirt</span></div>
+    <div><span class="chain-arrow">  ↓  </span></div>
+    <div><span class="chain-node">Alembic FX-1</span> <span class="chain-label">Tube preamp — tone shaping happens here</span></div>
+    <div><span class="chain-arrow">  ↓  </span></div>
+    <div><span class="chain-node">Lehle Parallel M</span> <span class="chain-label">QuadraVerb in parallel loop · dry path untouched by A/D conversion</span></div>
+    <div><span class="chain-arrow">  ↓  </span></div>
+    <div><span class="chain-node hi">👻 Ghost Spring Tank</span> <span class="chain-label">Spring reverb · series · Mix pot handles blend</span></div>
+    <div><span class="chain-arrow">  ↓  </span></div>
+    <div><span class="chain-node">McIntosh MC100 → 2× JBL E120-8</span></div>
+  </div>
+</section>
+
+<!-- COMPONENTS -->
+<section id="components">
+  <h2>Components</h2>
+  <h3>Every Piece in the Chain</h3>
+
+  <!-- Alembic FX-1 -->
+  <div class="component">
+    <div class="component-label">Preamp</div>
+    <div class="component-title">Alembic FX-1</div>
+    <p>The amp. All tone shaping happens here. Descended from the Fender Showman/Dual Showman preamp circuit, packaged by Ron Wickersham at Alembic in a 1U hi-fi rack format. Jerry Garcia used the earlier F-2B from the early 1970s — the FX-1 is the modern version of the same topology.</p>
+
+    <h4>Lineage</h4>
+    <ul>
+      <li><strong>F-2B (1970s):</strong> Jerry's preamp. Dual-channel, dual 12AX7, Bright switch per channel, XLR + 1/4" outputs. Fender Showman topology.</li>
+      <li><strong>F-1X:</strong> Successor — added footswitchable channel select.</li>
+      <li><strong>FX-1:</strong> Current version. Single-channel with additional features.</li>
+    </ul>
+
+    <h4>Role in the Rig</h4>
+    <p>The McIntosh MC100 is a transparent power amp — it adds zero coloration. All character comes from the Alembic. This mirrors Jerry's approach: the F-2B provided Fender-style tube warmth and EQ, and the MC2300 just made it louder.</p>
+
+    <h4>Tube Selection</h4>
+    <p>Key tube: <strong>NOS GE 5751 5 Star Gray Plate 3 Mica</strong> — gain factor ~70 vs. 100 for a 12AX7, smoother, more articulate. The classic choice for Jerry tones.</p>
+
+    <h4>EQ Approach for the Jerry Tone</h4>
+    <ul>
+      <li><strong>Bass:</strong> Moderate boost — single-coil pickups need low-end reinforcement for clean sustain</li>
+      <li><strong>Midrange:</strong> Slightly scooped — Fender topology inherits a natural mid-scoop</li>
+      <li><strong>Treble:</strong> Fairly high with Bright switch engaged — clear, articulate sparkle</li>
+      <li><strong>Gain:</strong> Always clean — dirt comes from pedals, not the preamp</li>
+    </ul>
+
+    <div class="spec-card">
+      <div class="spec-row"><span class="spec-key">Type</span><span class="spec-val">1U rackmount tube preamp</span></div>
+      <div class="spec-row"><span class="spec-key">Topology</span><span class="spec-val">Fender Showman / Dual Showman — same as F-2B</span></div>
+      <div class="spec-row"><span class="spec-key">Input</span><span class="spec-val">¼" instrument level (from pedalboard)</span></div>
+      <div class="spec-row"><span class="spec-key">Output</span><span class="spec-val">¼" line level (to effects rack / Ghost Spring)</span></div>
+      <div class="spec-row"><span class="spec-key">Key tube</span><span class="spec-val">NOS GE 5751 5 Star Gray Plate 3 Mica</span></div>
+    </div>
+  </div>
+
+  <!-- McIntosh MC100 -->
+  <div class="component">
+    <div class="component-label">Power Amp</div>
+    <div class="component-title">McIntosh MC100</div>
+    <p>100W mono solid-state power amplifier, 1970–1974. Transistors feeding McIntosh's patented Autoformer output. The MC100 amplifies cleanly — no sag, no compression, no harmonic distortion. All tone comes from the Alembic upstream.</p>
+
+    <h4>Why the Autoformer Matters</h4>
+    <p>Speaker impedance varies with frequency. A conventional amplifier's frequency response shifts as load impedance changes. The autoformer decouples the amplifier from the speaker — identical power output and flat frequency response into any impedance tap (2Ω, 4Ω, 8Ω, 16Ω).</p>
+
+    <h4>Jerry Context</h4>
+    <p>Jerry used the MC2300 (300W/ch stereo, bridgeable to 600W mono) — same architecture and philosophy as the MC100. The MC100 is a home/small-venue version. With 103dB-sensitive JBL E120s, 100W of clean McIntosh power is more than adequate.</p>
+
+    <div class="spec-card">
+      <div class="spec-row"><span class="spec-key">Power</span><span class="spec-val">100W RMS @ 8Ω (tested to 145W before clipping)</span></div>
+      <div class="spec-row"><span class="spec-key">THD</span><span class="spec-val">&lt;0.25% at rated power</span></div>
+      <div class="spec-row"><span class="spec-key">Input Z</span><span class="spec-val">~100kΩ unbalanced RCA</span></div>
+      <div class="spec-row"><span class="spec-key">Input Sensitivity</span><span class="spec-val">~0.75V for rated output</span></div>
+      <div class="spec-row"><span class="spec-key">Output Taps</span><span class="spec-val">2Ω · 4Ω · 8Ω · 16Ω via autoformer barrier strip</span></div>
+      <div class="spec-row"><span class="spec-key">Current Tap</span><span class="spec-val">4Ω — matches 2× JBL E120-8 in parallel</span></div>
+    </div>
+  </div>
+
+  <!-- JBL E120-8 -->
+  <div class="component">
+    <div class="component-label">Speakers</div>
+    <div class="component-title">2× JBL E120-8</div>
+    <p>The speakers that defined Garcia's tone. The JBL D120F (Fender-branded), K120, and E120 were in every serious Jerry/Bob rig from the Wall of Sound era forward. The aluminum dome dust cap is the character — extended high-frequency response, wide flat frequency range, no speaker breakup.</p>
+
+    <h4>Why JBLs</h4>
+    <ul>
+      <li><strong>Aluminum dome:</strong> Extended HF response. The "glassy," articulate top end.</li>
+      <li><strong>Flat response:</strong> No midrange honk. Equal energy across the spectrum — like studio monitors, not guitar speakers.</li>
+      <li><strong>High power handling:</strong> 150W each, two in parallel = 300W handling into a 100W amp. Effectively unblowabl.</li>
+      <li><strong>No breakup:</strong> JBLs stay clean and articulate at high volume — essential for the hi-fi approach.</li>
+    </ul>
+
+    <h4>Parallel Wiring</h4>
+    <p>Two 8Ω speakers in parallel = 4Ω total load. MC100 set to 4Ω output tap via autoformer. Cable: Canare 4S11, 4-conductor 14AWG wired to Neutrik Speakon NL4FC (R+W conductors to Pin 1+, B+Black to Pin 1−).</p>
+
+    <div class="spec-card">
+      <div class="spec-row"><span class="spec-key">Model</span><span class="spec-val">JBL E120-8</span></div>
+      <div class="spec-row"><span class="spec-key">Impedance</span><span class="spec-val">8Ω nominal (×2 in parallel = 4Ω load)</span></div>
+      <div class="spec-row"><span class="spec-key">Power</span><span class="spec-val">150W RMS each</span></div>
+      <div class="spec-row"><span class="spec-key">Sensitivity</span><span class="spec-val">~103dB (1W/1m) — extremely efficient</span></div>
+      <div class="spec-row"><span class="spec-key">Voice Coil</span><span class="spec-val">4" edge-wound copper</span></div>
+      <div class="spec-row"><span class="spec-key">Dust Cap</span><span class="spec-val">Aluminum dome — extended HF response</span></div>
+    </div>
+  </div>
+
+  <!-- Pedals -->
+  <div class="component">
+    <div class="component-label">Pedalboard</div>
+    <div class="component-title">IO Thick Air + IO Old Dirt</div>
+    <p>Both from IO Custom Guitars (Brian White, Laramie, WY). NOS Siliconix J230 JFETs, mil-spec components, no electrolytic caps — built to the same standard as the rest of the rig.</p>
+
+    <h4>IO Thick Air — Dual JFET Clean Boost</h4>
+    <p>Two independent JFET preamp stages with dedicated footswitches and gain controls. Based on the classic Stratoblaster design, heavily refined. Adds presence, air, and a 3D sound stage without compression. Stage 1 runs at minimum gain as a permanent buffer/tone enhancer — always on. Stage 2 used as a solo boost. Right channel Air toggle lifts upper frequencies without harshness.</p>
+
+    <h4>IO Old Dirt — Distortion</h4>
+    <p>Newest pedal from IO Custom Guitars. Designed to complement the Deadhead/Jerry tone aesthetic. Placed after Thick Air — Thick Air pushes the Dirt, Dirt hits the Alembic's tube input for controllable gain staging without touching the preamp's gain control.</p>
+
+    <h4>Gain Staging</h4>
+    <p>Thick Air (buffer + subtle boost) → Old Dirt (clipping) → Alembic FX-1 (tube warmth, EQ). The Alembic should be set clean at the edge — all dirt comes from pedals, not from overdriving the preamp.</p>
+  </div>
+
+  <!-- QuadraVerb -->
+  <div class="component">
+    <div class="component-label">Effects</div>
+    <div class="component-title">Alesis QuadraVerb</div>
+    <p>Multi-effects processor — digital reverb, delay, chorus, flanger, pitch shift, EQ. In the future state of this rig, the QuadraVerb runs in the Lehle Parallel M's loop so its A/D converters are never in the dry signal path. Used for hall/plate reverb algorithms and digital delay as an alternative to (or layered with) the Ghost Spring's analog spring reverb.</p>
+
+    <h4>Why Parallel</h4>
+    <p>Running the QuadraVerb in series means the dry guitar signal passes through its A/D and D/A converters — this compromises the transparency of the Alembic → McIntosh chain. The Lehle Parallel M puts it in a parallel loop: the dry signal bypasses the QuadraVerb entirely, and only the effect return is blended in.</p>
+
+    <h4>Setup for the Jerry Tone</h4>
+    <ul>
+      <li>Reverb: plate or hall, moderate decay (1.5–2.5s)</li>
+      <li>Delay: subtle slapback or clean digital delay mixed low</li>
+      <li>EQ: flat or slight high-shelf boost</li>
+      <li>Mix: keep it subtle — the Ghost Spring handles the ambient spring tail</li>
+    </ul>
+  </div>
+
+  <!-- Lehle Parallel M -->
+  <div class="component">
+    <div class="component-label">Parallel Loop — Planned</div>
+    <div class="component-title">Lehle Parallel M</div>
+    <p>Commercial single-loop parallel mixer (~$180 used on Reverb.com). Puts the QuadraVerb in a true parallel loop — the dry signal passes through the Lehle's summing network completely untouched by the QuadraVerb's A/D converters. The effect return is blended in cleanly at the Lehle's output.</p>
+
+    <h4>Why This Solves the QuadraVerb Problem</h4>
+    <p>The QuadraVerb is a late-1980s digital effects unit. Its A/D conversion is functional but not hi-fi by modern standards. Running guitar through it in series is like routing through a 32kHz digital chain between a tube preamp and a McIntosh. The Lehle bypasses that entirely — you get the effect tails without the converters touching your dry tone.</p>
+
+    <h4>Chain Position</h4>
+    <p>Alembic FX-1 → Lehle Parallel M (QuadraVerb in loop) → Ghost Spring → MC100. The Ghost Spring sits in series after the Lehle — it's fully analog with its own Mix pot, no parallel treatment needed.</p>
+
+    <div class="spec-card">
+      <div class="spec-row"><span class="spec-key">Status</span><span class="spec-val">Ready to purchase — ~$180 used on Reverb.com or Music Go Round</span></div>
+      <div class="spec-row"><span class="spec-key">Type</span><span class="spec-val">Single parallel loop unit, passive summing</span></div>
+      <div class="spec-row"><span class="spec-key">Dry path</span><span class="spec-val">Completely off the loop device's converters</span></div>
+    </div>
+  </div>
+
+  <!-- Sabine RT-1601 -->
+  <div class="component">
+    <div class="component-label">Tuner</div>
+    <div class="component-title">Sabine RT-1601</div>
+    <p>1U rack chromatic tuner. Not in the main signal path — receives signal via a passive mute switch split placed before the Alembic FX-1. When the mute footswitch is stomped, signal routes to the Sabine and the output to the Alembic is disconnected. Silent tuning with no buffer in the audio path during play.</p>
+
+    <div class="spec-card">
+      <div class="spec-row"><span class="spec-key">Tuning</span><span class="spec-val">Chromatic, auto-sensing, 7 octaves, ±1 cent accuracy</span></div>
+      <div class="spec-row"><span class="spec-key">Inputs</span><span class="spec-val">2× ¼" TS front + rear (parallel)</span></div>
+      <div class="spec-row"><span class="spec-key">Mute</span><span class="spec-val">Front panel + external footswitch jack</span></div>
+      <div class="spec-row"><span class="spec-key">Path</span><span class="spec-val">Passive split — never in audio chain while playing</span></div>
+    </div>
+  </div>
+
+</section>
+
+<footer>
+  <p>Ghost Spring Tank · <a href="https://github.com/bingeboy/le-ton-juste" target="_blank">le-ton-juste on GitHub</a></p>
+</footer>
+
+</body>
+</html>
