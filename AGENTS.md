@@ -56,5 +56,5 @@ Reference and design tool for a clean, hi-fi Jerry Garcia / Bob Weir guitar sign
 | Boost | IO Thick Air (dual JFET clean boost) |
 | Distortion | IO Old Dirt |
 | Multi-FX | Alesis QuadraVerb |
-| Reverb | Custom spring reverb tank (in design, rackmount, low-Z buffer) |
+| Reverb | Ghost Spring — transformer-coupled spring reverb (specced, being built by Dan Jams LLC) |
 | Tuner | Sabine RT-1601 (1U rackmount chromatic, passive mute-switch split) |
