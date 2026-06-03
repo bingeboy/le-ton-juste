@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Ghost Spring Tank — full circuit design: transformer coupling, component rationale, build notes, enclosure layout.">
+  <title>Circuit Design — Ghost Spring Tank</title>
+  <style>
+    :root {
+      --bg:      #0e0c08;
+      --surface: #16130d;
+      --border:  #2a2318;
+      --tan:     #d4a96a;
+      --warm:    #e8c88a;
+      --text:    #e8dfd0;
+      --muted:   #8a7a6a;
+      --code-bg: #120f0a;
+      --red:     #c0392b;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @keyframes bg-breathe {
+      0%   { background-color: #0e0c08; }
+      25%  { background-color: #100c06; }
+      50%  { background-color: #0c0e08; }
+      75%  { background-color: #0e0a06; }
+      100% { background-color: #0e0c08; }
+    }
+
+    @keyframes vignette-pulse {
+      0%, 100% { opacity: 0.7; }
+      50%       { opacity: 0.9; }
+    }
+
+    @keyframes scanline-drift {
+      from { background-position: 0 0; }
+      to   { background-position: 0 100vh; }
+    }
+
+    @keyframes border-seep {
+      0%,100% { border-color: #2a2318; }
+      33%     { border-color: #2a1e18; }
+      66%     { border-color: #222a18; }
+    }
+
+    body {
+      background-color: var(--bg);
+      animation: bg-breathe 24s ease-in-out infinite;
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px);
+      pointer-events: none;
+      z-index: 9998;
+      animation: scanline-drift 12s linear infinite;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.75) 100%);
+      pointer-events: none;
+      z-index: 9997;
+      animation: vignette-pulse 18s ease-in-out infinite;
+    }
+
+    a { color: var(--tan); text-decoration: none; }
+    a:hover { color: var(--warm); }
+
+    /* ── Page nav ── */
+    .page-nav {
+      padding: 1.1rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      animation: border-seep 20s ease-in-out infinite;
+    }
+
+    .nav-logo {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--tan);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 1.1rem;
+      flex-wrap: wrap;
+      font-size: 0.82rem;
+    }
+
+    .nav-links a { color: var(--muted); }
+    .nav-links a:hover { color: var(--tan); }
+    .nav-links a.active { color: var(--tan); }
+
+    .nav-sep { margin-left: auto; }
+
+    /* ── Page hero ── */
+    .page-hero {
+      padding: 3rem 0 2.5rem;
+      border-bottom: 1px solid var(--border);
+      animation: border-seep 20s ease-in-out infinite;
+    }
+
+    .page-hero h1 {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 700;
+      color: var(--tan);
+      letter-spacing: -0.01em;
+      margin-bottom: 0.5rem;
+    }
+
+    .page-hero p {
+      color: var(--muted);
+      max-width: 540px;
+      margin-bottom: 0;
+    }
+
+    /* ── Sections ── */
+    section {
+      padding: 3rem 0;
+      border-bottom: 1px solid var(--border);
+      animation: border-seep 20s ease-in-out infinite;
+    }
+
+    section:last-of-type { border-bottom: none; }
+
+    h2 {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 1.25rem;
+    }
+
+    h3 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+
+    h4 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--tan);
+      margin: 1.75rem 0 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    p { color: var(--muted); margin-bottom: 1rem; max-width: 620px; }
+
+    ul {
+      color: var(--muted);
+      padding-left: 1.25rem;
+      margin-bottom: 1rem;
+      max-width: 620px;
+    }
+
+    ul li { margin-bottom: 0.3rem; }
+
+    strong { color: var(--text); }
+
+    /* ── Code / pre ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.83rem;
+      line-height: 1.75;
+      margin-bottom: 1.5rem;
+      animation: border-seep 20s ease-in-out infinite;
+    }
+
+    code {
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+      background: var(--code-bg);
+      border-radius: 3px;
+      color: var(--tan);
+      font-size: 0.82em;
+      padding: 0.1rem 0.35rem;
+    }
+
+    .hi { color: var(--tan); }
+    .dim { color: var(--muted); }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; margin-bottom: 1.5rem; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+
+    th {
+      text-align: left;
+      padding: 0.55rem 1rem;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    td:first-child { color: var(--tan); font-family: monospace; font-size: 0.85rem; }
+
+    /* ── Spec card ── */
+    .spec-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      animation: border-seep 20s ease-in-out infinite;
+    }
+
+    .spec-row {
+      display: flex;
+      gap: 1rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+
+    .spec-row:last-child { border-bottom: none; }
+    .spec-key { color: var(--muted); width: 160px; flex-shrink: 0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; padding-top: 0.1rem; }
+    .spec-val { color: var(--text); }
+
+    /* ── Warning block ── */
+    .warn {
+      background: rgba(192, 57, 43, 0.07);
+      border: 1px solid rgba(192, 57, 43, 0.32);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .warn-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #e74c3c;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.4rem;
+    }
+
+    .warn p { color: var(--text); max-width: none; margin-bottom: 0; font-size: 0.88rem; }
+
+    /* ── Info block ── */
+    .info {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      animation: border-seep 20s ease-in-out infinite;
+    }
+
+    .info p { color: var(--muted); max-width: none; margin-bottom: 0; font-size: 0.88rem; }
+
+    /* ── Build note list ── */
+    .build-notes ol {
+      counter-reset: note;
+      list-style: none;
+      padding: 0;
+      max-width: 640px;
+    }
+
+    .build-notes ol li {
+      counter-increment: note;
+      padding: 0.75rem 0 0.75rem 2.5rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      position: relative;
+      font-size: 0.9rem;
+    }
+
+    .build-notes ol li:last-child { border-bottom: none; }
+
+    .build-notes ol li::before {
+      content: counter(note, decimal-leading-zero);
+      position: absolute;
+      left: 0;
+      color: var(--tan);
+      font-family: monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      top: 0.85rem;
+    }
+
+    .build-notes ol li strong { color: var(--text); }
+
+    /* ── Schematic image ── */
+    .schematic-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      animation: border-seep 20s ease-in-out infinite;
+      text-align: center;
+    }
+
+    .schematic-wrap img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+
+    .schematic-caption {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 0.75rem;
+      margin-bottom: 0;
+    }
+
+    /* ── Enclosure diagram ── */
+    .enclosure-pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+      color: var(--muted);
+      animation: border-seep 20s ease-in-out infinite;
+    }
+
+    /* ── Footer ── */
+    footer {
+      padding: 2.5rem 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--tan); }
+  </style>
+</head>
+<body>
+
+<nav class="page-nav">
+  <a href="index.html" class="nav-logo">👻 Ghost Spring Tank</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="rig.html">The Rig</a>
+    <a href="design.html" class="active">Design</a>
+    <a href="parts.html">Parts</a>
+    <a href="roadmap.html">Roadmap</a>
+  </div>
+  <div class="nav-sep"></div>
+  <div class="nav-links">
+    <a href="https://github.com/bingeboy/le-ton-juste" target="_blank">GitHub</a>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <h1>Circuit Design</h1>
+  <p>Full engineering specification for the Ghost Spring Tank — transformer coupling rationale, complete signal flow, component selection, output buffer, enclosure, and build rules.</p>
+</div>
+
+<!-- ── SPEC CARD ── -->
+<section id="spec">
+  <h2>At a Glance</h2>
+  <h3>Ghost Spring Tank</h3>
+  <p>One spring. One voice. Transformer-coupled for the organic bloom that no direct-drive circuit can replicate — the same mechanism that made the Fender 6G15 Reverb Unit sound like nothing else.</p>
+
+  <div class="spec-card">
+    <div class="spec-row"><span class="spec-key">Spring Tank</span><span class="spec-val">Accutronics 9AB3C1B — 3-spring, long decay, 8Ω input / 2550Ω output</span></div>
+    <div class="spec-row"><span class="spec-key">Driver Xfmr</span><span class="spec-val">Accutronics REB3S — dedicated spring reverb driver transformer, 8Ω secondary</span></div>
+    <div class="spec-row"><span class="spec-key">Driver Stage</span><span class="spec-val">BD139 NPN transistor (TO-126) → REB3S primary. Class A, ~19mA quiescent</span></div>
+    <div class="spec-row"><span class="spec-key">Op-Amps</span><span class="spec-val">OPA2134PA throughout — input buffer, recovery preamp, output buffer</span></div>
+    <div class="spec-row"><span class="spec-key">Signal Path</span><span class="spec-val">100% analog. Post-recovery 300Hz HPF on wet signal only</span></div>
+    <div class="spec-row"><span class="spec-key">Controls</span><span class="spec-val">Dwell (10kΩ lin) · Mix (100kΩ lin + 47pF silver mica bright cap) · Tone (100kΩ lin)</span></div>
+    <div class="spec-row"><span class="spec-key">Power</span><span class="spec-val">Internal ±15V linear — Triad F-219X toroidal 15VA, LM7815/LM7915. IEC mains inlet</span></div>
+    <div class="spec-row"><span class="spec-key">Form Factor</span><span class="spec-val">2U aluminum rackmount. Hammond 1455T2201 chassis, rack ears included</span></div>
+    <div class="spec-row"><span class="spec-key">Tank Mount</span><span class="spec-val">Horizontal, open-side down, 4× Shore 30A rubber isolation grommets</span></div>
+    <div class="spec-row"><span class="spec-key">PCB</span><span class="spec-val">Vector T44 FR4 perfboard, 0.1" pitch — point-to-point construction, no custom PCB</span></div>
+  </div>
+</section>
+
+<!-- ── SCHEMATIC ── -->
+<section id="schematic">
+  <h2>Schematic</h2>
+  <h3>Circuit Diagram</h3>
+  <div class="schematic-wrap">
+    <img src="docs/reverb-tank/schematic.png" alt="Ghost Spring Tank circuit schematic — full signal path from input buffer through BD139 driver, REB3S transformer, 9AB3C1B spring tank, recovery preamp, HPF, Mix/Tone controls, and output buffer">
+    <p class="schematic-caption">Generated from schematic.py — see <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/schematic.py" target="_blank">schematic.py on GitHub</a></p>
+  </div>
+</section>
+
+<!-- ── SIGNAL FLOW ── -->
+<section id="signal-flow">
+  <h2>Signal Flow</h2>
+  <h3>Complete Path</h3>
+  <p>Every stage in the signal chain with component values inline. Left to right: input from line source, through the spring and back out to the power amp.</p>
+
+  <pre><span class="dim">Line In (from Lehle Parallel M)</span>
+  → <span class="hi">Input Buffer</span>     <span class="dim">U1 OPA2134 · 1MΩ (R1) input · unity gain · R2 100Ω series output</span>
+  → <span class="hi">Dwell Pot</span>       <span class="dim">RV1 10kΩ linear · C1 1µF film coupling cap · controls drive level</span>
+  → <span class="hi">BD139 Driver</span>    <span class="dim">Q1 Class A · R3b 6.8k + R4 1k bias divider · R5 68Ω emitter degen
+                   C2 100µF bypass · ~19mA quiescent</span>
+  → <span class="hi">REB3S Xfmr</span>     <span class="dim">T2 primary (from Q1 collector) → 8Ω secondary</span>
+  → <span class="hi">9AB3C1B Tank</span>   <span class="dim">RT1 · 3 springs · long decay · 8Ω input / 2550Ω output</span>
+  → <span class="hi">C3 Coupling</span>     <span class="dim">470nF film · blocks DC from tank output terminals</span>
+  → <span class="hi">Recovery Preamp</span> <span class="dim">U2 OPA2134 · inverting · Ri=470Ω / Rf=100kΩ → gain=214× (~46dB)
+                   Rbias=470Ω at non-inv input · 1–5mV → ~1Vrms</span>
+  → <span class="hi">300Hz Wet HPF</span>  <span class="dim">C4 100nF film + R6 5.6kΩ · f = 1/(2π×5600×100n) ≈ 284Hz
+                   wet signal only — dry path bypasses this stage</span>
+  → <span class="hi">Tone Pot</span>        <span class="dim">RV3 100kΩ · high-shelf on wet signal only</span>
+  → <span class="hi">Mix Pot</span>         <span class="dim">RV2 100kΩ · Rdry=10kΩ summing · C_bright=47pF silver mica across wiper
+                   dry path (from U1 via Rdry) + wet path blend here</span>
+  → <span class="hi">Output Buffer</span>  <span class="dim">U3 OPA2134 · voltage follower · R7 100Ω series · &lt;100Ω output Z</span>
+  → <span class="dim">Line Out (to McIntosh MC100)</span></pre>
+</section>
+
+<!-- ── WHY TRANSFORMER ── -->
+<section id="transformer">
+  <h2>The Key Mechanism</h2>
+  <h3>Why Transformer Coupling</h3>
+  <p>This is the part that makes the Ghost Spring sound like a spring reverb and not a plate sim. Most DIY spring reverb designs drive the tank directly from a transistor or op-amp output. That works — but it doesn't sound like a Fender 6G15.</p>
+
+  <p>The REB3S transformer's inductance forms a resonant circuit with the tank's input impedance (8Ω). This resonance creates:</p>
+  <ul>
+    <li><strong>A peak at ~2–3kHz on attack transients</strong> — the "drip" character. This is the mechanism behind the distinctive splash on hard-picked notes.</li>
+    <li><strong>Soft low-frequency drive</strong> — the resonant circuit naturally rolls off very low frequencies into the tank, providing passive mud rejection without any filter in the signal path.</li>
+    <li><strong>Galvanic isolation</strong> — the transformer blocks DC, eliminating any risk of a DC offset reaching the tank's input coil.</li>
+  </ul>
+
+  <p>The Accutronics REB3S is designed specifically for this application. It's used in boutique spring reverb units and is correctly matched to 8Ω tanks. Using a generic transformer (or no transformer) changes the resonant character fundamentally.</p>
+
+  <h4>The 9AB3C1B — Why This Tank</h4>
+  <p>Three springs give a denser, more uniform reverb tail than two-spring tanks. Two-spring designs can produce a metallic "ping" on hard attacks because the two resonant modes are more distinct. Three springs blend into a closer-to-continuous reverb tail — the same reason the original Fender 6G15 and most boutique spring reverbs use 3-spring tanks.</p>
+
+  <div class="spec-card">
+    <div class="spec-row"><span class="spec-key">Model code</span><span class="spec-val">9AB3C1B — 9" long tank, A-type spring (long decay), B=3-spring, C=output type, 1=medium resistance, B=medium resistance</span></div>
+    <div class="spec-row"><span class="spec-key">Input Z</span><span class="spec-val">8Ω — matches REB3S secondary directly, no impedance mismatch</span></div>
+    <div class="spec-row"><span class="spec-key">Output Z</span><span class="spec-val">2550Ω — requires high-impedance input at U2 recovery stage (OPA2134 FET input: 10¹³Ω)</span></div>
+    <div class="spec-row"><span class="spec-key">Decay</span><span class="spec-val">Long — the "A" type. This is the sustained ambient tail Jerry Garcia's clean tone requires at slow tempos.</span></div>
+  </div>
+</section>
+
+<!-- ── CIRCUIT INNOVATIONS ── -->
+<section id="innovations">
+  <h2>Circuit Decisions</h2>
+  <h3>What Makes This Design Different</h3>
+
+  <h4>Post-Recovery High-Pass Filter</h4>
+  <p>Most DIY reverb designs filter before the driver — a HPF or shelving filter before the spring to prevent low-end boom. This unit takes the opposite approach: the full-bandwidth signal enters the spring, and the HPF is applied to the wet output after the recovery preamp.</p>
+
+  <p>The result: the physical attack transient (the full-frequency "thump") enters the spring intact, creating a realistic reverb bloom. The reverb tail is then filtered. Low-end boom clears up as the note decays, which is more natural than a pre-filtered attack.</p>
+
+  <div class="info">
+    <p><strong>HPF values:</strong> C4 100nF film + R6 5.6kΩ → corner at 284Hz (~300Hz). Use 5.6kΩ exactly — 4.7kΩ pushes the corner to 338Hz (too aggressive), 6.8kΩ drops it to 234Hz (insufficient mud rejection).</p>
+  </div>
+
+  <h4>Bright Cap on Mix Pot</h4>
+  <p>The Mix pot acts as a voltage divider at audio frequencies. At low mix settings, it attenuates high frequencies more than low frequencies — the reverb tails lose their shimmer before they lose their body. A 47pF silver mica capacitor across the Mix pot wiper bypasses the pot for high frequencies, keeping the reverb "glassy" even when nearly blended out.</p>
+
+  <div class="info">
+    <p><strong>Why silver mica:</strong> Silver mica is stable to ±1% over temperature. A ceramic disc capacitor will add high-frequency distortion that's audible in reverb tails. Do not substitute.</p>
+  </div>
+
+  <h4>Emitter Bypass Capacitor (C2)</h4>
+  <p>R5 (68Ω emitter resistor) provides thermal stability and sets quiescent current. Without C2, R5 degenerates the BD139's gain at audio frequencies — the spring is underdriven and loses high-frequency drive. C2 (100µF low-ESR Nichicon) bypasses R5 at audio frequencies, restoring full gain while keeping the DC stability of R5 intact.</p>
+
+  <h4>Recovery Gain — 214× (46dB)</h4>
+  <p>The spring tank's output is 1–5mV. Line level is ~1Vrms. The recovery preamp (U2 OPA2134 in inverting configuration) brings the signal up to line level with Ri=470Ω / Rf=100kΩ → gain = 1 + (100k/470) = 214×. This is not unusual — spring tanks are low-output transducers, and this gain is normal for the stage.</p>
+</section>
+
+<!-- ── COMPONENT RATIONALE ── -->
+<section id="components">
+  <h2>Component Rationale</h2>
+  <h3>Why Each Part</h3>
+  <p>Every component was chosen for a specific engineering reason. These notes are the difference between a build that sounds right and one that doesn't.</p>
+
+  <h4>Op-Amps — OPA2134PA</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Stage</th><th>Ref</th><th>Why OPA2134</th></tr>
+      <tr><td>Input Buffer</td><td>U1</td><td>FET input (10¹³Ω) places virtually no load on the upstream device. Unity-gain stable.</td></tr>
+      <tr><td>Recovery Preamp</td><td>U2</td><td>FET input is critical here — U2 must load the tank's 2550Ω output without signal attenuation. THD+N=0.00008%. Slew rate 20V/µs eliminates slew-limiting distortion on pick transients.</td></tr>
+      <tr><td>Output Buffer</td><td>U3</td><td>Voltage follower — drives the MC100's RCA input and any cable capacitance without treble loss. &lt;100Ω closed-loop output impedance.</td></tr>
+    </table>
+  </div>
+
+  <div class="warn">
+    <div class="warn-title">Do not substitute</div>
+    <p>Do not replace OPA2134 with NE5532 or TL072. Both have significantly higher noise floors and lower input impedance — the NE5532 is bipolar-input (low impedance) and will attenuate the tank's output signal at the recovery stage. The OPA2134 is specified throughout for consistency; you need only one part number and the builder can swap a section if one fails.</p>
+  </div>
+
+  <h4>Transistor — BD139 (TO-126)</h4>
+  <p>High-current NPN bipolar rated 1.5A / 80V. At 19mA quiescent current it runs well within ratings with negligible heat. The TO-126 package mounts flat against the chassis for passive heatsinking if needed. BD139 has excellent hFE linearity at low currents — critical for low distortion in the driver stage.</p>
+
+  <div class="warn">
+    <div class="warn-title">Do not substitute</div>
+    <p>Do not use a TO-92 small-signal transistor (2N3904, BC547, etc.). Insufficient current capacity will clip drive transients and harden the reverb attack character. The BD139 TO-126 is specifically sized for this application.</p>
+  </div>
+
+  <h4>Resistors — Yageo MFR 1% 250mW Metal Film</h4>
+  <p>All resistors are metal film, 1% tolerance. Carbon film resistors have higher noise (current noise 10–100× higher) and temperature drift that degrades the signal floor, especially in the 214× gain recovery stage. Order 5 of each value — metal film resistors are cheap and you want spares for the build.</p>
+
+  <h4>Critical Resistor Values</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Ref</th><th>Value</th><th>Function</th><th>Why This Value</th></tr>
+      <tr><td>R1</td><td>1MΩ</td><td>Input impedance</td><td>Negligible load on upstream device. High-Z input.</td></tr>
+      <tr><td>R3b</td><td>6.8kΩ</td><td>Upper bias divider</td><td>Sets base voltage to ~1.96V → Vc~1.3V → Ic~19mA</td></tr>
+      <tr><td>R4</td><td>1kΩ</td><td>Lower bias divider</td><td>Divider current (~2mA) = 10× base current → bias stable vs. hFE variation</td></tr>
+      <tr><td>R5</td><td>68Ω</td><td>Emitter degeneration</td><td>Ic = Ve/R5 = 1.3V/68Ω ≈ 19mA. Thermal runaway protection.</td></tr>
+      <tr><td>Ri</td><td>470Ω</td><td>Recovery gain (inverting input)</td><td>Gain = 1+(Rf/Ri) = 1+(100k/470) = 214× ≈ 46dB</td></tr>
+      <tr><td>Rf</td><td>100kΩ</td><td>Recovery gain (feedback)</td><td>100kΩ keeps thermal noise below OPA2134's own input noise</td></tr>
+      <tr><td>R6</td><td>5.6kΩ</td><td>HPF corner</td><td>f = 1/(2π×5600×100n) = 284Hz. Use exactly 5.6kΩ.</td></tr>
+      <tr><td>Rbias</td><td>470Ω</td><td>U2 non-inv DC path</td><td>Prevents floating input from developing offset → recovery stage clip</td></tr>
+    </table>
+  </div>
+
+  <h4>Capacitors — Film Required in Signal Path</h4>
+  <div class="warn">
+    <div class="warn-title">No ceramic caps in the signal path</div>
+    <p>Ceramic capacitors have piezoelectric microphonics and voltage-dependent capacitance (distortion) at audio frequencies. All signal-path capacitors must be WIMA MKS2 film. This is non-negotiable in a hi-fi circuit with 214× gain in the recovery stage.</p>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>Ref</th><th>Value</th><th>Type</th><th>Why</th></tr>
+      <tr><td>C1</td><td>1µF/63V</td><td>WIMA MKS2 film</td><td>Coupling before driver. HPF corner = 1/(2π×1µ×10k) = 16Hz — well below guitar fundamentals.</td></tr>
+      <tr><td>C3</td><td>470nF/63V</td><td>WIMA MKS2 film</td><td>Tank output coupling. Blocks DC offset from tank terminals. Corner at 34Hz with U2 input impedance.</td></tr>
+      <tr><td>C4</td><td>100nF/63V</td><td>WIMA MKS2 film</td><td>300Hz HPF with R6. Must be film — ceramic drifts with temperature, shifting the cutoff.</td></tr>
+      <tr><td>C_bright</td><td>47pF</td><td>Silver mica</td><td>Bright cap across Mix pot. Silver mica ±1% stability, lowest HF distortion. Do not use ceramic disc.</td></tr>
+      <tr><td>C2</td><td>100µF/25V</td><td>Nichicon UKW audio grade</td><td>Emitter bypass. Low-ESR is critical — high-ESR cap won't bypass R5 at high audio frequencies.</td></tr>
+      <tr><td>C5–C10</td><td>100nF/63V</td><td>WIMA MKS2 film</td><td>Op-amp supply decoupling — one per supply pin, placed as close as physically possible to IC.</td></tr>
+    </table>
+  </div>
+
+  <h4>Potentiometers — Vishay/Spectrol 296 (MIL-PRF-39023)</h4>
+  <p>Military-grade cermet element, gold-plated wiper, stainless shaft, rated 10,000+ cycles. These are overkill for a guitar rig but they will outlast everything else in the build and will never develop contact noise.</p>
+
+  <div class="info">
+    <p><strong>Note on taper:</strong> MIL-SPEC pots are only certified in linear taper. Dwell (RV1) is correctly linear. Mix (RV2) and Tone (RV3) are linear as well — acceptable at line level. If audio taper is strongly preferred, substitute Bourns PDB18-B415 (pro audio grade, audio taper available).</p>
+  </div>
+</section>
+
+<!-- ── OUTPUT BUFFER ── -->
+<section id="buffer">
+  <h2>Output Stage</h2>
+  <h3>Low-Impedance Output Buffer</h3>
+  <p>The output buffer (U3) drives the McIntosh MC100's RCA input and any cable between the unit and the power amp. Without a buffer, the Mix pot's output impedance varies with rotation — at center position it's at maximum (half of 100kΩ = 50kΩ), which would roll off high frequencies through cable capacitance and interact unpredictably with the MC100's input.</p>
+
+  <div class="spec-card">
+    <div class="spec-row"><span class="spec-key">Topology</span><span class="spec-val">Non-inverting voltage follower (gain = 1×). Output connected to inverting input.</span></div>
+    <div class="spec-row"><span class="spec-key">Input Z</span><span class="spec-val">~1MΩ (R1 at non-inv input) — does not load the Mix pot</span></div>
+    <div class="spec-row"><span class="spec-key">Output Z</span><span class="spec-val">&lt;1Ω at audio frequencies (op-amp closed-loop). Effectively zero.</span></div>
+    <div class="spec-row"><span class="spec-key">Series R</span><span class="spec-val">R7 100Ω — short-circuit protection; prevents oscillation into capacitive cable loads</span></div>
+    <div class="spec-row"><span class="spec-key">Bandwidth</span><span class="spec-val">&gt;100kHz — well beyond audio</span></div>
+    <div class="spec-row"><span class="spec-key">THD</span><span class="spec-val">&lt;0.001% (OPA2134 spec)</span></div>
+  </div>
+
+  <h4>MC100 Interface</h4>
+  <ul>
+    <li>MC100 has RCA unbalanced inputs with ~100kΩ input impedance</li>
+    <li>Use a high-quality 1/4" TS to RCA cable, or install an RCA jack on the reverb unit's rear panel</li>
+    <li>Keep cable under 6ft to minimize hum pickup — the output buffer makes the signal robust to cable capacitance, but length still matters for shielding</li>
+    <li>If hum is present after all grounding steps, a ground-lift switch (10Ω resistor + 100nF cap between audio ground and chassis) can help</li>
+  </ul>
+</section>
+
+<!-- ── POWER SUPPLY ── -->
+<section id="power">
+  <h2>Power Supply</h2>
+  <h3>Internal ±15V Linear</h3>
+  <p>The power supply is internal to the unit. No wall wart, no switching regulator — a toroidal transformer, bridge rectifier, and pair of linear regulators. This is the correct approach for a hi-fi reverb unit and the reason the circuit doesn't need external power management.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>Stage</th><th>Part</th><th>Why</th></tr>
+      <tr><td>Transformer</td><td>Triad F-219X, 15VA dual 15VAC toroidal</td><td>Toroidal has ~10× lower magnetic field leakage than E-I laminate. Critical — the spring tank is a sensitive magnetic transducer and will pick up 60Hz hum from a nearby transformer. Keep transformer as far from the tank as the chassis allows.</td></tr>
+      <tr><td>Rectifier</td><td>W02G bridge, 1A/200V</td><td>200V is derated 2× from the 42V peak. Reliable, conservative rating.</td></tr>
+      <tr><td>Filter</td><td>2× 2200µF/35V Nichicon KW low-ESR</td><td>Ripple stays below 1Vrms at 20mA load. Low-ESR minimizes heat and maintains regulation.</td></tr>
+      <tr><td>+15V Reg</td><td>LM7815CT (TO-220)</td><td>Linear regulation = zero switching noise. Switching regulators inject kHz noise that passes through op-amp power supply rejection. LM7815 is proven and inexpensive.</td></tr>
+      <tr><td>−15V Reg</td><td>LM7915CT (TO-220)</td><td>Same rationale. Provides negative rail for op-amp negative supply pins.</td></tr>
+      <tr><td>Reg output caps</td><td>2× 100µF/25V + 2× 100nF film</td><td>Electrolytic for stability per LM78xx/79xx datasheet; film in parallel for HF suppression above ~100kHz.</td></tr>
+    </table>
+  </div>
+
+  <div class="warn">
+    <div class="warn-title">Insulating pads required on TO-220 regulators</div>
+    <p>The TO-220 tab is electrically connected to the output pin. Without mica insulating pads between each regulator and the chassis, mounting both regulators to the same chassis creates a short between +15V and −15V through chassis ground. Use TO-220 mica pads + M3 nylon screws or an insulated shoulder washer.</p>
+  </div>
+</section>
+
+<!-- ── ENCLOSURE ── -->
+<section id="enclosure">
+  <h2>Enclosure</h2>
+  <h3>2U Rackmount Chassis</h3>
+  <p>The 2U form factor is required — 1U is too tight to mount the 9AB3C1B tank horizontally with spring clearance. 2U gives comfortable room for the tank, PCB, power supply, and ventilation.</p>
+
+  <h4>Chassis</h4>
+  <p>Hammond 1455T2201 — 2U aluminum rackmount. Aluminum is mandatory: steel would interact magnetically with the toroidal transformer. Rack ears are included with the Hammond chassis.</p>
+
+  <h4>Internal Layout</h4>
+  <div class="enclosure-pre">Rear Panel ─────────────────────────────────── Front Panel
+│                                                  │
+│  ┌──────────────────────────┐                   │
+│  │                          │                   │
+│  │  Spring Tank (9AB3C1B)   │     ┌──────────┐  │
+│  │  horizontal, open down   │     │ Audio PCB │  │
+│  │  grommet-isolated        │     │ (Vector   │  │
+│  │                          │     │  T44)     │  │
+│  └──────────────────────────┘     └──────────┘  │
+│                                                  │
+│  ┌──────────┐                                    │
+│  │ PSU PCB  │ ← toroidal transformer here        │
+│  │ (Triad   │   as far from tank as possible     │
+│  │  F-219X) │                                    │
+│  └──────────┘                                    │
+│                                                  │
+────────────────────────────────────────────────────
+       ↑ IEC C14 inlet · Fuse · Rocker switch ↑</div>
+
+  <h4>Front Panel Controls</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Control</th><th>Type</th><th>Function</th></tr>
+      <tr><td>DWELL</td><td>10kΩ linear pot, ¼" D-shaft</td><td>Drive level into transformer — spring saturation and reverb density</td></tr>
+      <tr><td>MIX</td><td>100kΩ linear pot + 47pF bright cap</td><td>Dry/wet blend</td></tr>
+      <tr><td>TONE</td><td>100kΩ linear pot</td><td>High-shelf EQ on wet signal only</td></tr>
+    </table>
+  </div>
+
+  <h4>Rear Panel Connectors</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Connector</th><th>Type</th><th>Notes</th></tr>
+      <tr><td>Input</td><td>Switchcraft 112A ¼" TS</td><td>From Lehle Parallel M output (future state) or directly from Alembic FX-1</td></tr>
+      <tr><td>Output</td><td>Switchcraft 112A ¼" TS</td><td>To McIntosh MC100 RCA input (with 1/4" TS → RCA adapter cable)</td></tr>
+      <tr><td>IEC Power</td><td>Schurter 4301.0527 (IEC C14 + fuse holder)</td><td>500mA slow-blow fuse. Slow-blow is essential — inrush current at power-on blows fast-blow fuses.</td></tr>
+      <tr><td>Power Switch</td><td>TE 1825232-1 SPST rocker, 6A/250V</td><td>Interrupts mains before transformer primary</td></tr>
+    </table>
+  </div>
+
+  <h4>Tank Mounting</h4>
+  <ul>
+    <li><strong>Open-side down</strong> — springs hang below the transducers. If mounted open-side up, springs shift over time and reverb character drifts.</li>
+    <li><strong>Rubber grommets</strong> — 4× Shore 30A soft silicone/rubber. Hard rubber or plastic transmits vibration from the chassis (footsteps, rack fans) directly into the springs as noise.</li>
+    <li><strong>Away from the toroidal</strong> — orient the transformer's toroid axis perpendicular to the tank's spring axis and place them on opposite sides of the chassis to minimize inductive coupling (60Hz hum in the reverb tail).</li>
+    <li><strong>RCA cables short</strong> — keep tank input and output RCA cables under 12". Excess length adds capacitance that rolls off the HF drive to the tank and attenuates the high-gain recovery signal.</li>
+  </ul>
+
+  <h4>Front Panel — Custom via Front Panel Express</h4>
+  <p>Custom 2U aluminum panel with laser-drilled holes and engraved labels. Holes required: 3× ¼" pot holes (DWELL / MIX / TONE), 2× ¼" jack holes (IN / OUT). IEC cutout and rocker switch hole on rear panel. Use Front Panel Express designer software to spec all hole positions to fit the Hammond 1455T2201 chassis dimensions.</p>
+</section>
+
+<!-- ── BUILD NOTES ── -->
+<section id="build">
+  <h2>Build Notes</h2>
+  <h3>Critical Rules for the Builder</h3>
+  <p>These five rules are the difference between a working build and one that hums, oscillates, or drifts. Non-negotiable.</p>
+
+  <div class="build-notes">
+    <ol>
+      <li><strong>Star grounding.</strong> All grounds — op-amp ground pins, pot grounds, jack grounds, PSU output — connect to a single point on the chassis, near the IEC inlet. No daisy-chaining. Any second chassis ground connection creates a ground loop and 60Hz hum.</li>
+      <li><strong>Decoupling caps physically close.</strong> C5–C10 (100nF film, one per op-amp supply pin) must be placed within 1" of the OPA2134 supply pins on the perfboard. Further than that and they won't suppress high-frequency noise — the circuit will likely oscillate or have a high noise floor.</li>
+      <li><strong>Tank orientation: open-side down.</strong> Mount the 9AB3C1B horizontally with the open side (where you can see the springs) facing down. Springs hang below the transducers. If mounted open-side up, springs shift over years and reverb character drifts unpredictably.</li>
+      <li><strong>Transformer placement and orientation.</strong> Mount the Triad F-219X as far from the spring tank as the chassis allows. Orient it so the transformer's toroid axis is perpendicular to the tank's spring axis. This minimizes inductive coupling (60Hz hum in the reverb tail).</li>
+      <li><strong>Shield the recovery wire.</strong> The wire from the tank's output (2550Ω side, RCA connector) to U2's non-inverting input is the most sensitive signal in the circuit — 1–5mV. Use Belden 8451 shielded cable. Ground the shield at the U2 end only (not the tank end) — one-end grounding prevents a shield ground loop that would induce 60Hz hum directly into the recovery stage.</li>
+    </ol>
+  </div>
+
+  <h4>PCB — Vector T44 FR4 Perfboard</h4>
+  <p>FR4 fibreglass is mandatory. The cheaper brown phenolic perfboard absorbs moisture and increases leakage current between pads — at the recovery stage gain of 214× this manifests as audible noise. Use 4× M3 nylon hex standoffs (not metal) to mount the board — metal standoffs can accidentally create a second chassis ground connection.</p>
+
+  <h4>Phase Alignment — First Power-Up Check</h4>
+  <p>Spring tank polarity varies between Accutronics batches. If the reverb sounds hollow, thin, or "phasey" when mixed in at 50/50, the tank output is out of phase with the dry signal. Fix: swap the two wires at the tank's output RCA connector (the 2550Ω side). No design change needed — this is a 10-second wire swap on first commissioning.</p>
+
+  <h4>Solder</h4>
+  <p>Kester 44, 63/37 tin/lead, 0.031". Kester 44 is the standard for hand-soldered audio. 63/37 eutectic alloy — snaps solid with no mushy semi-solid phase, reducing cold joints. 0.031" diameter is correct for through-hole perfboard work. Do not use lead-free — higher melting point increases heat stress on sensitive components and produces higher-resistance joints.</p>
+</section>
+
+<footer>
+  <p>Ghost Spring Tank · <a href="https://github.com/bingeboy/le-ton-juste" target="_blank">le-ton-juste on GitHub</a></p>
+</footer>
+
+</body>
+</html>

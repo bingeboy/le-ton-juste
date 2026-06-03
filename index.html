@@ -3,12 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Ghost Spring Tank — transformer-coupled single spring reverb unit for hi-fi guitar rigs.">
+  <meta name="description" content="Ghost Spring Tank — transformer-coupled single spring reverb unit for hi-fi guitar rigs. Full design, parts, and build docs.">
   <title>Ghost Spring Tank</title>
-  <script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-    mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#2a2318', primaryTextColor: '#e8dfd0', lineColor: '#d4a96a', secondaryColor: '#16130d', tertiaryColor: '#0e0c08' } });
-  </script>
   <style>
     :root {
       --bg:      #0e0c08;
@@ -19,7 +15,6 @@
       --text:    #e8dfd0;
       --muted:   #8a7a6a;
       --code-bg: #120f0a;
-      --red:     #c0392b;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,29 +26,24 @@
       75%  { background-color: #0e0a06; }
       100% { background-color: #0e0c08; }
     }
-
     @keyframes vignette-pulse {
       0%, 100% { opacity: 0.7; }
       50%       { opacity: 0.9; }
     }
-
     @keyframes scanline-drift {
       from { background-position: 0 0; }
       to   { background-position: 0 100vh; }
     }
-
     @keyframes flicker {
       0%,18%,20%,22%,53%,55%,100% { opacity: 1; }
       19%,21%,54% { opacity: 0.6; }
     }
-
     @keyframes ghost-glow {
       0%,100% { text-shadow: 0 0 20px rgba(212,169,106,0.6), 0 0 60px rgba(212,169,106,0.2), 0 0 120px rgba(212,169,106,0.05); }
       25%     { text-shadow: 0 0 30px rgba(232,200,138,0.7), 0 0 80px rgba(212,169,106,0.3); }
       50%     { text-shadow: 0 0 15px rgba(212,169,106,0.4), 0 0 40px rgba(212,169,106,0.1); }
       75%     { text-shadow: 0 0 35px rgba(232,200,138,0.8), 0 0 100px rgba(212,169,106,0.3); }
     }
-
     @keyframes logo-drift {
       0%,100% { transform: translate(0, 0) skewX(0deg); }
       15%     { transform: translate(-1px, 1px) skewX(-0.3deg); }
@@ -62,7 +52,6 @@
       70%     { transform: translate(1px, 0) skewX(0.3deg); }
       85%     { transform: translate(-1px, 1px) skewX(-0.15deg); }
     }
-
     @keyframes border-seep {
       0%,100% { border-color: #2a2318; }
       33%     { border-color: #2a1e18; }
@@ -179,100 +168,15 @@
     }
 
     h4 {
-      font-size: 1rem;
+      font-size: 0.8rem;
       font-weight: 600;
       color: var(--tan);
       margin: 1.5rem 0 0.5rem;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      font-size: 0.8rem;
     }
 
     p { color: var(--muted); margin-bottom: 1rem; max-width: 600px; }
-
-    ul {
-      color: var(--muted);
-      padding-left: 1.25rem;
-      margin-bottom: 1rem;
-      max-width: 600px;
-    }
-
-    ul li { margin-bottom: 0.3rem; }
-
-    /* ── Code ── */
-    pre {
-      background: var(--code-bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 1.25rem 1.5rem;
-      overflow-x: auto;
-      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
-      font-size: 0.84rem;
-      line-height: 1.7;
-      margin-bottom: 1.5rem;
-      animation: border-seep 20s ease-in-out infinite;
-    }
-
-    code {
-      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
-      background: var(--code-bg);
-      border-radius: 3px;
-      color: var(--tan);
-      font-size: 0.82em;
-      padding: 0.1rem 0.35rem;
-    }
-
-    .hi { color: var(--tan); }
-    .dim { color: var(--muted); }
-
-    /* ── Tables ── */
-    .table-wrap { overflow-x: auto; margin-bottom: 1.5rem; }
-
-    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-
-    th {
-      text-align: left;
-      padding: 0.55rem 1rem;
-      background: var(--surface);
-      color: var(--muted);
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      border-bottom: 1px solid var(--border);
-    }
-
-    td {
-      padding: 0.65rem 1rem;
-      border-bottom: 1px solid var(--border);
-      color: var(--text);
-      vertical-align: top;
-    }
-
-    tr:last-child td { border-bottom: none; }
-    td:first-child { color: var(--tan); font-family: monospace; font-size: 0.85rem; }
-
-    /* ── Spec card ── */
-    .spec-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      animation: border-seep 20s ease-in-out infinite;
-    }
-
-    .spec-row {
-      display: flex;
-      gap: 1rem;
-      padding: 0.5rem 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.9rem;
-    }
-
-    .spec-row:last-child { border-bottom: none; }
-    .spec-key { color: var(--muted); width: 160px; flex-shrink: 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; padding-top: 0.1rem; }
-    .spec-val { color: var(--text); }
 
     /* ── Chain diagram ── */
     .chain {
@@ -290,28 +194,54 @@
     .chain-arrow { color: var(--tan); }
     .chain-node { color: var(--text); }
     .chain-label { color: var(--muted); font-size: 0.75rem; }
+    .hi { color: var(--tan); }
 
-    /* ── Supplier blocks ── */
-    .supplier {
+    /* ── Nav cards ── */
+    .nav-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .nav-card {
+      display: block;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 1.25rem 1.5rem;
-      margin-bottom: 1rem;
+      padding: 1.25rem;
       animation: border-seep 20s ease-in-out infinite;
+      transition: border-color 0.15s;
+      text-decoration: none;
     }
 
-    .supplier-name {
-      font-size: 0.7rem;
+    .nav-card:hover { border-color: var(--tan); }
+
+    .nav-card-label {
+      font-size: 0.65rem;
       font-weight: 700;
-      color: var(--tan);
+      color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.14em;
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.3rem;
     }
 
-    .supplier-url { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.75rem; }
-    .supplier-total { font-size: 0.85rem; color: var(--text); margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.5rem; }
+    .nav-card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--tan);
+      margin-bottom: 0.35rem;
+      display: block;
+    }
+
+    .nav-card-desc {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+      display: block;
+      margin: 0;
+      max-width: none;
+    }
 
     /* ── Footer ── */
     footer {
@@ -323,9 +253,6 @@
 
     footer a { color: var(--muted); }
     footer a:hover { color: var(--tan); }
-
-    /* ── Mermaid overrides ── */
-    .mermaid { margin: 1.5rem 0; }
   </style>
 </head>
 <body>
@@ -335,17 +262,19 @@
   <span class="logo">Ghost Spring Tank</span>
   <p>Transformer-coupled single spring reverb unit for hi-fi guitar rigs. Solid-state. Internally powered. Rack-mounted.</p>
   <nav>
-    <a href="#chain">Signal Chain</a>
+    <a href="rig.html">The Rig</a>
     <span>·</span>
-    <a href="#design">Design</a>
+    <a href="design.html">Design</a>
     <span>·</span>
-    <a href="#parts">Parts & Ordering</a>
+    <a href="parts.html">Parts</a>
+    <span>·</span>
+    <a href="roadmap.html">Roadmap</a>
     <span>·</span>
     <a href="https://github.com/bingeboy/le-ton-juste" target="_blank">GitHub</a>
   </nav>
 </header>
 
-<!-- ── SIGNAL CHAIN ── -->
+<!-- SIGNAL CHAIN -->
 <section id="chain">
   <h2>Signal Chain</h2>
   <h3>Current Rig</h3>
@@ -383,100 +312,33 @@
   </div>
 </section>
 
-<!-- ── DESIGN ── -->
-<section id="design">
-  <h2>Design</h2>
-  <h3>Ghost Spring Tank</h3>
-  <p>One spring. One voice. Transformer-coupled for the organic bloom that no direct-drive circuit can replicate — the same mechanism that made the Fender 6G15 Reverb Unit sound like nothing else.</p>
+<!-- NAVIGATION -->
+<section id="docs">
+  <h2>Documentation</h2>
+  <h3>Everything You Need</h3>
+  <p>All engineering docs — from the full circuit specification to the orderable parts list.</p>
 
-  <div class="spec-card">
-    <div class="spec-row"><span class="spec-key">Spring Tank</span><span class="spec-val">Accutronics 9AB3C1B — Long, 3-spring, long decay, 8Ω input / 2550Ω output</span></div>
-    <div class="spec-row"><span class="spec-key">Driver Xfmr</span><span class="spec-val">Accutronics REB3S — dedicated spring reverb driver, 8Ω secondary</span></div>
-    <div class="spec-row"><span class="spec-key">Driver Stage</span><span class="spec-val">BD139 NPN transistor → REB3S → tank. Class A, ~19mA quiescent</span></div>
-    <div class="spec-row"><span class="spec-key">Op-Amps</span><span class="spec-val">OPA2134PA throughout — input buffer, recovery preamp, output buffer</span></div>
-    <div class="spec-row"><span class="spec-key">Signal Path</span><span class="spec-val">100% analog. Post-recovery 300Hz HPF on wet signal only</span></div>
-    <div class="spec-row"><span class="spec-key">Controls</span><span class="spec-val">Dwell (10kΩ lin) · Mix (100kΩ audio + 47pF bright cap) · Tone (100kΩ audio)</span></div>
-    <div class="spec-row"><span class="spec-key">Power</span><span class="spec-val">Internal ±15V linear — toroidal 15VA, LM7815/LM7915. IEC mains inlet</span></div>
-    <div class="spec-row"><span class="spec-key">Form Factor</span><span class="spec-val">2U aluminum rackmount. Rack ears included with chassis</span></div>
-    <div class="spec-row"><span class="spec-key">Tank Mount</span><span class="spec-val">Horizontal, open-side down, 4× Shore 30A rubber isolation grommets</span></div>
-  </div>
-
-  <h4>Why Transformer Coupling</h4>
-  <p>The transformer's inductance forms a resonant circuit with the spring's input impedance, creating a slight peak at ~2–3kHz on the attack transient — the "drip" character of the Fender 6G15. Also provides galvanic isolation between the driver stage and tank.</p>
-
-  <h4>Signal Flow</h4>
-  <pre><span class="dim">Line In</span>
-  → <span class="hi">Input Buffer</span>   <span class="dim">OPA2134 · 1MΩ input · unity gain</span>
-  → <span class="hi">Dwell Pot</span>      <span class="dim">10kΩ linear · spring drive level</span>
-  → <span class="hi">BD139 Driver</span>   <span class="dim">Class A · ~19mA · into REB3S primary</span>
-  → <span class="hi">REB3S Xfmr</span>    <span class="dim">8Ω secondary → tank input</span>
-  → <span class="hi">9AB3C1B Tank</span>  <span class="dim">3 springs · long decay</span>
-  → <span class="hi">Recovery</span>       <span class="dim">OPA2134 · 214× gain (~46dB)</span>
-  → <span class="hi">300Hz HPF</span>      <span class="dim">Wet signal only · C4 100nF + R6 5.6kΩ</span>
-  → <span class="hi">Tone Pot</span>       <span class="dim">High-shelf EQ · wet only</span>
-  → <span class="hi">Mix Pot</span>        <span class="dim">100kΩ audio · 47pF bright cap</span>
-  → <span class="hi">Output Buffer</span>  <span class="dim">OPA2134 · &lt;100Ω output · to MC100</span></pre>
-</section>
-
-<!-- ── PARTS & ORDERING ── -->
-<section id="parts">
-  <h2>Parts &amp; Ordering</h2>
-  <h3>Four Suppliers</h3>
-  <p>Download the Mouser BOM CSV from the GitHub repo and upload it to the Mouser BOM Tool for one-click ordering of all electronics. Order the Accutronics pieces separately from Amplified Parts.</p>
-
-  <div class="supplier">
-    <div class="supplier-name">① Amplified Parts</div>
-    <div class="supplier-url">amplifiedparts.com — order separately</div>
-    <div class="table-wrap">
-      <table>
-        <tr><th>Part</th><th>Part #</th><th>Est.</th></tr>
-        <tr><td>Accutronics 9AB3C1B spring tank</td><td>9AB3C1B</td><td>~$35</td></tr>
-        <tr><td>Accutronics REB3S driver transformer</td><td>REB3S</td><td>~$18</td></tr>
-      </table>
-    </div>
-    <div class="supplier-total">Subtotal ~$53</div>
-  </div>
-
-  <div class="supplier">
-    <div class="supplier-name">② Mouser Electronics</div>
-    <div class="supplier-url">mouser.com — upload mouser-bom.csv via BOM Tool</div>
-    <p style="font-size:0.85rem;">Key items: OPA2134PA ($7.64 ea), BD139, LM7815/7915, WIMA film caps, Nichicon electrolytics, Vishay/Spectrol 296 mil-spec pots, Switchcraft 112A jacks, Triad F-219X toroidal transformer, Kester 44 solder.</p>
-    <div class="supplier-total">Subtotal ~$145–165</div>
-  </div>
-
-  <div class="supplier">
-    <div class="supplier-name">③ Hammond (via Mouser)</div>
-    <div class="supplier-url">mouser.com — part # 1455T2201</div>
-    <p style="font-size:0.85rem;">2U aluminum rackmount chassis. Rack ears included.</p>
-    <div class="supplier-total">~$50</div>
-  </div>
-
-  <div class="supplier">
-    <div class="supplier-name">④ Front Panel Express</div>
-    <div class="supplier-url">frontpanelexpress.com — design custom panel</div>
-    <p style="font-size:0.85rem;">Custom 2U aluminum front panel. 3 pot holes (DWELL / MIX / TONE), 2 jack holes (IN / OUT), IEC cutout, switch hole, engraved labels.</p>
-    <div class="supplier-total">~$35</div>
-  </div>
-
-  <h4>How to Use the Mouser BOM Tool</h4>
-  <pre><span class="dim">1.</span> Go to <span class="hi">mouser.com</span> — create a free account
-<span class="dim">2.</span> Click <span class="hi">BOM Tool</span> in the top navigation
-<span class="dim">3.</span> Create New BOM → name it "Ghost Spring Tank"
-<span class="dim">4.</span> Upload <span class="hi">mouser-bom.csv</span> from the GitHub repo
-<span class="dim">5.</span> Confirm manufacturer part number matches
-<span class="dim">6.</span> Review live prices and stock levels
-<span class="dim">7.</span> Add All to Cart → checkout</pre>
-
-  <div class="table-wrap">
-    <table>
-      <tr><th>Supplier</th><th>Est. Cost</th></tr>
-      <tr><td>Amplified Parts</td><td>~$53</td></tr>
-      <tr><td>Mouser</td><td>~$145–165</td></tr>
-      <tr><td>Hammond (chassis)</td><td>~$50</td></tr>
-      <tr><td>Front Panel Express</td><td>~$35</td></tr>
-      <tr><td>Knobs (owner selects)</td><td>~$15</td></tr>
-      <tr><td><strong>Total</strong></td><td><strong>~$298–318</strong></td></tr>
-    </table>
+  <div class="nav-cards">
+    <a href="rig.html" class="nav-card">
+      <div class="nav-card-label">Component breakdown</div>
+      <span class="nav-card-title">The Rig</span>
+      <span class="nav-card-desc">Alembic FX-1, McIntosh MC100, JBL E120-8, pedals, QuadraVerb, Lehle Parallel M — every piece explained.</span>
+    </a>
+    <a href="design.html" class="nav-card">
+      <div class="nav-card-label">Circuit design</div>
+      <span class="nav-card-title">Design</span>
+      <span class="nav-card-desc">Full circuit: transformer coupling, signal flow, component rationale, output buffer, enclosure, build rules.</span>
+    </a>
+    <a href="parts.html" class="nav-card">
+      <div class="nav-card-label">Orderable BOM</div>
+      <span class="nav-card-title">Parts</span>
+      <span class="nav-card-desc">Four suppliers, manufacturer part numbers, Mouser BOM CSV for one-click ordering. ~$298–318 total.</span>
+    </a>
+    <a href="roadmap.html" class="nav-card">
+      <div class="nav-card-label">What's next</div>
+      <span class="nav-card-title">Roadmap</span>
+      <span class="nav-card-desc">Lehle Parallel M, OBEL buffer, mute switch, rack compressor options — priority order.</span>
+    </a>
   </div>
 </section>
 

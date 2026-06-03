@@ -221,3 +221,5 @@ Standard item — available on Amazon, Mouser, or any hardware supplier. Search 
 4. **Transformer placement:** Mount T1 as far from RT1 as the chassis allows and orient it so the transformer's toroid axis is perpendicular to the tank's spring axis. This minimizes inductive coupling between transformer and tank (which causes 60Hz hum in the reverb tail).
 
 5. **Shielding the recovery stage:** The wire from RT1's output (2550Ω side) to U2's non-inverting input (Rbias → C3 → U2) carries the most sensitive signal in the entire circuit — approximately 1–5mV. This wire must be shielded (Belden 8451) with the shield grounded at the U2 end only (not at the tank end — one-end grounding prevents a ground loop through the shield).
+
+6. **Phase alignment on first power-up:** Spring tank polarity varies between Accutronics batches. If the reverb sounds hollow, thin, or "phasey" when the Mix pot is at 50/50, the tank output is out of phase with the dry signal. Fix: swap the two wires at RT1's output RCA connector (the 2550Ω side). This is a 10-second wire swap — no schematic changes required.

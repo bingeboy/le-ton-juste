@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Ghost Spring Tank — complete orderable parts list with manufacturer part numbers, Mouser BOM tool instructions, and substitution warnings.">
+  <title>Parts & Ordering — Ghost Spring Tank</title>
+  <style>
+    :root {
+      --bg:      #0e0c08;
+      --surface: #16130d;
+      --border:  #2a2318;
+      --tan:     #d4a96a;
+      --warm:    #e8c88a;
+      --text:    #e8dfd0;
+      --muted:   #8a7a6a;
+      --code-bg: #120f0a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @keyframes bg-breathe {
+      0%   { background-color: #0e0c08; }
+      50%  { background-color: #0c0e08; }
+      100% { background-color: #0e0c08; }
+    }
+    @keyframes vignette-pulse {
+      0%, 100% { opacity: 0.7; }
+      50%       { opacity: 0.9; }
+    }
+    @keyframes scanline-drift {
+      from { background-position: 0 0; }
+      to   { background-position: 0 100vh; }
+    }
+    @keyframes border-seep {
+      0%,100% { border-color: #2a2318; }
+      33%     { border-color: #2a1e18; }
+      66%     { border-color: #222a18; }
+    }
+
+    body {
+      background-color: var(--bg);
+      animation: bg-breathe 24s ease-in-out infinite;
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px);
+      pointer-events: none;
+      z-index: 9998;
+      animation: scanline-drift 12s linear infinite;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.75) 100%);
+      pointer-events: none;
+      z-index: 9997;
+      animation: vignette-pulse 18s ease-in-out infinite;
+    }
+
+    a { color: var(--tan); text-decoration: none; }
+    a:hover { color: var(--warm); }
+
+    .page-nav {
+      padding: 1.1rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      animation: border-seep 20s ease-in-out infinite;
+    }
+    .nav-logo { font-size: 0.88rem; font-weight: 700; color: var(--tan); text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+    .nav-links { display: flex; gap: 1.1rem; flex-wrap: wrap; font-size: 0.82rem; }
+    .nav-links a { color: var(--muted); }
+    .nav-links a:hover { color: var(--tan); }
+    .nav-links a.active { color: var(--tan); }
+    .nav-sep { margin-left: auto; }
+
+    .page-hero {
+      padding: 3rem 0 2.5rem;
+      border-bottom: 1px solid var(--border);
+      animation: border-seep 20s ease-in-out infinite;
+    }
+    .page-hero h1 { font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 700; color: var(--tan); letter-spacing: -0.01em; margin-bottom: 0.5rem; }
+    .page-hero p { color: var(--muted); max-width: 540px; margin-bottom: 0; }
+
+    section { padding: 3rem 0; border-bottom: 1px solid var(--border); animation: border-seep 20s ease-in-out infinite; }
+    section:last-of-type { border-bottom: none; }
+
+    h2 { font-size: 0.7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 1.25rem; }
+    h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.6rem; letter-spacing: -0.01em; color: var(--text); }
+    h4 { font-size: 0.78rem; font-weight: 600; color: var(--tan); margin: 1.75rem 0 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+    p { color: var(--muted); margin-bottom: 1rem; max-width: 620px; }
+    ul { color: var(--muted); padding-left: 1.25rem; margin-bottom: 1rem; max-width: 620px; }
+    ul li { margin-bottom: 0.3rem; }
+    strong { color: var(--text); }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.83rem;
+      line-height: 1.75;
+      margin-bottom: 1.5rem;
+      animation: border-seep 20s ease-in-out infinite;
+    }
+    .hi { color: var(--tan); }
+    .dim { color: var(--muted); }
+
+    .table-wrap { overflow-x: auto; margin-bottom: 1.5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th { text-align: left; padding: 0.55rem 1rem; background: var(--surface); color: var(--muted); font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid var(--border); }
+    td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    td:first-child { color: var(--tan); }
+    td.mono { font-family: monospace; font-size: 0.84rem; color: var(--tan); }
+
+    .supplier {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      animation: border-seep 20s ease-in-out infinite;
+    }
+    .supplier-header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .supplier-name { font-size: 0.72rem; font-weight: 700; color: var(--tan); text-transform: uppercase; letter-spacing: 0.14em; }
+    .supplier-url { font-size: 0.8rem; color: var(--muted); }
+    .supplier-total { font-size: 0.85rem; color: var(--text); margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.5rem; }
+
+    .warn {
+      background: rgba(192, 57, 43, 0.07);
+      border: 1px solid rgba(192, 57, 43, 0.32);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .warn-title { font-size: 0.68rem; font-weight: 700; color: #e74c3c; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.4rem; }
+    .warn p { color: var(--text); max-width: none; margin-bottom: 0.4rem; font-size: 0.88rem; }
+    .warn p:last-child { margin-bottom: 0; }
+
+    .cost-total td { color: var(--tan) !important; font-weight: 700; }
+
+    footer { padding: 2.5rem 0; text-align: center; color: var(--muted); font-size: 0.8rem; }
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--tan); }
+  </style>
+</head>
+<body>
+
+<nav class="page-nav">
+  <a href="index.html" class="nav-logo">👻 Ghost Spring Tank</a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="rig.html">The Rig</a>
+    <a href="design.html">Design</a>
+    <a href="parts.html" class="active">Parts</a>
+    <a href="roadmap.html">Roadmap</a>
+  </div>
+  <div class="nav-sep"></div>
+  <div class="nav-links">
+    <a href="https://github.com/bingeboy/le-ton-juste" target="_blank">GitHub</a>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <h1>Parts &amp; Ordering</h1>
+  <p>Four suppliers. Complete manufacturer part numbers. Upload the Mouser BOM CSV for one-click ordering of all electronics. Estimated total: ~$298–318.</p>
+</div>
+
+<!-- BOM TOOL -->
+<section id="bom-tool">
+  <h2>One-Click Ordering</h2>
+  <h3>Mouser BOM Tool</h3>
+  <p>Download <code>mouser-bom.csv</code> from the GitHub repo and upload it to the Mouser BOM Tool — Mouser maps manufacturer part numbers automatically and shows live prices and stock levels.</p>
+
+  <pre><span class="dim">1.</span>  Go to <span class="hi">mouser.com</span> — create a free account if you don't have one
+<span class="dim">2.</span>  Click <span class="hi">BOM Tool</span> in the top navigation
+<span class="dim">3.</span>  Click <span class="hi">Create New BOM</span> → name it "Ghost Spring Tank"
+<span class="dim">4.</span>  Download <span class="hi">mouser-bom.csv</span> from GitHub:
+     <span class="dim">github.com/bingeboy/le-ton-juste → docs/reverb-tank/mouser-bom.csv</span>
+<span class="dim">5.</span>  Click <span class="hi">Upload BOM File</span> → select the CSV
+<span class="dim">6.</span>  Mouser matches manufacturer part numbers — confirm each one
+<span class="dim">7.</span>  Review live prices and stock — out-of-stock items show alternatives
+<span class="dim">8.</span>  Click <span class="hi">Add All to Cart</span> → checkout</pre>
+
+  <p style="font-size:0.85rem;">Prices below are estimates. The BOM tool shows live prices — verify before paying. OPA2134PA confirmed at $7.64 (Mouser, June 2026).</p>
+</section>
+
+<!-- AMPLIFIED PARTS -->
+<section id="amplified-parts">
+  <h2>Supplier 1</h2>
+  <h3>Amplified Parts</h3>
+  <p>Order separately — not on Mouser. These two Accutronics parts define the core sound of the build.</p>
+
+  <div class="supplier">
+    <div class="supplier-header">
+      <div class="supplier-name">① Amplified Parts</div>
+      <div class="supplier-url">amplifiedparts.com</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Part</th><th>Mfr Part #</th><th>Qty</th><th>Est.</th></tr>
+        <tr>
+          <td>Accutronics 9AB3C1B spring tank — 3-spring, long decay, 8Ω in / 2550Ω out</td>
+          <td class="mono">9AB3C1B</td><td>1</td><td>~$35</td>
+        </tr>
+        <tr>
+          <td>Accutronics REB3S reverb driver transformer — 8Ω secondary</td>
+          <td class="mono">REB3S</td><td>1</td><td>~$18</td>
+        </tr>
+      </table>
+    </div>
+    <div class="supplier-total">Subtotal ~$53</div>
+  </div>
+</section>
+
+<!-- MOUSER -->
+<section id="mouser">
+  <h2>Supplier 2</h2>
+  <h3>Mouser Electronics</h3>
+  <p>Upload <code>mouser-bom.csv</code> via the BOM Tool. All items below are in the CSV.</p>
+
+  <h4>Semiconductors</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Part</th><th>Mfr Part #</th><th>Qty</th><th>Est.</th></tr>
+      <tr><td>OPA2134PA dual audio op-amp DIP-8 (FET input)</td><td class="mono">OPA2134PA</td><td>2 pkg</td><td>$7.64 ea = $15.28</td></tr>
+      <tr><td>BD139 NPN transistor TO-126 (driver stage)</td><td class="mono">BD139</td><td>1</td><td>~$0.55</td></tr>
+      <tr><td>LM7815CT/NOPB +15V regulator TO-220</td><td class="mono">LM7815CT/NOPB</td><td>1</td><td>~$0.75</td></tr>
+      <tr><td>LM7915CT/NOPB −15V regulator TO-220</td><td class="mono">LM7915CT/NOPB</td><td>1</td><td>~$0.75</td></tr>
+      <tr><td>W02G-E4/51 bridge rectifier 1A/200V</td><td class="mono">W02G-E4/51</td><td>1</td><td>~$0.45</td></tr>
+    </table>
+  </div>
+
+  <h4>Capacitors — Signal Path (WIMA MKS2 Film)</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Part</th><th>Mfr Part #</th><th>Qty</th><th>Est.</th></tr>
+      <tr><td>1µF/63V film — input coupling C1</td><td class="mono">MKS2C041001B00KSSD</td><td>1</td><td>~$0.50</td></tr>
+      <tr><td>470nF/63V film — tank output coupling C3</td><td class="mono">MKS2C034700K00KSSD</td><td>1</td><td>~$0.35</td></tr>
+      <tr><td>100nF/63V film — HPF (C4) + op-amp decoupling (C5–C10)</td><td class="mono">MKS2C031001A00KSSD</td><td>8</td><td>~$0.25 ea = $2.00</td></tr>
+      <tr><td>47pF silver mica — bright cap C_bright</td><td class="mono">CD15ED470JO3F</td><td>1</td><td>~$0.40</td></tr>
+    </table>
+  </div>
+
+  <h4>Capacitors — Electrolytic (Nichicon)</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Part</th><th>Mfr Part #</th><th>Qty</th><th>Est.</th></tr>
+      <tr><td>2200µF/35V low-ESR — main PSU filter C13–C14</td><td class="mono">UKW1V222MHD</td><td>2</td><td>~$1.20 ea = $2.40</td></tr>
+      <tr><td>100µF/25V audio grade — reg output + emitter bypass C2, C15–C16</td><td class="mono">UKW1E101MED</td><td>3</td><td>~$0.35 ea = $1.05</td></tr>
+      <tr><td>10µF/25V — bulk rail decoupling C11–C12</td><td class="mono">UKW1E100MDD</td><td>2</td><td>~$0.25 ea = $0.50</td></tr>
+    </table>
+  </div>
+
+  <h4>Resistors — Yageo MFR 1% 250mW Metal Film (5 of each)</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Value</th><th>Mfr Part #</th><th>Qty</th><th>Location</th><th>Est.</th></tr>
+      <tr><td>1MΩ</td><td class="mono">MFR-25FBF52-1M</td><td>5</td><td>R1 input impedance</td><td>~$0.40</td></tr>
+      <tr><td>100kΩ</td><td class="mono">MFR-25FBF52-100K</td><td>5</td><td>Rf recovery feedback</td><td>~$0.40</td></tr>
+      <tr><td>22kΩ</td><td class="mono">MFR-25FBF52-22K</td><td>5</td><td>Rdry dry path summing</td><td>~$0.40</td></tr>
+      <tr><td>10kΩ</td><td class="mono">MFR-25FBF52-10K</td><td>5</td><td>Rdry</td><td>~$0.40</td></tr>
+      <tr><td>6.8kΩ</td><td class="mono">MFR-25FBF52-6K8</td><td>5</td><td>R3b upper bias divider</td><td>~$0.40</td></tr>
+      <tr><td>5.6kΩ</td><td class="mono">MFR-25FBF52-5K6</td><td>5</td><td>R6 HPF corner — use exactly 5.6kΩ</td><td>~$0.40</td></tr>
+      <tr><td>470Ω</td><td class="mono">MFR-25FBF52-470R</td><td>5</td><td>Ri recovery gain · Rbias U2 non-inv</td><td>~$0.40</td></tr>
+      <tr><td>100Ω</td><td class="mono">MFR-25FBF52-100R</td><td>5</td><td>R2 U1 series · R7 U3 series output</td><td>~$0.40</td></tr>
+      <tr><td>68Ω</td><td class="mono">MFR-25FBF52-68R</td><td>5</td><td>R5 emitter degeneration</td><td>~$0.40</td></tr>
+      <tr><td>1kΩ</td><td class="mono">MFR-25FBF52-1K</td><td>5</td><td>R3 base drive · R4 lower bias divider</td><td>~$0.40</td></tr>
+    </table>
+  </div>
+
+  <h4>Potentiometers — Vishay/Spectrol 296 (MIL-PRF-39023)</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Part</th><th>Mfr Part #</th><th>Qty</th><th>Est.</th></tr>
+      <tr><td>10kΩ linear — Dwell RV1</td><td class="mono">296UAL103B2</td><td>1</td><td>~$10</td></tr>
+      <tr><td>100kΩ linear — Mix RV2 + Tone RV3</td><td class="mono">296UAL104B2</td><td>2</td><td>~$10 ea = $20</td></tr>
+    </table>
+  </div>
+
+  <h4>Hardware &amp; Connectors</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Part</th><th>Mfr Part #</th><th>Qty</th><th>Est.</th></tr>
+      <tr><td>Switchcraft 112A ¼" TS jack — In + Out</td><td class="mono">112A</td><td>2</td><td>~$3.20 ea = $6.40</td></tr>
+      <tr><td>DIP-8 machine-pin IC socket (for OPA2134)</td><td class="mono">A-108-A-LPT</td><td>2</td><td>~$0.50 ea = $1.00</td></tr>
+      <tr><td>Schurter IEC C14 inlet with fuse holder</td><td class="mono">4301.0527</td><td>1</td><td>~$8.00</td></tr>
+      <tr><td>TE SPST rocker switch 6A/250V</td><td class="mono">1825232-1</td><td>1</td><td>~$2.00</td></tr>
+      <tr><td>TO-220 heatsink — for LM7815/7915</td><td class="mono">V7477X</td><td>2</td><td>~$1.50 ea = $3.00</td></tr>
+      <tr><td>TO-220 mica insulating pad — mandatory, see warning below</td><td class="mono">4880SG</td><td>2</td><td>~$0.30 ea = $0.60</td></tr>
+      <tr><td>Triad F-219X toroidal transformer 15VA dual 15VAC</td><td class="mono">F-219X</td><td>1</td><td>~$28</td></tr>
+      <tr><td>Vector T44 FR4 perfboard 0.1" pitch</td><td class="mono">T44</td><td>1</td><td>~$8.00</td></tr>
+      <tr><td>Würth M3 nylon standoff 10mm — PCB isolation</td><td class="mono">971100311</td><td>4</td><td>~$0.50 ea = $2.00</td></tr>
+      <tr><td>Würth M3 stainless screw</td><td class="mono">900151030030</td><td>10</td><td>~$0.20 ea = $2.00</td></tr>
+      <tr><td>Belden 8451 shielded wire 24AWG</td><td class="mono">8451</td><td>1 roll</td><td>~$15</td></tr>
+      <tr><td>Kester 44 solder 63/37 0.031"</td><td class="mono">24-6337-0027</td><td>1 roll</td><td>~$18</td></tr>
+      <tr><td>Kester 951 no-clean flux pen</td><td class="mono">2331-ZX</td><td>1</td><td>~$8.00</td></tr>
+    </table>
+  </div>
+
+  <div class="supplier">
+    <div class="supplier-header">
+      <div class="supplier-name">② Mouser Electronics</div>
+      <div class="supplier-url">mouser.com — upload mouser-bom.csv via BOM Tool</div>
+    </div>
+    <div class="supplier-total">Subtotal ~$145–165 — verify live prices in BOM tool</div>
+  </div>
+</section>
+
+<!-- HAMMOND -->
+<section id="hammond">
+  <h2>Supplier 3</h2>
+  <h3>Hammond — Chassis</h3>
+
+  <div class="supplier">
+    <div class="supplier-header">
+      <div class="supplier-name">③ Hammond</div>
+      <div class="supplier-url">via mouser.com or hammfg.com</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Part</th><th>Mfr Part #</th><th>Qty</th><th>Est.</th></tr>
+        <tr>
+          <td>2U aluminum rackmount chassis — rack ears included</td>
+          <td class="mono">1455T2201</td><td>1</td><td>~$50</td>
+        </tr>
+      </table>
+    </div>
+    <div class="supplier-total">~$50</div>
+  </div>
+
+  <p style="font-size:0.88rem;">Aluminum is mandatory — steel interacts magnetically with the toroidal transformer. 2U height required to mount the 9AB3C1B tank horizontally with spring clearance. Rack ears are included.</p>
+</section>
+
+<!-- FRONT PANEL EXPRESS -->
+<section id="front-panel">
+  <h2>Supplier 4</h2>
+  <h3>Front Panel Express — Custom Panel</h3>
+
+  <div class="supplier">
+    <div class="supplier-header">
+      <div class="supplier-name">④ Front Panel Express</div>
+      <div class="supplier-url">frontpanelexpress.com — design online, order direct</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Part</th><th>Qty</th><th>Est.</th></tr>
+        <tr><td>Custom 2U aluminum front panel with engraved labels</td><td>1</td><td>~$35</td></tr>
+      </table>
+    </div>
+    <div class="supplier-total">~$35</div>
+  </div>
+
+  <p>Use Front Panel Express's online designer. Select the Hammond 1455T2201 chassis as the template. Required holes and labels:</p>
+  <ul>
+    <li>3× ¼" D-shaft pot holes — <strong>DWELL</strong> · <strong>MIX</strong> · <strong>TONE</strong></li>
+    <li>2× ¼" jack holes — <strong>IN</strong> · <strong>OUT</strong></li>
+    <li>1× IEC C14 cutout (rear panel)</li>
+    <li>1× rocker switch hole (rear panel)</li>
+    <li>Engraved unit name: <strong>GHOST SPRING</strong></li>
+  </ul>
+</section>
+
+<!-- KNOBS -->
+<section id="knobs">
+  <h2>Owner to Select</h2>
+  <h3>Knobs</h3>
+  <p>3 knobs — Dwell, Mix, Tone. The Vishay/Spectrol 296 pots have a ¼" (6.35mm) D-shaft. Specify D-shaft when ordering.</p>
+  <ul>
+    <li><strong>Shaft:</strong> ¼" D-shaft</li>
+    <li><strong>Diameter:</strong> 1" (25mm) — correct scale on a 2U panel</li>
+    <li><strong>Style:</strong> Skirted aluminum or Davies 1510 clone with pointer stripe</li>
+  </ul>
+  <p>Source from Mouser, Smallbear Electronics, or Amazon. Search: "D-shaft aluminum knob 1 inch" — ~$15 for 3.</p>
+</section>
+
+<!-- COST BREAKDOWN -->
+<section id="cost">
+  <h2>Total Cost</h2>
+  <h3>Breakdown by Supplier</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>Supplier</th><th>What</th><th>Est. Cost</th></tr>
+      <tr><td>Amplified Parts</td><td>9AB3C1B tank + REB3S transformer</td><td>~$53</td></tr>
+      <tr><td>Mouser</td><td>All electronics</td><td>~$145–165</td></tr>
+      <tr><td>Hammond</td><td>2U chassis with rack ears</td><td>~$50</td></tr>
+      <tr><td>Front Panel Express</td><td>Custom engraved aluminum panel</td><td>~$35</td></tr>
+      <tr><td>Knobs</td><td>3× ¼" D-shaft aluminum knobs</td><td>~$15</td></tr>
+      <tr class="cost-total"><td>Total</td><td></td><td>~$298–318</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- DO NOT SUBSTITUTE -->
+<section id="substitutions">
+  <h2>Critical Warnings</h2>
+  <h3>What NOT to Substitute</h3>
+
+  <div class="warn">
+    <div class="warn-title">No ceramic caps in the signal path</div>
+    <p>Ceramic caps have piezoelectric microphonics and voltage-dependent capacitance (distortion). All signal-path caps must be WIMA MKS2 film. The 47pF bright cap must be silver mica specifically — ceramic will add HF distortion audible in reverb tails.</p>
+  </div>
+
+  <div class="warn">
+    <div class="warn-title">No carbon film resistors</div>
+    <p>Carbon film has 10–100× higher current noise and temperature drift. At 214× recovery gain this degrades the signal floor audibly. Use metal film 1% only (Yageo MFR or equivalent).</p>
+  </div>
+
+  <div class="warn">
+    <div class="warn-title">No TO-92 for the driver transistor</div>
+    <p>A TO-92 small-signal transistor (2N3904, BC547) cannot supply enough current to the transformer primary — it will clip drive transients and harden the reverb attack. BD139 TO-126 only.</p>
+  </div>
+
+  <div class="warn">
+    <div class="warn-title">No NE5532 or TL072 in place of OPA2134</div>
+    <p>NE5532 has bipolar (low-impedance) input — it attenuates the tank's 2550Ω output before any amplification occurs at the recovery stage. TL072 has higher noise and lower current capacity. OPA2134PA throughout — same part number at all three stages.</p>
+  </div>
+
+  <div class="warn">
+    <div class="warn-title">Mica insulating pads on TO-220 regulators — not optional</div>
+    <p>The TO-220 tab is electrically connected to the output pin. Without mica pads, mounting both LM7815 and LM7915 to the same chassis shorts +15V to −15V through chassis ground. Both regulators will be destroyed. Pads are in the BOM (part# 4880SG).</p>
+  </div>
+</section>
+
+<footer>
+  <p>Ghost Spring Tank · <a href="https://github.com/bingeboy/le-ton-juste" target="_blank">le-ton-juste on GitHub</a></p>
+</footer>
+
+</body>
+</html>
