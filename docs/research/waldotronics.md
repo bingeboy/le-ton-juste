@@ -7,7 +7,9 @@ Crawled via nget HTTP fetch (SSL expired on waldotronics.com — use HTTP).
 
 ## OBEL — Origin & Philosophy
 
-**First use:** December 31, 1976 — Cow Palace. Travis Bean 500 #12 with JFET source-follower buffer.
+**First use:** December 31, 1976 — Cow Palace. Travis Bean 500 #12.
+**First OBEL hardware:** Switchcraft 14B switched TRS jack + JFET Source Follower Buffer.
+**OBEL bypass switch:** Not added until Fall 1978.
 
 > "All those gadgets are voltage-sensitive. If you have them *after* the volume control their behavior is affected by the loudness setting on the guitar. With my system, on the other hand, the effects always see the guitar as if it had full output voltage. The effects are also controlled by a DC power supply rather than batteries. Since the effects' input voltage — the guitar's output — is always fixed, they behave exactly the way I want them to. The whole thing is so stable that it's completely repeatable in every situation, and I never run into a weirdness of any sort. I'd used effects in recording before, but they were always too unstable for me to use onstage until we came up with this."
 > — Jerry Garcia, Guitar Player Magazine, October 1978
@@ -45,6 +47,22 @@ Crawled via nget HTTP fetch (SSL expired on waldotronics.com — use HTTP).
 - **Preamp:** Unity-gain (no boost), 9V battery — lowers output impedance, combats cable capacitance
 - **OBEL:** Signal from pickups → preamp → OBEL switch (bypass or effects loop via TRS jack) → volume control → output jack
 - **Pickup height:** Neck/middle 10/64" from strings; bridge 14/64"
+
+---
+
+## Wolf Guitar — OBEL & Buffer History
+
+Key data points relevant to OBEL implementation:
+
+| Version | Date | OBEL / Buffer |
+|---|---|---|
+| Wolf 2.0 | Sept 28, 1977 | OBEL added (no bypass switch). Neck/bridge dual ganged tone control. DiMarzio FS-1 pickups. |
+| Wolf 2.2 | Spring 1978 | Effects Loop In/Out switch added |
+| Wolf 3.0 | Sept 1, 1978 | DiMarzio Dual Sound humbuckers (bridge + middle), parallel/series switch per pickup |
+| Wolf 3.2 | Sept 29, 1989 | **EMG JG Unity Gain Buffer** installed (alternative to JFET approach). DiMarzio Dual Sound (mid/bridge), HS-2 (neck). JFET buffer removed, EMG buffer installed in 1991. |
+| Wolf 4.0 | Final | Wiring returned to parallel/series configuration |
+
+**EMG JG Buffer note:** Wolf 3.2's EMG JG is a solid-state unity-gain buffer — an alternative to the Waldotronics JFET approach for the same function. Both achieve low output impedance; the JFET has slightly more organic character, the EMG is cleaner and more modern.
 
 ---
 
