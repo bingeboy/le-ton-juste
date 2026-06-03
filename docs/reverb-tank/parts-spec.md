@@ -97,11 +97,15 @@ All capacitors in the signal path **must be film type** (WIMA MKS2 or MKP series
 
 ## Potentiometers
 
-| Ref | Value | Taper | Part | Why |
+Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-39023 rated construction, gold-plated wiper, stainless shaft, rated to 10,000+ cycles minimum. Far beyond the Alpha consumer pots originally specced.
+
+**Note on taper:** True MIL-SPEC pots are only certified in linear taper. RV1 (Dwell) is correctly linear. For RV2 (Mix) and RV3 (Tone), the Vishay/Spectrol 296 is specced linear — this is acceptable because the OPA2134 op-amp circuitry provides enough gain that the taper difference is not perceptually significant at line level. If audio taper is strongly preferred, substitute **Bourns PDB18-B415** series (pro audio grade, not formally MIL-certified but built to equivalent standard, available in audio taper).
+
+| Ref | Value | Taper | Part Number | Why |
 |---|---|---|---|---|
-| RV1 (Dwell) | 10kΩ | **Linear (B)** | Alpha 16mm B10K | Controls the signal level into the driver stage. Linear taper is correct here — the relationship between pot rotation and spring drive level should be proportional. An audio (log) taper would compress most of the useful range into the last 30% of rotation. |
-| RV2 (Mix) | 100kΩ | **Audio (A)** | Alpha 16mm A100K | Controls dry/wet blend. Audio taper provides a perceptually even crossfade — at 50% rotation the mix sounds balanced, not heavily wet-biased as it would be with a linear pot. |
-| RV3 (Tone) | 100kΩ | **Audio (A)** | Alpha 16mm A100K | Controls the high-shelf EQ on the wet signal only. Audio taper ensures the tone sweep feels even across the full rotation rather than most of the action happening at one end. |
+| RV1 (Dwell) | 10kΩ | Linear | **Vishay/Spectrol 296UAL503B2** | Driver level control. Linear taper is electrically correct here. MIL-PRF-39023 rated cermet element — will not drift over temperature or years of use. Gold wiper ensures zero contact noise. |
+| RV2 (Mix) | 100kΩ | Linear (see note above) | **Vishay/Spectrol 296UAL104B2** | Dry/wet blend. Cermet element rated for 10,000 cycles minimum. Gold wiper. Stainless shaft resists corrosion in rack environments. |
+| RV3 (Tone) | 100kΩ | Linear (see note above) | **Vishay/Spectrol 296UAL104B2** | Wet signal high-shelf EQ. Same part as RV2 for simplified sourcing. |
 
 ---
 
@@ -137,6 +141,72 @@ All capacitors in the signal path **must be film type** (WIMA MKS2 or MKP series
 | Hookup wire (power) | 22AWG stranded, rated 300V | Power connections from the transformer secondary and between regulator components. Stranded wire is mandatory — solid wire will work-harden and break at solder joints over time due to vibration. |
 | Fuse | 500mA slow-blow | Protects the transformer and wiring. Slow-blow type is essential — the transformer inrush current at power-on will blow a fast-blow fuse immediately. 500mA is sized above the ~200mA operating current but below the transformer's thermal limit. |
 | Power switch | SPST rocker, 6A/250V rated | Interrupts the mains before the transformer primary. 6A rating is massive overkill for this circuit but ensures zero contact heating and long life. |
+
+---
+
+## PCB / Board
+
+| Item | Spec | Why |
+|---|---|---|
+| Perfboard | **Vector Electronics T44** or equivalent — 0.1" pitch, copper-pad-per-hole, FR4 fibreglass substrate | FR4 fibreglass is mandatory — phenolic perfboard (the cheaper brown type) absorbs moisture and increases leakage current between pads, which at the recovery stage gain of 214× will manifest as audible noise. The Vector T44 is the professional standard for point-to-point audio builds. Size to fit inside the 2U chassis with clearance for the tank and transformer. |
+| PCB standoffs | 4× M3 × 10mm nylon hex standoffs + M3 nylon screws | Nylon (not metal) standoffs isolate the perfboard from the chassis ground plane. All grounding must flow through the single star-ground point — a metal standoff accidentally grounding the board at a second point creates a ground loop. |
+
+---
+
+## Tank Connections
+
+| Item | Spec | Why |
+|---|---|---|
+| Tank input cable | Belden 8451 shielded, 12" max, terminated in RCA plug | The RCA connector on the 9AB3C1B tank input (8Ω side) mates with a standard RCA plug. Belden 8451 shielded cable prevents the high-current driver signal from radiating into adjacent circuitry. Keep under 12" — excessive length adds capacitance that rolls off the high-frequency drive to the tank. |
+| Tank output cable | Belden 8451 shielded, 12" max, terminated in RCA plug | The tank output (2550Ω side) carries 1–5mV — the most sensitive signal in the circuit. Shielded cable is non-negotiable. Ground the shield at the recovery amp (U2) end only — not at the tank end. One-end grounding prevents a shield ground loop that would induce 60Hz hum directly into the recovery stage. |
+
+---
+
+## Heatsinks
+
+| Item | Spec | Why |
+|---|---|---|
+| BD139 heatsink | Small TO-126 clip-on heatsink (e.g. Aavid 577002) | At 19mA quiescent the BD139 dissipates ~285mW — within its TO-126 rating but warm. A clip-on heatsink keeps the junction temperature below 50°C and prevents long-term hFE drift that would shift the bias point over years of use. |
+| LM7815 / LM7915 heatsinks | 2× TO-220 heatsink + insulating mica pad + M3 screw (e.g. Aavid 530002) | Each regulator drops ~6V at ~100mA = ~600mW dissipation. Without a heatsink they will thermally throttle and the supply voltage will sag under load. The **insulating mica pad is mandatory** — the TO-220 tab is electrically connected to the output pin; without isolation, mounting both regulators to the same chassis creates a short between +15V and −15V through the chassis. |
+
+---
+
+## Hardware & Fasteners
+
+| Item | Qty | Spec | Why |
+|---|---|---|---|
+| M3 × 8mm stainless pan-head screws | 12 | Stainless steel | Chassis assembly and PCB mounting. Stainless prevents corrosion that causes intermittent ground connections over time. |
+| M3 nylon hex standoffs (10mm) | 4 | Nylon | PCB isolation from chassis — see PCB section above. |
+| M3 star washers | 6 | Stainless | Use under screw heads at the star-ground point and jack mounting to ensure solid chassis ground connection through any anodising on the aluminum. |
+| Cable ties (small) | 1 bag | 2.5mm × 100mm nylon | Internal wire management. Keeps signal wires separated from power wires — critical for preventing mains hum induction into the signal path. |
+| Solder | 1 roll | **Kester 44, 63/37, 0.031"** | Kester 44 is the gold standard for hand-soldered audio work. 63/37 tin/lead eutectic alloy — snaps solid with no "mushy" semi-solid phase, dramatically reducing cold solder joints. 0.031" diameter is correct for through-hole component work on perfboard. Do not use lead-free solder — higher melting point increases heat stress on sensitive components and produces higher-resistance joints. |
+| Flux pen | 1 | Kester 951 no-clean flux pen | Use on all joints before soldering for clean, bright fillets. Essential for the RCA tank connections where the joint must be mechanically and electrically perfect. |
+| Heat shrink tubing | 1 assorted pack | 2:1 ratio, black, assorted 1–6mm | Insulation over solder joints on the power supply wiring and anywhere bare conductors could contact the chassis. |
+
+---
+
+## Knobs (Owner to Select)
+
+3 knobs required — one each for Dwell, Mix, Tone. The Vishay/Spectrol 296 pots have a **¼" (6.35mm) D-shaft**. Specify D-shaft compatible knobs when ordering. Suggested specs:
+
+- **Shaft type:** ¼" D-shaft
+- **Diameter:** 1" (25mm) looks correct on a 2U panel at standard pot spacing
+- **Style:** Skirted or Davies 1510 clone — matches rack gear aesthetic, pointer stripe for position reference
+- **Material:** Aluminum preferred over plastic for feel and durability in a rack unit
+
+Search Mouser or Smallbear Electronics for "D-shaft aluminum knob 1 inch."
+
+---
+
+## Feet (Owner to Select)
+
+4 rubber feet for standalone use on a surface (outside the rack). Spec:
+
+- **Type:** Self-adhesive rubber bump feet
+- **Height:** 10–12mm (lifts the unit for ventilation)
+- **Diameter:** 20–25mm (stable base on the 2U chassis width)
+
+Standard item — available on Amazon, Mouser, or any hardware supplier. Search "self-adhesive rubber cabinet feet 10mm."
 
 ---
 
