@@ -66,6 +66,20 @@ Key data points relevant to OBEL implementation:
 
 ---
 
+## Rosebud Guitar
+
+Waldotronics page is photo-only — no textual specs published. Images show the guitar from what appears to be a Hall of Fame display.
+
+Known from external sources:
+- **Builder:** Steve Cripe (not Doug Irwin)
+- **Weight:** 9.6 lbs (per waldotronics.com)
+- **Period:** 1993–1995 (Jerry's last guitar)
+- **Finish:** Cherry red, double-cut body similar to Les Paul Special
+- **Electronics:** OBEL + JFET buffer (same philosophy as Tiger/Wolf)
+- **Pickups:** DiMarzio
+
+---
+
 ## Rig Timeline Reference
 Detailed rig diagrams are image files on waldotronics.com/rigbreakdowns.html. Visit directly for visual breakdowns:
 
