@@ -42,7 +42,7 @@ Quantity,Manufacturer Part Number,Description,Customer Reference
 2,V7477X,Assmann TO-220 heatsink,LM7815 LM7915 heatsinks
 2,4880SG,Aavid TO-220 mica insulating pad,Regulator thermal isolation
 2,0218.500MXP,Littelfuse 500mA T slow-blow 5x20mm fuse,Mains fuse (1 installed + 1 spare)
-1,F-219X,Triad Magnetics toroidal transformer 15VA dual 15VAC,T1 power supply
+1,F-219X,Triad F-219X 30VA dual-primary toroidal 2x115VAC in 2x15VAC out,T1 power supply (wire primaries in parallel for 120VAC)
 1,T44,Vector FR4 perfboard,Audio + PSU board
 4,971100311,Wurth M3 nylon hex standoff 10mm,PCB standoffs
 10,900151030030,Wurth M3 stainless pan-head screw,Hardware

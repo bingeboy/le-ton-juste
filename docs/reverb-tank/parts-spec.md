@@ -89,7 +89,7 @@ All capacitors in the signal path **must be film type** (WIMA MKS2 or MKP series
 ### Signal Path — Electrolytic
 | Ref | Value | Type | Location | Why |
 |---|---|---|---|---|
-| C2 | 100µF / 25V | Nichicon UKW (low-ESR audio grade) | Q1 emitter bypass | Bypasses R5 at audio frequencies, allowing full AC gain from the driver stage. Without this cap, R5 provides heavy degeneration at audio frequencies and the spring tank is underdriven. Low-ESR audio grade is specified because a high-ESR cap will not effectively bypass R5 at high audio frequencies — the driver's HF response will roll off early, losing the "air" in the reverb sound. 25V voltage rating is appropriate: C2 sits at Q1's emitter (~1.22V), not on a supply rail, and never sees unregulated transients. |
+| C2 | 100µF / 25V | Nichicon UKW (low-ESR audio grade) — same P/N as C13/C14: UKW1E101MED | Q1 emitter bypass | Bypasses R5 at audio frequencies, allowing full AC gain from the driver stage. Without this cap, R5 provides heavy degeneration at audio frequencies and the spring tank is underdriven. Low-ESR audio grade is specified because a high-ESR cap will not effectively bypass R5 at high audio frequencies — the driver's HF response will roll off early, losing the "air" in the reverb sound. 25V voltage rating is appropriate: C2 sits at Q1's emitter (~1.22V), not on a supply rail, and never sees unregulated transients. |
 
 ### Op-Amp Decoupling — Film
 | Ref | Value | Type | Location | Why |

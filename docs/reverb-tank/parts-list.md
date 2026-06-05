@@ -90,7 +90,7 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 | Value | Mfr Part # | Qty | Est. Price |
 |---|---|---|---|
 | 10kΩ / 1W metal film (PSU bleed resistors — 1 per rail) | FMP100JR-52-10K | 2 | ~$0.30 each = $0.60 |
-| 10Ω / 0.5W metal film (ground lift RC network) | MFR-25FBF52-10R | 2 | ~$0.10 each = $0.20 |
+| 10Ω / 250mW metal film (ground lift RC network) | MFR-25FBF52-10R | 2 | ~$0.10 each = $0.20 |
 
 ### Potentiometers
 
@@ -121,6 +121,8 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 | SPDT mini toggle switch (ground lift, rear panel) | 100SP1T1B1M1QEH | 1 | ~$3.50 |
 | 5mm LED — blue or amber (power indicator) | — | 1 | ~$0.50 |
 | 5mm LED panel-mount bezel | — | 1 | ~$1.00 |
+| 500mA T slow-blow 5×20mm fuse (1 installed + 1 spare) | 0218.500MXP | 2 | ~$0.50 |
+| 10kΩ LED current-limiting resistor — use one from the Rdry 10kΩ stock (MFR-25FBF52-10K) | — | 1 | (no separate order needed) |
 | TO-220 heatsink | V7477X | 2 | ~$1.50 each = $3.00 |
 | TO-220 mica insulating pad | 4880SG | 2 | ~$0.30 each = $0.60 |
 | Thermal compound (Shin-Etsu X-23 or equivalent) | — | 1 small tube | ~$5.00 |

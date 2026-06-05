@@ -237,7 +237,7 @@ ax.add_patch(rect_psu)
 ax.text(ps_x, ps_y + psu_h/2 - 0.15, '±15V POWER SUPPLY',
         ha='center', va='top', fontsize=8, fontweight='bold', color=PWRR, zorder=4)
 psu_body = (
-    'T1  Toroidal 15VA\n'
+    'T1  Toroidal 30VA\n'
     '    2 × 15VAC output\n\n'
     'BR1  Bridge rectifier 2A\n\n'
     'U4   LM7815  →  +15V\n'
