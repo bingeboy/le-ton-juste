@@ -709,8 +709,48 @@
   <h4>PCB — Vector T44 FR4 Perfboard</h4>
   <p>FR4 fibreglass is mandatory. The cheaper brown phenolic perfboard absorbs moisture and increases leakage current between pads — at the recovery stage gain of 214× this manifests as audible noise. Use 4× M3 nylon hex standoffs (not metal) to mount the board — metal standoffs can accidentally create a second chassis ground connection.</p>
 
+  <h4>Build Sequence</h4>
+  <p>Build in this order to make each stage testable before adding the next:</p>
+  <ol>
+    <li><strong>PSU first.</strong> Install T1, BR1, NTC1, C11/C12, U4, U5, reg output caps (C13/C14 100µF + C5–C10 100nF). Power up with a variac or current-limited bench supply if available. Measure: +15V at U4 output pin, −15V at U5 output pin, &lt;50mV ripple on each rail. <em>Do not proceed until both rails are correct.</em></li>
+    <li><strong>Input stage.</strong> Install R1 (1MΩ), C_in (1µF), D_clamp+/D_clamp− (1N4148 pair), TVS1 (SMBJ15CA), U1 (input buffer OPA2134). Inject a 1kHz sine at −20dBV. Scope at U1 output: clean sine, no clipping, gain ≈1.</li>
+    <li><strong>Driver stage.</strong> Install Q1 (BD139), R3/R3b/R4 (bias network), R5 (emitter), C1 (1µF coupling), C2 (100µF bypass), D3 (flyback clamp), T2 (REB3S driver transformer). Connect the tank's 8Ω input side. Scope at T2 primary: sinusoidal drive signal, no ringing or DC offset. Measure Q1 collector DC: should be ~7.5V (≈ halfway to +15V) at zero signal.</li>
+    <li><strong>Tank output and recovery.</strong> Install C3 (470nF), Rbias (100kΩ), Ri (470Ω), Rf (100kΩ), U2 (recovery OPA2134). Connect the tank's 2550Ω output side. Tap the spring with a finger — you should hear a reverb impulse at U2's output. Scope gain at U2 output vs. U2 (+) input: should be ≈214×.</li>
+    <li><strong>HPF and tone.</strong> Install R6 (5.6kΩ), C4 (100nF), RV3 (Tone pot). Verify HPF corner is ~300Hz by sweeping a function generator — signal below 300Hz should attenuate; above 300Hz passes flat.</li>
+    <li><strong>Mix and output buffer.</strong> Install Rdry (10kΩ), C_bright (47pF), RV2 (Mix pot), U3 (output buffer OPA2134), R7 (100Ω isolation). Connect input jack J1 and output jack J2. Sweep Mix pot: CCW = dry only, CW = wet only, mid = blend.</li>
+    <li><strong>Front-panel pots and wiring.</strong> Install RV1 (Dwell), connect Molex KK housings to all panel pots and jacks. Retest full signal chain end-to-end with guitar signal.</li>
+    <li><strong>Chassis install, grounding, and final checks.</strong> Mount PCB on standoffs, connect star ground, install IEC inlet, fuse, rocker switch, ground lift switch. Check: no hum at idle, Dwell changes reverb density, Mix blends correctly, Tone brightens wet signal. Run for 30 minutes; check that regulators are warm but not hot (&lt;60°C case temp).</li>
+  </ol>
+
+  <h4>Test Points Summary</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Test Point</th><th>Expected</th><th>Fault if wrong</th></tr>
+      <tr><td>U4 output pin</td><td>+15.0V ±0.5V DC</td><td>Regulator or rectifier issue</td></tr>
+      <tr><td>U5 output pin</td><td>−15.0V ±0.5V DC</td><td>Regulator or rectifier issue</td></tr>
+      <tr><td>PSU rails ripple</td><td>&lt;50mV p-p at idle</td><td>Filter cap ESR or wiring issue</td></tr>
+      <tr><td>Q1 collector (no signal)</td><td>~7.5V DC</td><td>Bias resistor values or BD139 fault</td></tr>
+      <tr><td>U2 (+) input (signal)</td><td>1–5mV at normal playing level</td><td>Tank not driven, C3 open, or Rbias fault</td></tr>
+      <tr><td>U2 output (signal)</td><td>~200–1000mV at normal playing level</td><td>Op-amp fault, Ri/Rf values wrong</td></tr>
+      <tr><td>U3 output (idle)</td><td>&lt;5mV DC offset</td><td>DC offset from upstream; check Rbias and Ri</td></tr>
+      <tr><td>Chassis ground to star point</td><td>0Ω</td><td>Ground lift switch in wrong position, or open connection</td></tr>
+    </table>
+  </div>
+
   <h4>Phase Alignment — First Power-Up Check</h4>
-  <p>Spring tank polarity varies between Accutronics batches. If the reverb sounds hollow, thin, or "phasey" when mixed in at 50/50, the tank output is out of phase with the dry signal. Fix: swap the two wires at the tank's output RCA connector (the 2550Ω side). No design change needed — this is a 10-second wire swap on first commissioning.</p>
+  <p>Spring tank polarity varies between Accutronics batches. If the reverb sounds hollow, thin, or "phasey" when mixed in at 50/50, the tank output is out of phase with the dry signal. Fix: on the <strong>output</strong> Molex KK connector at the tank's 2550Ω side (the RCA that goes to U2's input), swap the two wires. The input connector (8Ω driver side) is not involved. No design change needed — this is a 10-second wire swap on first commissioning.</p>
+
+  <h4>Conformal Coating</h4>
+  <p>After all testing is complete and the build is verified, apply MG Chemicals 422B acrylic conformal coating spray to the PCB to protect against humidity and oxidation over time. <strong>Mask or skip the following before spraying — coating these will cause problems:</strong></p>
+  <ul>
+    <li><strong>IC sockets</strong> — coating wicks into the socket contacts and prevents chip insertion/removal</li>
+    <li><strong>Potentiometer shafts and bodies</strong> — coating seizes the mechanism</li>
+    <li><strong>Molex KK connectors</strong> — coating bonds the housing and prevents disconnection for service</li>
+    <li><strong>Heatsink faces</strong> (the face that contacts the mica pad) — coating is an insulator and will impede thermal transfer to the chassis</li>
+    <li><strong>Fuse holder contacts</strong> — coating makes fuse replacement impossible</li>
+    <li><strong>Any test points you want to stay accessible</strong></li>
+  </ul>
+  <p>Apply in two thin coats, allowing full dry time between coats. Hold the can 8–12" away and use short strokes — thick single-pass coats pool and crack.</p>
 
   <h4>Solder</h4>
   <p>Kester 44, 63/37 tin/lead, 0.031". Kester 44 is the standard for hand-soldered audio. 63/37 eutectic alloy — snaps solid with no mushy semi-solid phase, reducing cold joints. 0.031" diameter is correct for through-hole perfboard work. Do not use lead-free — higher melting point increases heat stress on sensitive components and produces higher-resistance joints.</p>
