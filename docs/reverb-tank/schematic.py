@@ -239,10 +239,10 @@ ax.text(ps_x, ps_y + psu_h/2 - 0.15, '±15V POWER SUPPLY',
 psu_body = (
     'T1  Toroidal 15VA\n'
     '    2 × 15VAC output\n\n'
-    'BR1  Bridge rectifier 1A\n\n'
+    'BR1  Bridge rectifier 2A\n\n'
     'U4   LM7815  →  +15V\n'
     'U5   LM7915  →  −15V\n\n'
-    'C5–C6   2200µF / 35V\n'
+    'C5–C6   2200µF / 50V\n'
     'C7–C8   100nF bypass'
 )
 ax.text(ps_x, ps_y - 0.05, psu_body,

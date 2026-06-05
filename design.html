@@ -614,8 +614,8 @@
     <table>
       <tr><th>Stage</th><th>Part</th><th>Why</th></tr>
       <tr><td>Transformer</td><td>Triad F-219X, 15VA dual 15VAC toroidal</td><td>Toroidal has ~10× lower magnetic field leakage than E-I laminate. Critical — the spring tank is a sensitive magnetic transducer and will pick up 60Hz hum from a nearby transformer. Keep transformer as far from the tank as the chassis allows.</td></tr>
-      <tr><td>Rectifier</td><td>W02G bridge, 1A/200V</td><td>200V is derated 2× from the 42V peak. Reliable, conservative rating.</td></tr>
-      <tr><td>Filter</td><td>2× 2200µF/35V Nichicon KW low-ESR</td><td>Ripple stays below 1Vrms at 20mA load. Low-ESR minimizes heat and maintains regulation.</td></tr>
+      <tr><td>Rectifier</td><td>W04G bridge, 2A/400V</td><td>400V is derated 10× from the 42V peak. 2A rating gives 4× headroom over typical load — reliable even with inrush.</td></tr>
+      <tr><td>Filter</td><td>2× 2200µF/50V Nichicon UKW low-ESR</td><td>Ripple stays below 1Vrms at 20mA load. 50V rated for headroom against any transients. Low-ESR minimizes heat and maintains regulation.</td></tr>
       <tr><td>+15V Reg</td><td>LM7815CT (TO-220)</td><td>Linear regulation = zero switching noise. Switching regulators inject kHz noise that passes through op-amp power supply rejection. LM7815 is proven and inexpensive.</td></tr>
       <tr><td>−15V Reg</td><td>LM7915CT (TO-220)</td><td>Same rationale. Provides negative rail for op-amp negative supply pins.</td></tr>
       <tr><td>Reg output caps</td><td>2× 100µF/25V + 2× 100nF film</td><td>Electrolytic for stability per LM78xx/79xx datasheet; film in parallel for HF suppression above ~100kHz.</td></tr>
@@ -673,7 +673,7 @@
       <tr><th>Connector</th><th>Type</th><th>Notes</th></tr>
       <tr><td>Input</td><td>Switchcraft 112A ¼" TS</td><td>From Lehle Parallel M output (future state) or directly from Alembic FX-1</td></tr>
       <tr><td>Output</td><td>Switchcraft 112A ¼" TS</td><td>To McIntosh MC100 RCA input (with 1/4" TS → RCA adapter cable)</td></tr>
-      <tr><td>IEC Power</td><td>Schurter 4301.0527 (IEC C14 + fuse holder)</td><td>500mA slow-blow fuse. Slow-blow is essential — inrush current at power-on blows fast-blow fuses.</td></tr>
+      <tr><td>IEC Power</td><td>Schurter 5110.1052 (EMI-filtered IEC C14 + fuse holder)</td><td>500mA slow-blow fuse. Integrated EMI filter suppresses mains-borne noise before it reaches the transformer. Slow-blow essential — inrush current at power-on blows fast-blow fuses.</td></tr>
       <tr><td>Power Switch</td><td>TE 1825232-1 SPST rocker, 6A/250V</td><td>Interrupts mains before transformer primary</td></tr>
     </table>
   </div>
