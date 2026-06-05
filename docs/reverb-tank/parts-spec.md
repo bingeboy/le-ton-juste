@@ -45,7 +45,7 @@ All resistors: **metal film, 1% tolerance, 250mW** (Yageo MFR or Vishay CMF seri
 
 | Ref | Value | Location | Why |
 |---|---|---|---|
-| R1 | 1MΩ | Input to U1 non-inv input | Sets the input impedance seen by the upstream device (Alesis QuadraVerb). 1MΩ places virtually zero load on the QuadraVerb output, preserving the hi-fi signal integrity of the preceding stage. |
+| R1 | 1MΩ | U1(+) pin → GND (shunt — after C_in) | **R1 must be placed after C_in: from U1's non-inverting (+) pin to GND, not in series between the jack and C_in.** This shunt path provides the DC bias return for U1's FET input. Without it, the (+) input has no defined DC reference and will drift to a supply rail. R1 also sets the 1MΩ input impedance seen by the upstream device (Alesis QuadraVerb) — virtually zero load, preserving hi-fi signal integrity. |
 | R2 | 100Ω | U1 output (series) | Isolates the op-amp output from capacitive cable loads. Prevents U1 from oscillating when driving a cable to the next stage. Required on all op-amp outputs driving cable runs. |
 | R3 | 1kΩ | Dwell pot wiper → Q1 base | Limits base drive current into Q1 and damps any tendency to oscillate at high frequencies. Without this resistor, the Dwell pot wiper impedance varies with rotation, causing the driver gain to be nonlinear. |
 | R3b | 6.8kΩ | +15V → Q1 base (upper bias) | Upper leg of the BD139 base voltage divider. With R4, sets base voltage to ~1.92V, which sets emitter at ~1.22V and quiescent collector current at ~18mA. |
@@ -89,12 +89,12 @@ All capacitors in the signal path **must be film type** (WIMA MKS2 or MKP series
 ### Signal Path — Electrolytic
 | Ref | Value | Type | Location | Why |
 |---|---|---|---|---|
-| C2 | 100µF / 25V | Nichicon UKW (low-ESR audio grade) | Q1 emitter bypass | Bypasses R5 at audio frequencies, allowing full AC gain from the driver stage. Without this cap, R5 provides heavy degeneration at audio frequencies and the spring tank is underdriven. Low-ESR audio grade is specified because a high-ESR cap will not effectively bypass R5 at high audio frequencies — the driver's HF response will roll off early, losing the "air" in the reverb sound. |
+| C2 | 100µF / 25V | Nichicon UKW (low-ESR audio grade) — same P/N as C13/C14: UKW1E101MED | Q1 emitter bypass | Bypasses R5 at audio frequencies, allowing full AC gain from the driver stage. Without this cap, R5 provides heavy degeneration at audio frequencies and the spring tank is underdriven. Low-ESR audio grade is specified because a high-ESR cap will not effectively bypass R5 at high audio frequencies — the driver's HF response will roll off early, losing the "air" in the reverb sound. 25V voltage rating is appropriate: C2 sits at Q1's emitter (~1.22V), not on a supply rail, and never sees unregulated transients. |
 
 ### Op-Amp Decoupling — Film
 | Ref | Value | Type | Location | Why |
 |---|---|---|---|---|
-| C5–C10 | 100nF / 63V | WIMA MKS2 film | One per op-amp supply pin (6 total — 2 per OPA2134 package, ×3 stages) | Prevents high-frequency noise on the ±15V supply rails from entering the op-amp and appearing as distortion on the output. Must be placed as close to the supply pins as physically possible on the PCB/perfboard. If omitted, the circuit will likely oscillate or have a high noise floor. |
+| C5–C8 | 100nF / 63V | WIMA MKS2 film | One per op-amp supply pin (4 total — 2 supply pins per DIP-8 package × 2 packages) | Prevents high-frequency noise on the ±15V supply rails from entering the op-amp and appearing as distortion on the output. Must be placed as close to the supply pins as physically possible on the PCB/perfboard. If omitted, the circuit will likely oscillate or have a high noise floor. |
 
 ### Op-Amp Decoupling — Bulk Electrolytic
 | Ref | Value | Type | Location | Why |
@@ -114,13 +114,15 @@ All capacitors in the signal path **must be film type** (WIMA MKS2 or MKP series
 
 Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-39023 rated construction, gold-plated wiper, stainless shaft, rated to 10,000+ cycles minimum. Far beyond the Alpha consumer pots originally specced.
 
-**Note on taper:** True MIL-SPEC pots are only certified in linear taper. RV1 (Dwell) is correctly linear. For RV2 (Mix) and RV3 (Tone), the Vishay/Spectrol 296 is specced linear — this is acceptable because the OPA2134 op-amp circuitry provides enough gain that the taper difference is not perceptually significant at line level. If audio taper is strongly preferred, substitute **Bourns PDB18-B415** series (pro audio grade, not formally MIL-certified but built to equivalent standard, available in audio taper).
+**Note on taper:** Mix (RV2) and Tone (RV3) are specified as audio taper — **Bourns PDB181-GTR01-104A0**. Audio taper matches how ears perceive level changes; a 100kΩ linear pot in this passive blend against a 10kΩ dry resistor compresses most of the audible range into a narrow arc near minimum rotation. RV1 (Dwell) is correctly linear.
+
+**Builder's note — taper is a preference call:** Substitute **Vishay/Spectrol 296UAL104B2** (100kΩ linear) for RV2/RV3 if MIL-PRF-39023 certification is required throughout or linear feel is preferred. The circuit is electrically identical either way.
 
 | Ref | Value | Taper | Part Number | Why |
 |---|---|---|---|---|
 | RV1 (Dwell) | 10kΩ | Linear | **Vishay/Spectrol 296UAL103B2** | Driver level control. Linear taper is electrically correct here. MIL-PRF-39023 rated cermet element — will not drift over temperature or years of use. Gold wiper ensures zero contact noise. |
-| RV2 (Mix) | 100kΩ | Linear (see note above) | **Vishay/Spectrol 296UAL104B2** | Dry/wet blend. Cermet element rated for 10,000 cycles minimum. Gold wiper. Stainless shaft resists corrosion in rack environments. |
-| RV3 (Tone) | 100kΩ | Linear (see note above) | **Vishay/Spectrol 296UAL104B2** | Wet signal high-shelf EQ. Same part as RV2 for simplified sourcing. |
+| RV2 (Mix) | 100kΩ | Audio | **Bourns PDB181-GTR01-104A0** | Dry/wet blend. Carbon element, 17mm body, D-shaft. Audio taper gives an even-feeling sweep across the blend range. See builder's note above for linear alternative. |
+| RV3 (Tone) | 100kΩ | Audio | **Bourns PDB181-GTR01-104A0** | Wet signal high-shelf EQ. Same part as RV2 for simplified sourcing. See builder's note above for linear alternative. |
 
 ---
 
@@ -137,7 +139,7 @@ Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-3902
 
 | Ref | Part | Spec | Why |
 |---|---|---|---|
-| T1 | Antek AN-0115 (or equivalent toroidal) | 15VA, dual 15VAC secondary | Toroidal transformers have ~10× lower magnetic field leakage than standard E-I laminate transformers. This is critical in a reverb unit — the spring tank is a sensitive magnetic transducer and will pick up 60Hz hum from a nearby transformer. The toroidal's closed-core geometry keeps the field contained. 15VA is sized at 5× the actual load (~3VA) for cool, quiet operation. |
+| T1 | Triad F-219X | 30VA, dual-primary (2×115VAC), dual-secondary (2×15VAC) toroidal | Toroidal transformers have ~10× lower magnetic field leakage than standard E-I laminate transformers. This is critical in a reverb unit — the spring tank is a sensitive magnetic transducer and will pick up 60Hz hum from a nearby transformer. The toroidal's closed-core geometry keeps the field contained. 30VA is 10× the actual load (~3VA) for cool, quiet operation. **Primary wiring:** The F-219X has two 115VAC primary windings. For 120VAC mains they must be wired in parallel (observe phasing dots — connect both starts together and both finishes together). Wiring them in series gives a 230VAC transformer and incorrect secondary voltages. **Secondary wiring:** The F-219X also has two independent 15VAC secondary windings. These must be wired in series to create a 15-0-15 center-tapped supply: connect one end of winding A to one end of winding B — that junction becomes the 0V/GND reference. The remaining outer ends of the two windings connect to the AC input pins of BR1. Wiring the secondaries in parallel gives a single ~15VAC winding → single ~20V DC rail with no negative rail; the LM7915 and all negative op-amp supply pins will be unbiased. |
 | BR1 | W04G | 2A / 400V bridge rectifier *(upgraded from W02G 1A)* | Converts transformer AC to pulsating DC. Upgraded to 2A for 10× current margin at 200mA load — the rectifier is the one PSU component that fails silently and takes the whole supply down. 400V rating is derated 10× from the 42V peak. Costs $0.10 more than the W02G. |
 | U4 | LM7815 (TO-220) | +15V linear regulator | Sets the positive supply rail. Linear regulators produce zero switching noise — essential for a hi-fi circuit. Switching regulators (buck converters, etc.) inject kHz-range noise that passes through the op-amp supply rejection and appears as distortion. The LM7815 is proven, inexpensive, and stable. Mount to chassis with mica insulating pad and thermal compound. |
 | U5 | LM7915 (TO-220) | −15V linear regulator | Same rationale as U4. The negative rail powers the inverting inputs and negative supply pins of all op-amps. |
@@ -168,8 +170,8 @@ Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-3902
 | Ref | Part | Spec | Why |
 |---|---|---|---|
 | C_in | 1µF / 63V WIMA MKS2 film | Input coupling cap — before U1 | Blocks DC from reaching the circuit. A failing pedal or preamp with a DC offset on its output would otherwise reach U1's input directly through R1. The existing C1 is after the input buffer — C_in sits at the jack itself, first in the signal path. |
-| D_clamp+ | 1N4148 | Input → +15V rail | Overvoltage clamp. If the input exceeds +15.6V, this diode conducts and clamps the voltage. R1 (1MΩ) limits clamp current to safe microamps even at extreme input voltages. Protects U1's input from any source accidentally connected to the input jack. |
-| D_clamp− | 1N4148 | −15V rail → Input | Same clamp on the negative side. Together with D_clamp+ they form a hard limit — input can never exceed the supply rails at U1's gate. |
+| D_clamp+ | 1N4148 | Anode at U1(+) node → cathode at +15V rail | Overvoltage clamp at U1(+) node. Conducts when the node rises above ~+15.6V, pulling excess energy into the supply rail. Clamp current is limited by the source impedance and C_in reactance during transients. Protects U1's input from any source accidentally connected to the input jack. |
+| D_clamp− | 1N4148 | Anode at −15V rail → cathode at U1(+) node | Same clamp on the negative side — clamps node below ~−15.6V. Together D_clamp+/D_clamp− hard-limit the U1(+) node to within ±15.6V of the supply rails. |
 | TVS1 | SMBJ15CA | Bidirectional TVS at input jack | Catches ESD events that 1N4148 diodes are too slow to handle. When you plug in a cable while other gear is running, a static discharge travels down the cable faster than the clamping diodes can respond. The TVS clamps in nanoseconds. Wired directly across the input jack tip to sleeve. |
 
 ### Serviceability
@@ -181,7 +183,7 @@ Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-3902
 | Thermal compound | Shin-Etsu X-23 or equivalent | Applied between LM7815/7915 tab, mica pad, and chassis. Halves the thermal resistance of the mica pad alone. Regulators run cooler, last longer. Apply a thin layer — less than 0.1mm. |
 | Conformal coating | MG Chemicals 422B spray | Applied over the completed, tested PCB. Seals the board against moisture and environmental contamination. At 214× recovery gain, moisture absorption into the perfboard substrate raises leakage current between pads and manifests as noise. One pass of conformal coating eliminates this permanently. Apply after all testing is complete — it makes rework harder. |
 | Colored heat-shrink (internal wiring) | Red = +15V, Blue = −15V, Black = GND, White = signal high-Z, Gray = signal line-level | Color coding means any technician can read the wiring without a schematic. Critical for a unit that will be serviced years from now by someone who didn't build it. |
-| Power LED + bezel | 5mm LED (blue or amber) + panel-mount bezel, 10kΩ current-limiting resistor from +15V rail | Visual confirmation that the unit is powered. Saves significant troubleshooting time when the unit appears silent — knowing immediately whether the PSU is alive narrows the fault immediately. Wire from +15V rail through 10kΩ resistor to LED anode, cathode to GND. |
+| Power LED + bezel | 5mm LED (blue or amber) + panel-mount bezel, 10kΩ current-limiting resistor from +15V rail | Visual confirmation that the unit is powered. Wire from +15V rail through 10kΩ resistor to LED anode, cathode to GND. At 10kΩ, drive current is ~1.2mA — subtle, not a beacon, which is appropriate for rack use. **Use a high-efficiency 5mm LED** (e.g. Kingbright WP7113ID or similar); standard commodity LEDs are optimized for 20mA and will be dim at this current. The 10kΩ resistor comes from the same Rdry stock — no separate order needed. Adjust value to taste: 4.7kΩ ≈ 2.5mA for brighter indication. |
 | Ground lift switch | SPDT mini toggle (rear panel) + 10Ω resistor + 100nF cap in series | Rack environments often develop ground loops — 60Hz hum that varies with what else is plugged in. The ground lift switch disconnects the direct audio-ground-to-chassis connection and inserts a 10Ω + 100nF RC network instead. This breaks ground loops without lifting the safety earth. Flip it one way for direct connection, the other way for lifted. Essential to have on the rear panel rather than requiring chassis opening to address hum. |
 
 ---
@@ -196,7 +198,7 @@ Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-3902
 | IC sockets | 2× DIP-8 machine-pin sockets | Allows the OPA2134 op-amps to be replaced without desoldering. Machine-pin (turned-pin) sockets maintain reliable contact over years of use and do not add audible resistance. Spring-contact (leaf-spring) sockets degrade over time and can cause intermittent noise. |
 | Hookup wire (signal) | Belden 8451 shielded twisted pair, 24AWG | All internal signal connections must be made with shielded wire. The reverb circuit has high-gain stages (U2 at 214×) — any unshielded wire in the high-gain section will act as an antenna and pick up hum. Belden 8451 is the industry standard for internal audio wiring. |
 | Hookup wire (power) | 22AWG stranded, rated 300V | Power connections from the transformer secondary and between regulator components. Stranded wire is mandatory — solid wire will work-harden and break at solder joints over time due to vibration. |
-| Fuse | 500mA slow-blow | Protects the transformer and wiring. Slow-blow type is essential — the transformer inrush current at power-on will blow a fast-blow fuse immediately. 500mA is sized above the ~200mA operating current but below the transformer's thermal limit. |
+| Fuse | 500mA slow-blow | Protects the transformer primary and mains wiring. Slow-blow type is essential — the transformer inrush current at power-on will blow a fast-blow fuse immediately. At 120VAC, the F-219X draws roughly 30VA/120V ≈ 250mA RMS at full load; 500mA is 2× that, sized for inrush and to protect the transformer without nuisance trips. |
 | Power switch | SPST rocker, 6A/250V rated | Interrupts the mains before the transformer primary. 6A rating is massive overkill for this circuit but ensures zero contact heating and long life. |
 
 ---
@@ -271,12 +273,12 @@ Standard item — available on Amazon, Mouser, or any hardware supplier. Search 
 
 1. **Grounding:** Use a single-point star ground connected to the chassis at one point. All circuit grounds (op-amp ground pins, pot grounds, jack grounds) run back to this single point. Do not daisy-chain grounds — ground loops cause hum.
 
-2. **Decoupling caps:** Place C5–C10 (100nF film) physically as close to the OPA2134 supply pins as possible. If they are more than 1" away from the IC, they will not effectively suppress HF noise.
+2. **Decoupling caps:** Place C5–C8 (100nF film — 4 total, one per supply pin per OPA2134 package × 2 packages) physically as close to the OPA2134 supply pins as possible. If they are more than 1" away from the IC, they will not effectively suppress HF noise.
 
 3. **Tank orientation:** Mount RT1 open-side down, horizontally. If mounted open-side up, the springs can shift position over time and the reverb character will drift.
 
 4. **Transformer placement:** Mount T1 as far from RT1 as the chassis allows and orient it so the transformer's toroid axis is perpendicular to the tank's spring axis. This minimizes inductive coupling between transformer and tank (which causes 60Hz hum in the reverb tail).
 
-5. **Shielding the recovery stage:** The wire from RT1's output (2550Ω side) to U2's non-inverting input (Rbias → C3 → U2) carries the most sensitive signal in the entire circuit — approximately 1–5mV. This wire must be shielded (Belden 8451) with the shield grounded at the U2 end only (not at the tank end — one-end grounding prevents a ground loop through the shield).
+5. **Shielding the recovery stage:** The wire from RT1's output (2550Ω side) to U2's non-inverting input carries the most sensitive signal in the entire circuit — approximately 1–5mV. Topology at this node: tank → C3 (series coupling cap) → U2(+) input, with Rbias (100kΩ) shunting U2(+) to GND. C3 is in series; Rbias is a shunt to ground, not in series with the signal. This wire must be shielded (Belden 8451) with the shield grounded at the U2 end only (not at the tank end — one-end grounding prevents a ground loop through the shield).
 
 6. **Phase alignment on first power-up:** Spring tank polarity varies between Accutronics batches. If the reverb sounds hollow, thin, or "phasey" when the Mix pot is at 50/50, the tank output is out of phase with the dry signal. Fix: swap the two wires at RT1's output RCA connector (the 2550Ω side). This is a 10-second wire swap — no schematic changes required.

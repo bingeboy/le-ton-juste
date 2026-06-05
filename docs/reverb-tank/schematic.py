@@ -61,7 +61,7 @@ ax.set_facecolor(BG)
 ax.text(W/2, H - 0.35, 'Ghost Spring Reverb — Signal Path Schematic',
         ha='center', va='top', fontsize=13, fontweight='bold', color=EDGE)
 ax.text(W/2, H - 0.72,
-        'Transformer-Coupled Single Spring  •  OPA2134 Solid-State  •  ±15V Linear Supply',
+        'Transformer-Coupled 3-Spring Tank  •  OPA2134 Solid-State  •  ±15V Linear Supply',
         ha='center', va='top', fontsize=8.5, color='#555555')
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -237,13 +237,13 @@ ax.add_patch(rect_psu)
 ax.text(ps_x, ps_y + psu_h/2 - 0.15, '±15V POWER SUPPLY',
         ha='center', va='top', fontsize=8, fontweight='bold', color=PWRR, zorder=4)
 psu_body = (
-    'T1  Toroidal 15VA\n'
+    'T1  Toroidal 30VA\n'
     '    2 × 15VAC output\n\n'
     'BR1  Bridge rectifier 2A\n\n'
     'U4   LM7815  →  +15V\n'
     'U5   LM7915  →  −15V\n\n'
     'C11–C12  2200µF / 50V\n'
-    'C13–C16  reg output caps'
+    'C13/C14 reg · C15/C16 bulk'
 )
 ax.text(ps_x, ps_y - 0.05, psu_body,
         ha='center', va='center', fontsize=6.8,
@@ -266,6 +266,7 @@ label(ax, 6.0, 0.6,
       size=6.5, color='#555555')
 
 plt.tight_layout(pad=0.3)
-plt.savefig('docs/reverb-tank/schematic.png', dpi=180, bbox_inches='tight',
-            facecolor=BG)
-print("Saved: docs/reverb-tank/schematic.png")
+import os as _os
+_out = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'schematic.png')
+plt.savefig(_out, dpi=180, bbox_inches='tight', facecolor=BG)
+print(f"Saved: {_out}")

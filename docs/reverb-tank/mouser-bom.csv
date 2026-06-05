@@ -11,7 +11,7 @@ Quantity,Manufacturer Part Number,Description,Customer Reference
 2,MF-R050,Bourns polyfuse 500mA hold DC rail overcurrent,F2 F3
 2,MKS2C041001B00KSSD,WIMA 1uF 63V film capacitor,C_in input coupling + C1 driver coupling
 1,MKS2C034700K00KSSD,WIMA 470nF 63V film capacitor,C3 tank output coupling
-8,MKS2C031001A00KSSD,WIMA 100nF 63V film capacitor,C4 HPF + C5-C10 op-amp supply decoupling
+10,MKS2C031001A00KSSD,WIMA 100nF 63V film capacitor,C4 HPF + C5-C8 op-amp decoupling (4 caps) + C17/C18 reg bypass + ground-lift RC (qty 10 = 8 used + 2 spare)
 1,CD15ED470JO3F,47pF silver mica capacitor,C_bright mix pot bright cap
 2,UKW1H222MHD,Nichicon UKW 2200uF 50V low-ESR electrolytic,C11 C12 main PSU filter
 3,UKW1E101MED,Nichicon UKW 100uF 25V audio grade electrolytic,C2 emitter bypass + C13 C14 reg output
@@ -28,7 +28,7 @@ Quantity,Manufacturer Part Number,Description,Customer Reference
 2,FMP100JR-52-10K,Yageo 10k 1W metal film resistor,R_bleed1 R_bleed2 PSU bleed resistors
 2,MFR-25FBF52-10R,Yageo 10R metal film resistor 1% 250mW,Ground lift RC network
 1,296UAL103B2,Vishay Spectrol 296 10k linear pot MIL-PRF-39023,RV1 Dwell
-2,296UAL104B2,Vishay Spectrol 296 100k linear pot MIL-PRF-39023,RV2 Mix + RV3 Tone
+2,PDB181-GTR01-104A0,Bourns PDB181-GTR 100k audio taper pot,RV2 Mix + RV3 Tone (audio taper — substitute 296UAL104B2 for linear)
 2,112A,Switchcraft 1/4 inch TS mono jack,J1 J2 input + output
 2,A-108-A-LPT,Assmann DIP-8 machine-pin IC socket,IC sockets for OPA2134
 8,22-01-3027,Molex KK 254 2-pin housing,Internal wire connectors (transformer secondaries + tank RCA + jacks)
@@ -42,7 +42,7 @@ Quantity,Manufacturer Part Number,Description,Customer Reference
 2,V7477X,Assmann TO-220 heatsink,LM7815 LM7915 heatsinks
 2,4880SG,Aavid TO-220 mica insulating pad,Regulator thermal isolation
 2,0218.500MXP,Littelfuse 500mA T slow-blow 5x20mm fuse,Mains fuse (1 installed + 1 spare)
-1,F-219X,Triad Magnetics toroidal transformer 15VA dual 15VAC,T1 power supply
+1,F-219X,Triad F-219X 30VA dual-primary toroidal 2x115VAC in 2x15VAC out,T1 power supply (primaries in parallel for 120VAC; secondaries in series — junction=GND — for 15-0-15 bipolar supply)
 1,T44,Vector FR4 perfboard,Audio + PSU board
 4,971100311,Wurth M3 nylon hex standoff 10mm,PCB standoffs
 10,900151030030,Wurth M3 stainless pan-head screw,Hardware
@@ -50,4 +50,5 @@ Quantity,Manufacturer Part Number,Description,Customer Reference
 1,24-6337-0027,Kester 44 solder 63/37 0.031 inch,Solder
 1,2331-ZX,Kester 951 no-clean flux pen,Flux
 1,422B,MG Chemicals 422B acrylic conformal coating spray,PCB conformal coat — apply after all testing complete
+2,34112,TE ring terminal 22-16AWG #8 stud insulated,Earth bond lugs (IEC C14 ground pin to chassis + secondary bond point)
 1,1455T2201,Hammond 2U aluminum rackmount chassis rack ears included,Chassis
