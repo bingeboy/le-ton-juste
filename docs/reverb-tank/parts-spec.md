@@ -24,7 +24,8 @@ This document lists every component with exact values, a suggested part number, 
 
 | Ref | Part | Package | Why |
 |---|---|---|---|
-| Q1 | BD139 NPN | TO-126 | High-current NPN bipolar transistor rated 1.5A / 80V. Used as the Class A driver amplifier that pushes current through T2's primary. At ~19mA quiescent current it runs well within ratings with minimal heat. The TO-126 package mounts flat to the chassis for passive heatsinking if ever needed. BD139 has high hFE linearity at low currents — critical for low distortion in the driver stage. Do not substitute a TO-92 small-signal transistor (e.g. 2N3904) — insufficient current capacity will clip drive transients and harden the reverb sound. |
+| Q1 | BD139 NPN | TO-126 | High-current NPN bipolar transistor rated 1.5A / 80V. Used as the Class A driver amplifier that pushes current through T2's primary. At ~18mA quiescent current it runs well within ratings with minimal heat. The TO-126 package mounts flat to the chassis for passive heatsinking if ever needed. BD139 has high hFE linearity at low currents — critical for low distortion in the driver stage. Do not substitute a TO-92 small-signal transistor (e.g. 2N3904) — insufficient current capacity will clip drive transients and harden the reverb sound. |
+| D3 | 1N4148 fast signal diode | Anode → Q1 collector, cathode → +15V rail | Flyback clamp across T2 primary. When Q1 current changes during audio transients, T2's primary inductance generates a voltage spike at Q1's collector. D3 conducts whenever Vc rises above +15V, clamping the spike harmlessly back into the supply rail. Same part as D_clamp+/D_clamp− (input protection) — no new BOM line, just increment the 1N4148 count to 3. |
 
 ---
 
@@ -47,15 +48,29 @@ All resistors: **metal film, 1% tolerance, 250mW** (Yageo MFR or Vishay CMF seri
 | R1 | 1MΩ | Input to U1 non-inv input | Sets the input impedance seen by the upstream device (Alesis QuadraVerb). 1MΩ places virtually zero load on the QuadraVerb output, preserving the hi-fi signal integrity of the preceding stage. |
 | R2 | 100Ω | U1 output (series) | Isolates the op-amp output from capacitive cable loads. Prevents U1 from oscillating when driving a cable to the next stage. Required on all op-amp outputs driving cable runs. |
 | R3 | 1kΩ | Dwell pot wiper → Q1 base | Limits base drive current into Q1 and damps any tendency to oscillate at high frequencies. Without this resistor, the Dwell pot wiper impedance varies with rotation, causing the driver gain to be nonlinear. |
-| R3b | 6.8kΩ | +15V → Q1 base (upper bias) | Upper leg of the BD139 base voltage divider. With R4, sets base voltage to ~1.96V, which sets emitter at ~1.3V and quiescent collector current at ~19mA. |
-| R4 | 1kΩ | Q1 base → GND (lower bias) | Lower leg of the bias divider. Value chosen so divider current (~2mA) is 10× the base current (~0.19mA), making the bias point stable against transistor hFE variation between units. |
-| R5 | 68Ω | Q1 emitter → GND | Emitter degeneration resistor. Sets quiescent current (Ic ≈ Ve/R5 ≈ 1.3V / 68Ω ≈ 19mA) and provides thermal stability — if Q1 heats up and hFE rises, the increased emitter voltage reduces Vbe, self-limiting the current. Without this resistor, the transistor will thermally run away. |
-| Ri | 470Ω | U2 inverting input (gain set) | With Rf, sets recovery gain: Gain = 1 + (Rf/Ri) = 1 + (100k/470) = 214× (≈46dB). This brings the spring tank's output (~1–5mV) up to line level (~1Vrms). Value chosen to give correct gain without making the feedback network too high-impedance (which would increase noise). |
-| Rf | 100kΩ | U2 feedback (out → inv input) | Feedback resistor that sets recovery gain with Ri. 100kΩ chosen to keep thermal noise contribution below the OPA2134's own input noise. |
+| R3b | 6.8kΩ | +15V → Q1 base (upper bias) | Upper leg of the BD139 base voltage divider. With R4, sets base voltage to ~1.92V, which sets emitter at ~1.22V and quiescent collector current at ~18mA. |
+| R4 | 1kΩ | Q1 base → GND (lower bias) | Lower leg of the bias divider. Divider current = 1.92mA; base current at hFE=100 is 0.18mA (ratio ≈ 11×). However, BD139 hFE can be as low as 40, at which base current rises to ~0.45mA and the ratio drops to ~4× — the divider alone does not fully swamp hFE variation. R5 emitter degeneration is what actually holds the operating point stable across units. Verify bias by measuring Q1 emitter voltage (should be ~1.22V), not by trusting the divider calculation. |
+| R5 | 68Ω | Q1 emitter → GND | Emitter degeneration resistor. Sets quiescent current (Ic ≈ Ve/R5 ≈ 1.22V / 68Ω ≈ 18mA) and provides thermal stability — if Q1 heats up and hFE rises, the increased emitter voltage reduces Vbe, self-limiting the current. This is the primary bias-stabilizing element; the divider (R3b/R4) provides the initial setpoint. Without this resistor, the transistor will thermally run away. |
+| Ri | 470Ω | U2 gain set — (−) pin to GND | U2 is **non-inverting**: tank signal enters the (+) input; Ri is the lower leg of the feedback divider at the (−) pin. With Rf: Gain = 1 + (Rf/Ri) = 1 + (100k/470) = 214× (≈46dB). Brings tank output (~1–5mV) to line level (~1Vrms). |
+| Rf | 100kΩ | U2 feedback — output → (−) pin | Upper leg of the non-inverting feedback divider. 100kΩ chosen to keep thermal noise contribution below the OPA2134's own input noise. |
 | R6 | 5.6kΩ | HPF node → GND | With C4 (100nF), sets the 300Hz wet-signal high-pass corner: f = 1 / (2π × 5600 × 100nF) = 284Hz ≈ 300Hz. This rolls off low-end boom in the reverb tail without affecting the dry signal path. Use 5.6kΩ exactly — 4.7kΩ pushes cutoff to 338Hz (too high), 6.8kΩ drops it to 234Hz (too low, insufficient mud rejection). |
 | Rdry | 10kΩ | Dry path → Mix node | Mixing resistor for the dry signal at the Mix pot input. Combines with the wet signal from the Tone stage. Value chosen to balance the two sources — if changed, the effective Mix pot ratio changes. |
 | R7 | 100Ω | U3 output (series) | Same role as R2 — isolates U3 from capacitive load of the output cable to the MC100. The MC100's RCA input is ~47kΩ, but the cable itself has capacitance; this resistor prevents U3 oscillation. |
-| Rbias | 470Ω | U2 non-inv input → GND | Bias current compensation for U2. The OPA2134 is FET-input so bias current is negligible (~5pA), but this resistor provides a defined DC path to ground at U2's non-inverting input. Without it, the input is floating through the tank's secondary coil, which can cause an offset voltage to build up and clip the recovery stage. |
+| Rbias | 100kΩ | U2 non-inv (+) input → GND | Sets the input impedance of the recovery stage. The standard Rbias = Rf\|\|Ri formula (which gives ~470Ω) applies to BJT op-amps with significant bias current — the OPA2134's 5pA FET input makes that formula irrelevant. With 470Ω the 2550Ω tank drives into a 470Ω load: only 15.6% of the signal transfers, reducing effective gain from 214× to 33×. At 100kΩ, signal transfer is 97.5% and the C3 coupling corner is ~3Hz (purely DC-blocking, no audio attenuation). DC offset from 5pA × 100kΩ = 500nV — inaudible. Sources from the same 100kΩ stock as Rf, no new BOM line required. |
+
+### Mix Stage Topology — Passive Blend into Voltage Follower
+
+The Mix node is a **passive resistive blend**, not an active summing network. There are no virtual-ground summing resistors here.
+
+Signal flow:
+- **Dry path:** U1 output → Rdry (10kΩ) → RV2 pin 1 (CCW terminal)
+- **Wet path:** RV3 (Tone) wiper → RV2 pin 3 (CW terminal)
+- **C_bright** (47pF silver mica) bridges RV2 pin 1 to pin 3 — adds air and treble presence on the wet signal as the pot approaches full wet
+- **RV2 wiper** (pin 2) → U3 non-inverting (+) input
+
+At full CCW (dry): wiper is at the Rdry terminal, wet signal is at the other end of the pot and fully attenuated. At full CW (wet): wiper is at the Tone output terminal, dry signal is attenuated through Rdry + pot. At center: passive blend of both paths. The 100kΩ pot value is large enough relative to Rdry (10kΩ) that the Mix pot itself contributes minimal loading to the U3 input.
+
+**U3 (output buffer):** Unity-gain voltage follower. FET input (10¹³Ω) draws negligible current from the wiper — no loading effect on the blend. Output through R7 (100Ω series) to the output jack.
 
 ---
 
@@ -67,7 +82,7 @@ All capacitors in the signal path **must be film type** (WIMA MKS2 or MKP series
 | Ref | Value | Type | Location | Why |
 |---|---|---|---|---|
 | C1 | 1µF / 63V | WIMA MKS2 film | Dwell pot input coupling | Blocks any DC offset from the input buffer output before the driver stage. Prevents DC from biasing the Dwell pot and reaching Q1's base. At 1µF with the ~10kΩ driver input impedance, the high-pass corner is ~16Hz — well below guitar fundamentals, so no bass rolloff in the reverb drive. |
-| C3 | 470nF / 63V | WIMA MKS2 film | Tank output → U2 input | Blocks DC from the tank's output terminals. The tank output coil can develop a small DC offset; this cap prevents it from reaching U2's input and causing an output DC offset that would clip the mix stage. 470nF with the ~10kΩ U2 input impedance gives a corner at ~34Hz — passes all audio frequencies. |
+| C3 | 470nF / 63V | WIMA MKS2 film | Tank output → U2 input | Blocks DC from the tank's output terminals. The tank output coil can develop a small DC offset; this cap prevents it from reaching U2's input and causing an output DC offset that would clip the mix stage. 470nF with Rbias = 100kΩ gives a corner at ~3Hz — purely DC-blocking, passes all audio frequencies without attenuation. |
 | C4 | 100nF / 63V | WIMA MKS2 film | HPF — wet signal | Sets the 300Hz wet HPF corner with R6. Film type is mandatory here — a ceramic cap would shift value with temperature, drifting the cutoff frequency. WIMA MKS2 is stable to ±5% over the full operating temperature range. |
 | C_bright | 47pF | Silver mica | Across RV2 Mix pot | Bright cap — maintains high-frequency content in the reverb tail at low mix settings. The Mix pot acts as a voltage divider at audio frequencies; at low settings it attenuates high frequencies more than low. The 47pF cap bypasses the pot for HF, keeping the reverb "glassy." Silver mica is specified for its extreme stability (±1% over temperature) and lowest possible distortion at high frequencies. Do not use ceramic disc — it will add HF distortion audible in reverb tails. |
 
@@ -84,14 +99,14 @@ All capacitors in the signal path **must be film type** (WIMA MKS2 or MKP series
 ### Op-Amp Decoupling — Bulk Electrolytic
 | Ref | Value | Type | Location | Why |
 |---|---|---|---|---|
-| C11–C12 | 10µF / 25V | Nichicon UKW | One per rail at PCB power entry | Bulk energy storage at the board level. Handles sudden current demands (e.g. when the driver stage is hit with a loud transient) without drooping the supply voltage. Works in parallel with the 100nF film caps — the 10µF handles low frequencies, 100nF handles high frequencies. |
+| C15–C16 | 10µF / 25V | Nichicon UKW | One per rail at PCB power entry | Bulk energy storage at the board level. Handles sudden current demands (e.g. when the driver stage is hit with a loud transient) without drooping the supply voltage. Works in parallel with the 100nF film caps — the 10µF handles low frequencies, 100nF handles high frequencies. |
 
 ### Power Supply Capacitors
 | Ref | Value | Type | Location | Why |
 |---|---|---|---|---|
-| C13–C14 | 2200µF / **50V** | Nichicon KW (low-ESR) | Main filter after bridge rectifier | Primary AC ripple filtering. 2200µF per rail keeps ripple below 1Vrms at 20mA load. **Upgraded from 35V to 50V rating** — the unregulated rail sits at ~21V, so 35V was 1.67× margin. 50V gives 2.4× margin. Capacitor lifespan increases significantly when operated well below rated voltage, and the cost difference is negligible. |
-| C15–C16 | 100µF / 35V | Nichicon KW | LM7815/7915 output | Regulator output stability cap. The LM78xx/79xx series requires a capacitor on the output to prevent oscillation. 100µF also provides local energy storage for the op-amp stages. |
-| C17–C18 | 100nF / 63V | WIMA MKS2 film | In parallel with C15–C16 | HF bypass on the regulator output. The electrolytic caps above are ineffective above ~100kHz; the film caps handle RF suppression and keep the supply quiet across the full audio band and beyond. |
+| C11–C12 | 2200µF / **50V** | Nichicon UKW (low-ESR) | Main filter after bridge rectifier | Primary AC ripple filtering. 2200µF per rail keeps ripple below 1Vrms at 20mA load. **Upgraded from 35V to 50V rating** — the unregulated rail sits at ~21V, so 35V was 1.67× margin. 50V gives 2.4× margin. Capacitor lifespan increases significantly when operated well below rated voltage, and the cost difference is negligible. |
+| C13–C14 | 100µF / 25V | Nichicon UKW | LM7815/7915 output | Regulator output stability cap. The LM78xx/79xx series requires a capacitor on the output to prevent oscillation. 100µF also provides local energy storage for the op-amp stages. |
+| C17–C18 | 100nF / 63V | WIMA MKS2 film | In parallel with C13–C14 | HF bypass on the regulator output. The electrolytic caps above are ineffective above ~100kHz; the film caps handle RF suppression and keep the supply quiet across the full audio band and beyond. |
 
 ---
 
@@ -103,7 +118,7 @@ Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-3902
 
 | Ref | Value | Taper | Part Number | Why |
 |---|---|---|---|---|
-| RV1 (Dwell) | 10kΩ | Linear | **Vishay/Spectrol 296UAL503B2** | Driver level control. Linear taper is electrically correct here. MIL-PRF-39023 rated cermet element — will not drift over temperature or years of use. Gold wiper ensures zero contact noise. |
+| RV1 (Dwell) | 10kΩ | Linear | **Vishay/Spectrol 296UAL103B2** | Driver level control. Linear taper is electrically correct here. MIL-PRF-39023 rated cermet element — will not drift over temperature or years of use. Gold wiper ensures zero contact noise. |
 | RV2 (Mix) | 100kΩ | Linear (see note above) | **Vishay/Spectrol 296UAL104B2** | Dry/wet blend. Cermet element rated for 10,000 cycles minimum. Gold wiper. Stainless shaft resists corrosion in rack environments. |
 | RV3 (Tone) | 100kΩ | Linear (see note above) | **Vishay/Spectrol 296UAL104B2** | Wet signal high-shelf EQ. Same part as RV2 for simplified sourcing. |
 
@@ -145,8 +160,8 @@ Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-3902
 |---|---|---|---|
 | F2 | Bourns MF-R050 | 500mA polyfuse — +15V rail | Acts like a circuit breaker on the positive DC rail. If a fault on the PCB draws more than 500mA the polyfuse trips, protecting the LM7815 and transformer. Resets automatically after cooling — no tools, no fuse replacement required. Same concept as a panel breaker. |
 | F3 | Bourns MF-R050 | 500mA polyfuse — −15V rail | Same as F2 on the negative rail. |
-| R_bleed1 | 10kΩ / 1W metal film | Across C13 (+15V filter cap) | When the unit is powered off, the filter caps hold ~21V charge. Without bleed resistors they stay charged for minutes — a shock hazard during servicing. The 10kΩ/1W resistor drains the cap in ~5 seconds. 1W rating required (P = V²/R = 441/10k = 44mW peak — 250mW standard resistor runs too hot). |
-| R_bleed2 | 10kΩ / 1W metal film | Across C14 (−15V filter cap) | Same as R_bleed1 on the negative rail. |
+| R_bleed1 | 10kΩ / 1W flameproof metal film | Across C11 (+15V filter cap) | When the unit is powered off, the filter caps hold ~21V charge. Without bleed resistors they stay charged — a shock hazard during servicing. τ = 10kΩ × 2200µF = 22s per time constant. After 5 time constants (~110s) the cap reaches <2V. **Wait at least 1–2 minutes (or measure) before servicing.** Peak power = 21²/10k = 44mW — well within 250mW rating, but 1W flameproof type is used for safety margin in a power supply application. Note: the general "no carbon film" rule applies to signal-path resistors only; the FMP100JR-52-10K is a flameproof metal film part (Yageo FMP series). |
+| R_bleed2 | 10kΩ / 1W flameproof metal film | Across C12 (−15V filter cap) | Same as R_bleed1 on the negative rail. |
 
 ### Input Protection
 
@@ -208,7 +223,7 @@ Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-3902
 
 | Item | Spec | Why |
 |---|---|---|
-| BD139 heatsink | Small TO-126 clip-on heatsink (e.g. Aavid 577002) | At 19mA quiescent the BD139 dissipates ~285mW — within its TO-126 rating but warm. A clip-on heatsink keeps the junction temperature below 50°C and prevents long-term hFE drift that would shift the bias point over years of use. |
+| BD139 heatsink | Small TO-126 clip-on heatsink (e.g. Aavid 577002) | At 18mA quiescent, Vce ≈ 15V − 1.22V = 13.78V, so dissipation ≈ 13.78V × 18mA ≈ 248mW — within the TO-126 rating but warm. A clip-on heatsink keeps the junction temperature below 50°C and prevents long-term hFE drift that would shift the bias point over years of use. |
 | LM7815 / LM7915 heatsinks | 2× TO-220 heatsink + insulating mica pad + M3 screw (e.g. Aavid 530002) | Each regulator drops ~6V at ~100mA = ~600mW dissipation. Without a heatsink they will thermally throttle and the supply voltage will sag under load. The **insulating mica pad is mandatory** — the TO-220 tab is electrically connected to the output pin; without isolation, mounting both regulators to the same chassis creates a short between +15V and −15V through the chassis. |
 
 ---

@@ -408,7 +408,7 @@
   <div class="spec-card">
     <div class="spec-row"><span class="spec-key">Spring Tank</span><span class="spec-val">Accutronics 9AB3C1B — 3-spring, long decay, 8Ω input / 2550Ω output</span></div>
     <div class="spec-row"><span class="spec-key">Driver Xfmr</span><span class="spec-val">Accutronics REB3S — dedicated spring reverb driver transformer, 8Ω secondary</span></div>
-    <div class="spec-row"><span class="spec-key">Driver Stage</span><span class="spec-val">BD139 NPN transistor (TO-126) → REB3S primary. Class A, ~19mA quiescent</span></div>
+    <div class="spec-row"><span class="spec-key">Driver Stage</span><span class="spec-val">BD139 NPN transistor (TO-126) → REB3S primary. Class A, ~18mA quiescent</span></div>
     <div class="spec-row"><span class="spec-key">Op-Amps</span><span class="spec-val">OPA2134PA throughout — input buffer, recovery preamp, output buffer</span></div>
     <div class="spec-row"><span class="spec-key">Signal Path</span><span class="spec-val">100% analog. Post-recovery 300Hz HPF on wet signal only</span></div>
     <div class="spec-row"><span class="spec-key">Controls</span><span class="spec-val">Dwell (10kΩ lin) · Mix (100kΩ lin + 47pF silver mica bright cap) · Tone (100kΩ lin)</span></div>
@@ -439,12 +439,12 @@
   → <span class="hi">Input Buffer</span>     <span class="dim">U1 OPA2134 · 1MΩ (R1) input · unity gain · R2 100Ω series output</span>
   → <span class="hi">Dwell Pot</span>       <span class="dim">RV1 10kΩ linear · C1 1µF film coupling cap · controls drive level</span>
   → <span class="hi">BD139 Driver</span>    <span class="dim">Q1 Class A · R3b 6.8k + R4 1k bias divider · R5 68Ω emitter degen
-                   C2 100µF bypass · ~19mA quiescent</span>
+                   C2 100µF bypass · ~18mA quiescent · D3 1N4148 flyback clamp</span>
   → <span class="hi">REB3S Xfmr</span>     <span class="dim">T2 primary (from Q1 collector) → 8Ω secondary</span>
   → <span class="hi">9AB3C1B Tank</span>   <span class="dim">RT1 · 3 springs · long decay · 8Ω input / 2550Ω output</span>
   → <span class="hi">C3 Coupling</span>     <span class="dim">470nF film · blocks DC from tank output terminals</span>
-  → <span class="hi">Recovery Preamp</span> <span class="dim">U2 OPA2134 · inverting · Ri=470Ω / Rf=100kΩ → gain=214× (~46dB)
-                   Rbias=470Ω at non-inv input · 1–5mV → ~1Vrms</span>
+  → <span class="hi">Recovery Preamp</span> <span class="dim">U2 OPA2134 · non-inverting · tank → (+) input · Ri=470Ω / Rf=100kΩ → gain=214× (~46dB)
+                   Rbias=100kΩ at (+) input to GND · 1–5mV → ~1Vrms</span>
   → <span class="hi">300Hz Wet HPF</span>  <span class="dim">C4 100nF film + R6 5.6kΩ · f = 1/(2π×5600×100n) ≈ 284Hz
                    wet signal only — dry path bypasses this stage</span>
   → <span class="hi">Tone Pot</span>        <span class="dim">RV3 100kΩ · high-shelf on wet signal only</span>
@@ -505,7 +505,7 @@
   <p>R5 (68Ω emitter resistor) provides thermal stability and sets quiescent current. Without C2, R5 degenerates the BD139's gain at audio frequencies — the spring is underdriven and loses high-frequency drive. C2 (100µF low-ESR Nichicon) bypasses R5 at audio frequencies, restoring full gain while keeping the DC stability of R5 intact.</p>
 
   <h4>Recovery Gain — 214× (46dB)</h4>
-  <p>The spring tank's output is 1–5mV. Line level is ~1Vrms. The recovery preamp (U2 OPA2134 in inverting configuration) brings the signal up to line level with Ri=470Ω / Rf=100kΩ → gain = 1 + (100k/470) = 214×. This is not unusual — spring tanks are low-output transducers, and this gain is normal for the stage.</p>
+  <p>The spring tank's output is 1–5mV. Line level is ~1Vrms. The recovery preamp (U2 OPA2134 in non-inverting configuration) brings the signal up to line level: tank signal enters the (+) input, Rbias (470Ω) holds the (+) input to GND for DC stability, Ri (470Ω) and Rf (100kΩ) form the feedback divider at the (−) pin → gain = 1 + (100k/470) = 214×. This is not unusual — spring tanks are low-output transducers, and this gain is normal for the stage.</p>
 </section>
 
 <!-- ── COMPONENT RATIONALE ── -->
@@ -530,7 +530,7 @@
   </div>
 
   <h4>Transistor — BD139 (TO-126)</h4>
-  <p>High-current NPN bipolar rated 1.5A / 80V. At 19mA quiescent current it runs well within ratings with negligible heat. The TO-126 package mounts flat against the chassis for passive heatsinking if needed. BD139 has excellent hFE linearity at low currents — critical for low distortion in the driver stage.</p>
+  <p>High-current NPN bipolar rated 1.5A / 80V. At 18mA quiescent current it runs well within ratings with negligible heat. The TO-126 package mounts flat against the chassis for passive heatsinking if needed. BD139 has excellent hFE linearity at low currents — critical for low distortion in the driver stage.</p>
 
   <div class="warn">
     <div class="warn-title">Do not substitute</div>
@@ -545,13 +545,13 @@
     <table>
       <tr><th>Ref</th><th>Value</th><th>Function</th><th>Why This Value</th></tr>
       <tr><td>R1</td><td>1MΩ</td><td>Input impedance</td><td>Negligible load on upstream device. High-Z input.</td></tr>
-      <tr><td>R3b</td><td>6.8kΩ</td><td>Upper bias divider</td><td>Sets base voltage to ~1.96V → Vc~1.3V → Ic~19mA</td></tr>
-      <tr><td>R4</td><td>1kΩ</td><td>Lower bias divider</td><td>Divider current (~2mA) = 10× base current → bias stable vs. hFE variation</td></tr>
-      <tr><td>R5</td><td>68Ω</td><td>Emitter degeneration</td><td>Ic = Ve/R5 = 1.3V/68Ω ≈ 19mA. Thermal runaway protection.</td></tr>
-      <tr><td>Ri</td><td>470Ω</td><td>Recovery gain (inverting input)</td><td>Gain = 1+(Rf/Ri) = 1+(100k/470) = 214× ≈ 46dB</td></tr>
+      <tr><td>R3b</td><td>6.8kΩ</td><td>Upper bias divider</td><td>Sets base voltage to ~1.92V → Ve~1.22V → Ic~18mA</td></tr>
+      <tr><td>R4</td><td>1kΩ</td><td>Lower bias divider</td><td>Divider current ~1.92mA. R5 emitter degeneration is the actual bias-stabilizing element — verify by measuring Ve ≈ 1.22V, not the divider math.</td></tr>
+      <tr><td>R5</td><td>68Ω</td><td>Emitter degeneration</td><td>Ic = Ve/R5 = 1.22V/68Ω ≈ 18mA. Primary bias stability and thermal runaway protection.</td></tr>
+      <tr><td>Ri</td><td>470Ω</td><td>Gain set — (−) pin to GND</td><td>Gain = 1+(Rf/Ri) = 1+(100k/470) = 214× ≈ 46dB. Tank signal enters (+) pin; Ri forms the lower leg of the feedback divider at the (−) pin.</td></tr>
       <tr><td>Rf</td><td>100kΩ</td><td>Recovery gain (feedback)</td><td>100kΩ keeps thermal noise below OPA2134's own input noise</td></tr>
       <tr><td>R6</td><td>5.6kΩ</td><td>HPF corner</td><td>f = 1/(2π×5600×100n) = 284Hz. Use exactly 5.6kΩ.</td></tr>
-      <tr><td>Rbias</td><td>470Ω</td><td>U2 non-inv DC path</td><td>Prevents floating input from developing offset → recovery stage clip</td></tr>
+      <tr><td>Rbias</td><td>100kΩ</td><td>U2 non-inv (+) input → GND</td><td>Sets recovery stage input impedance. 100kΩ ensures 97.5% signal transfer from the 2550Ω tank (470Ω would lose 84%). Sources from same 100kΩ stock as Rf — no extra BOM line.</td></tr>
     </table>
   </div>
 
@@ -565,7 +565,7 @@
     <table>
       <tr><th>Ref</th><th>Value</th><th>Type</th><th>Why</th></tr>
       <tr><td>C1</td><td>1µF/63V</td><td>WIMA MKS2 film</td><td>Coupling before driver. HPF corner = 1/(2π×1µ×10k) = 16Hz — well below guitar fundamentals.</td></tr>
-      <tr><td>C3</td><td>470nF/63V</td><td>WIMA MKS2 film</td><td>Tank output coupling. Blocks DC offset from tank terminals. Corner at 34Hz with U2 input impedance.</td></tr>
+      <tr><td>C3</td><td>470nF/63V</td><td>WIMA MKS2 film</td><td>Tank output coupling. Blocks DC offset from tank terminals. Corner at ~3Hz with Rbias = 100kΩ — purely DC-blocking, no audio attenuation.</td></tr>
       <tr><td>C4</td><td>100nF/63V</td><td>WIMA MKS2 film</td><td>300Hz HPF with R6. Must be film — ceramic drifts with temperature, shifting the cutoff.</td></tr>
       <tr><td>C_bright</td><td>47pF</td><td>Silver mica</td><td>Bright cap across Mix pot. Silver mica ±1% stability, lowest HF distortion. Do not use ceramic disc.</td></tr>
       <tr><td>C2</td><td>100µF/25V</td><td>Nichicon UKW audio grade</td><td>Emitter bypass. Low-ESR is critical — high-ESR cap won't bypass R5 at high audio frequencies.</td></tr>
@@ -589,7 +589,7 @@
 
   <div class="spec-card">
     <div class="spec-row"><span class="spec-key">Topology</span><span class="spec-val">Non-inverting voltage follower (gain = 1×). Output connected to inverting input.</span></div>
-    <div class="spec-row"><span class="spec-key">Input Z</span><span class="spec-val">~1MΩ (R1 at non-inv input) — does not load the Mix pot</span></div>
+    <div class="spec-row"><span class="spec-key">Input Z</span><span class="spec-val">FET input (10¹³Ω) — negligible load on the Mix pot wiper</span></div>
     <div class="spec-row"><span class="spec-key">Output Z</span><span class="spec-val">&lt;1Ω at audio frequencies (op-amp closed-loop). Effectively zero.</span></div>
     <div class="spec-row"><span class="spec-key">Series R</span><span class="spec-val">R7 100Ω — short-circuit protection; prevents oscillation into capacitive cable loads</span></div>
     <div class="spec-row"><span class="spec-key">Bandwidth</span><span class="spec-val">&gt;100kHz — well beyond audio</span></div>
@@ -599,7 +599,6 @@
   <h4>MC100 Interface</h4>
   <ul>
     <li>MC100 has RCA unbalanced inputs with ~100kΩ input impedance</li>
-    <li>Use a high-quality 1/4" TS to RCA cable, or install an RCA jack on the reverb unit's rear panel</li>
     <li>Keep cable under 6ft to minimize hum pickup — the output buffer makes the signal robust to cable capacitance, but length still matters for shielding</li>
     <li>If hum is present after all grounding steps, a ground-lift switch (10Ω resistor + 100nF cap between audio ground and chassis) can help</li>
   </ul>
@@ -615,8 +614,8 @@
     <table>
       <tr><th>Stage</th><th>Part</th><th>Why</th></tr>
       <tr><td>Transformer</td><td>Triad F-219X, 15VA dual 15VAC toroidal</td><td>Toroidal has ~10× lower magnetic field leakage than E-I laminate. Critical — the spring tank is a sensitive magnetic transducer and will pick up 60Hz hum from a nearby transformer. Keep transformer as far from the tank as the chassis allows.</td></tr>
-      <tr><td>Rectifier</td><td>W02G bridge, 1A/200V</td><td>200V is derated 2× from the 42V peak. Reliable, conservative rating.</td></tr>
-      <tr><td>Filter</td><td>2× 2200µF/35V Nichicon KW low-ESR</td><td>Ripple stays below 1Vrms at 20mA load. Low-ESR minimizes heat and maintains regulation.</td></tr>
+      <tr><td>Rectifier</td><td>W04G bridge, 2A/400V</td><td>400V is derated 10× from the 42V peak. 2A rating gives 4× headroom over typical load — reliable even with inrush.</td></tr>
+      <tr><td>Filter</td><td>2× 2200µF/50V Nichicon UKW low-ESR</td><td>Ripple stays below 1Vrms at 20mA load. 50V rated for headroom against any transients. Low-ESR minimizes heat and maintains regulation.</td></tr>
       <tr><td>+15V Reg</td><td>LM7815CT (TO-220)</td><td>Linear regulation = zero switching noise. Switching regulators inject kHz noise that passes through op-amp power supply rejection. LM7815 is proven and inexpensive.</td></tr>
       <tr><td>−15V Reg</td><td>LM7915CT (TO-220)</td><td>Same rationale. Provides negative rail for op-amp negative supply pins.</td></tr>
       <tr><td>Reg output caps</td><td>2× 100µF/25V + 2× 100nF film</td><td>Electrolytic for stability per LM78xx/79xx datasheet; film in parallel for HF suppression above ~100kHz.</td></tr>
@@ -674,7 +673,7 @@
       <tr><th>Connector</th><th>Type</th><th>Notes</th></tr>
       <tr><td>Input</td><td>Switchcraft 112A ¼" TS</td><td>From Lehle Parallel M output (future state) or directly from Alembic FX-1</td></tr>
       <tr><td>Output</td><td>Switchcraft 112A ¼" TS</td><td>To McIntosh MC100 RCA input (with 1/4" TS → RCA adapter cable)</td></tr>
-      <tr><td>IEC Power</td><td>Schurter 4301.0527 (IEC C14 + fuse holder)</td><td>500mA slow-blow fuse. Slow-blow is essential — inrush current at power-on blows fast-blow fuses.</td></tr>
+      <tr><td>IEC Power</td><td>Schurter 5110.1052 (EMI-filtered IEC C14 + fuse holder)</td><td>500mA slow-blow fuse. Integrated EMI filter suppresses mains-borne noise before it reaches the transformer. Slow-blow essential — inrush current at power-on blows fast-blow fuses.</td></tr>
       <tr><td>Power Switch</td><td>TE 1825232-1 SPST rocker, 6A/250V</td><td>Interrupts mains before transformer primary</td></tr>
     </table>
   </div>
@@ -710,8 +709,49 @@
   <h4>PCB — Vector T44 FR4 Perfboard</h4>
   <p>FR4 fibreglass is mandatory. The cheaper brown phenolic perfboard absorbs moisture and increases leakage current between pads — at the recovery stage gain of 214× this manifests as audible noise. Use 4× M3 nylon hex standoffs (not metal) to mount the board — metal standoffs can accidentally create a second chassis ground connection.</p>
 
+  <h4>Build Sequence</h4>
+  <p>Build in this order to make each stage testable before adding the next:</p>
+  <ol>
+    <li><strong>PSU first.</strong> Install T1, BR1, NTC1, C11/C12, U4, U5, reg output caps (C13/C14 100µF + C5–C10 100nF). Power up with a variac or current-limited bench supply if available. Measure: +15V at U4 output pin, −15V at U5 output pin, &lt;50mV ripple on each rail. <em>Do not proceed until both rails are correct.</em></li>
+    <li><strong>Input stage.</strong> Install R1 (1MΩ), C_in (1µF), D_clamp+/D_clamp− (1N4148 pair), TVS1 (SMBJ15CA), U1 (input buffer OPA2134). Inject a 1kHz sine at −20dBV. Scope at U1 output: clean sine, no clipping, gain ≈1.</li>
+    <li><strong>Driver stage.</strong> Install Q1 (BD139), R3/R3b/R4 (bias network), R5 (emitter), C1 (1µF coupling), C2 (100µF bypass), D3 (flyback clamp), T2 (REB3S driver transformer). Connect the tank's 8Ω input side. Scope at T2 primary: sinusoidal drive signal, no ringing or DC offset. Measure Q1 <em>emitter</em> DC: should be ~1.22V at zero signal (Ic ≈ 18mA through R5). The collector will read ≈ +15V — T2's transformer primary is a near-DC short to the rail, so Vce ≈ 13.8V drops across the transistor itself, not a load resistor. Do not expect a mid-rail reading at the collector.</li>
+    <li><strong>Tank output and recovery.</strong> Install C3 (470nF), Rbias (100kΩ), Ri (470Ω), Rf (100kΩ), U2 (recovery OPA2134). Connect the tank's 2550Ω output side. Tap the spring with a finger — you should hear a reverb impulse at U2's output. Scope gain at U2 output vs. U2 (+) input: should be ≈214×.</li>
+    <li><strong>HPF and tone.</strong> Install R6 (5.6kΩ), C4 (100nF), RV3 (Tone pot). Verify HPF corner is ~300Hz by sweeping a function generator — signal below 300Hz should attenuate; above 300Hz passes flat.</li>
+    <li><strong>Mix and output buffer.</strong> Install Rdry (10kΩ), C_bright (47pF), RV2 (Mix pot), U3 (output buffer OPA2134), R7 (100Ω isolation). Connect input jack J1 and output jack J2. Sweep Mix pot: CCW = dry only, CW = wet only, mid = blend.</li>
+    <li><strong>Front-panel pots and wiring.</strong> Install RV1 (Dwell), connect Molex KK housings to all panel pots and jacks. Retest full signal chain end-to-end with guitar signal.</li>
+    <li><strong>Chassis install, grounding, and final checks.</strong> Mount PCB on standoffs, connect star ground, install IEC inlet, fuse, rocker switch, ground lift switch. Check: no hum at idle, Dwell changes reverb density, Mix blends correctly, Tone brightens wet signal. Run for 30 minutes; check that regulators are warm but not hot (&lt;60°C case temp).</li>
+  </ol>
+
+  <h4>Test Points Summary</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Test Point</th><th>Expected</th><th>Fault if wrong</th></tr>
+      <tr><td>U4 output pin</td><td>+15.0V ±0.5V DC</td><td>Regulator or rectifier issue</td></tr>
+      <tr><td>U5 output pin</td><td>−15.0V ±0.5V DC</td><td>Regulator or rectifier issue</td></tr>
+      <tr><td>PSU rails ripple</td><td>&lt;50mV p-p at idle</td><td>Filter cap ESR or wiring issue</td></tr>
+      <tr><td>Q1 emitter (no signal)</td><td>~1.22V DC</td><td>Bias resistors (R3b/R4/R5) or BD139 fault — this is the correct node to measure for bias verification</td></tr>
+      <tr><td>Q1 collector (no signal)</td><td>≈ +15V DC</td><td>T2 primary is near-DC short to rail — a reading well below +15V means T2 is open or Q1 is saturated</td></tr>
+      <tr><td>U2 (+) input (signal)</td><td>1–5mV at normal playing level</td><td>Tank not driven, C3 open, or Rbias fault</td></tr>
+      <tr><td>U2 output (signal)</td><td>~200–1000mV at normal playing level</td><td>Op-amp fault, Ri/Rf values wrong</td></tr>
+      <tr><td>U3 output (idle)</td><td>&lt;5mV DC offset</td><td>DC offset from upstream; check Rbias and Ri</td></tr>
+      <tr><td>Chassis ground to star point</td><td>0Ω</td><td>Ground lift switch in wrong position, or open connection</td></tr>
+    </table>
+  </div>
+
   <h4>Phase Alignment — First Power-Up Check</h4>
-  <p>Spring tank polarity varies between Accutronics batches. If the reverb sounds hollow, thin, or "phasey" when mixed in at 50/50, the tank output is out of phase with the dry signal. Fix: swap the two wires at the tank's output RCA connector (the 2550Ω side). No design change needed — this is a 10-second wire swap on first commissioning.</p>
+  <p>Spring tank polarity varies between Accutronics batches. If the reverb sounds hollow, thin, or "phasey" when mixed in at 50/50, the tank output is out of phase with the dry signal. Fix: on the <strong>output</strong> Molex KK connector at the tank's 2550Ω side (the RCA that goes to U2's input), swap the two wires. The input connector (8Ω driver side) is not involved. No design change needed — this is a 10-second wire swap on first commissioning.</p>
+
+  <h4>Conformal Coating</h4>
+  <p>After all testing is complete and the build is verified, apply MG Chemicals 422B acrylic conformal coating spray to the PCB to protect against humidity and oxidation over time. <strong>Mask or skip the following before spraying — coating these will cause problems:</strong></p>
+  <ul>
+    <li><strong>IC sockets</strong> — coating wicks into the socket contacts and prevents chip insertion/removal</li>
+    <li><strong>Potentiometer shafts and bodies</strong> — coating seizes the mechanism</li>
+    <li><strong>Molex KK connectors</strong> — coating bonds the housing and prevents disconnection for service</li>
+    <li><strong>Heatsink faces</strong> (the face that contacts the mica pad) — coating is an insulator and will impede thermal transfer to the chassis</li>
+    <li><strong>Fuse holder contacts</strong> — coating makes fuse replacement impossible</li>
+    <li><strong>Any test points you want to stay accessible</strong></li>
+  </ul>
+  <p>Apply in two thin coats, allowing full dry time between coats. Hold the can 8–12" away and use short strokes — thick single-pass coats pool and crack.</p>
 
   <h4>Solder</h4>
   <p>Kester 44, 63/37 tin/lead, 0.031". Kester 44 is the standard for hand-soldered audio. 63/37 eutectic alloy — snaps solid with no mushy semi-solid phase, reducing cold joints. 0.031" diameter is correct for through-hole perfboard work. Do not use lead-free — higher melting point increases heat stress on sensitive components and produces higher-resistance joints.</p>

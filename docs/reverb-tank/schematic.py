@@ -140,6 +140,16 @@ ax.plot(xs[2] + 0.1, Y1 + BH/2 + 0.08, '^', ms=6, color=PWRR, zorder=5)
 label(ax, xs[3] + 0.1, Y1 + BH/2 + 0.18, '+15V', color=PWRR, size=6.5)
 ax.plot(xs[3] + 0.1, Y1 + BH/2 + 0.08, '^', ms=6, color=PWRR, zorder=5)
 
+# D3: flyback clamp diode — anode at Q1 collector junction, cathode to +15V
+# Drawn between driver stage and transformer
+d3_x = (xs[2] + xs[3]) / 2 + 0.1
+d3_y = Y1 - BH/2 - 0.28
+ax.plot([d3_x - 0.18, d3_x + 0.18], [d3_y, d3_y], color=PWRR, lw=1.0, zorder=4)
+ax.plot([d3_x, d3_x], [d3_y, d3_y + 0.18], color=PWRR, lw=0.8, ls='--', zorder=4)
+ax.plot(d3_x, d3_y + 0.18, '^', ms=5, color=PWRR, zorder=5)
+label(ax, d3_x, d3_y - 0.18, 'D3  1N4148\nflyback clamp\nanode→collector  cathode→+15V',
+      color=PWRR, size=5.8)
+
 # ═════════════════════════════════════════════════════════════════════════════
 # BOTTOM ROW  (Y2)  —  Tank out → Recovery → HPF → Tone → Mix → Output
 # ═════════════════════════════════════════════════════════════════════════════
@@ -153,7 +163,7 @@ label(ax, tank_x + tank_w/2 + 0.35, (Y1 + Y2)/2, '2550Ω\nout', color=WET, size=
 # ── U2: Recovery Preamp ───────────────────────────────────────────────────────
 box(ax, xs2[1], Y2, BW + 0.1, BH + 0.2,
     'U2  OPA2134',
-    'Recovery Preamp\nGain × 214  (~46 dB)\nRi 470Ω   Rf 100kΩ\nC3 470nF coupling',
+    'Recovery Preamp  (non-inverting)\nGain = 1+Rf/Ri = 214×  (~46 dB)\nRi 470Ω   Rf 100kΩ\nC3 470nF  Rbias 100kΩ',
     color='#EAFAF1')
 wire(ax, tank_x + tank_w/2 - 0.1, Y2, xs2[1] + BW/2 + 0.05, Y2, color=WET)
 label(ax, (tank_x + tank_w/2 + xs2[1])/2 + 0.1, Y2 + 0.22,
@@ -229,11 +239,11 @@ ax.text(ps_x, ps_y + psu_h/2 - 0.15, '±15V POWER SUPPLY',
 psu_body = (
     'T1  Toroidal 15VA\n'
     '    2 × 15VAC output\n\n'
-    'BR1  Bridge rectifier 1A\n\n'
+    'BR1  Bridge rectifier 2A\n\n'
     'U4   LM7815  →  +15V\n'
     'U5   LM7915  →  −15V\n\n'
-    'C5–C6   2200µF / 35V\n'
-    'C7–C8   100nF bypass'
+    'C11–C12  2200µF / 50V\n'
+    'C13–C16  reg output caps'
 )
 ax.text(ps_x, ps_y - 0.05, psu_body,
         ha='center', va='center', fontsize=6.8,
