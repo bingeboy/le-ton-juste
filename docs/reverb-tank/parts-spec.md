@@ -89,7 +89,7 @@ All capacitors in the signal path **must be film type** (WIMA MKS2 or MKP series
 ### Signal Path — Electrolytic
 | Ref | Value | Type | Location | Why |
 |---|---|---|---|---|
-| C2 | 100µF / 25V | Nichicon UKW (low-ESR audio grade) | Q1 emitter bypass | Bypasses R5 at audio frequencies, allowing full AC gain from the driver stage. Without this cap, R5 provides heavy degeneration at audio frequencies and the spring tank is underdriven. Low-ESR audio grade is specified because a high-ESR cap will not effectively bypass R5 at high audio frequencies — the driver's HF response will roll off early, losing the "air" in the reverb sound. |
+| C2 | 100µF / 25V | Nichicon UKW (low-ESR audio grade) | Q1 emitter bypass | Bypasses R5 at audio frequencies, allowing full AC gain from the driver stage. Without this cap, R5 provides heavy degeneration at audio frequencies and the spring tank is underdriven. Low-ESR audio grade is specified because a high-ESR cap will not effectively bypass R5 at high audio frequencies — the driver's HF response will roll off early, losing the "air" in the reverb sound. 25V voltage rating is appropriate: C2 sits at Q1's emitter (~1.22V), not on a supply rail, and never sees unregulated transients. |
 
 ### Op-Amp Decoupling — Film
 | Ref | Value | Type | Location | Why |
@@ -114,7 +114,7 @@ All capacitors in the signal path **must be film type** (WIMA MKS2 or MKP series
 
 Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-39023 rated construction, gold-plated wiper, stainless shaft, rated to 10,000+ cycles minimum. Far beyond the Alpha consumer pots originally specced.
 
-**Note on taper:** True MIL-SPEC pots are only certified in linear taper. RV1 (Dwell) is correctly linear. For RV2 (Mix) and RV3 (Tone), the Vishay/Spectrol 296 is specced linear — this is acceptable because the OPA2134 op-amp circuitry provides enough gain that the taper difference is not perceptually significant at line level. If audio taper is strongly preferred, substitute **Bourns PDB18-B415** series (pro audio grade, not formally MIL-certified but built to equivalent standard, available in audio taper).
+**Note on taper:** For RV2 (Mix) and RV3 (Tone), **audio taper is the recommended choice**. A 100kΩ linear Mix pot in a passive blend with a 10kΩ dry resistor will feel cramped — most of the useful range is compressed into a narrow arc of rotation. Recommended: **Bourns PDB18-B415** (pro audio grade, available in audio taper, built to equivalent standard). RV1 (Dwell) is correctly linear. The Vishay/Spectrol 296 in linear taper is the only MIL-PRF-39023-certified option and will work electrically, but will not feel as natural on Mix and Tone.
 
 | Ref | Value | Taper | Part Number | Why |
 |---|---|---|---|---|
@@ -277,6 +277,6 @@ Standard item — available on Amazon, Mouser, or any hardware supplier. Search 
 
 4. **Transformer placement:** Mount T1 as far from RT1 as the chassis allows and orient it so the transformer's toroid axis is perpendicular to the tank's spring axis. This minimizes inductive coupling between transformer and tank (which causes 60Hz hum in the reverb tail).
 
-5. **Shielding the recovery stage:** The wire from RT1's output (2550Ω side) to U2's non-inverting input (Rbias → C3 → U2) carries the most sensitive signal in the entire circuit — approximately 1–5mV. This wire must be shielded (Belden 8451) with the shield grounded at the U2 end only (not at the tank end — one-end grounding prevents a ground loop through the shield).
+5. **Shielding the recovery stage:** The wire from RT1's output (2550Ω side) to U2's non-inverting input carries the most sensitive signal in the entire circuit — approximately 1–5mV. Topology at this node: tank → C3 (series coupling cap) → U2(+) input, with Rbias (100kΩ) shunting U2(+) to GND. C3 is in series; Rbias is a shunt to ground, not in series with the signal. This wire must be shielded (Belden 8451) with the shield grounded at the U2 end only (not at the tank end — one-end grounding prevents a ground loop through the shield).
 
 6. **Phase alignment on first power-up:** Spring tank polarity varies between Accutronics batches. If the reverb sounds hollow, thin, or "phasey" when the Mix pot is at 50/50, the tank output is out of phase with the dry signal. Fix: swap the two wires at RT1's output RCA connector (the 2550Ω side). This is a 10-second wire swap — no schematic changes required.

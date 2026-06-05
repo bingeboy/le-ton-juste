@@ -425,7 +425,7 @@
   <h3>Circuit Diagram</h3>
   <div class="schematic-wrap">
     <img src="docs/reverb-tank/schematic.png" alt="Ghost Spring Tank circuit schematic — full signal path from input buffer through BD139 driver, REB3S transformer, 9AB3C1B spring tank, recovery preamp, HPF, Mix/Tone controls, and output buffer">
-    <p class="schematic-caption">Generated from schematic.py — see <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/schematic.py" target="_blank">schematic.py on GitHub</a></p>
+    <p class="schematic-caption">Generated from schematic.py — see <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/schematic.py" target="_blank">schematic.py on GitHub</a>. Signal-path schematic only — protection components (MOV, NTC inrush limiter, polyfuses, input TVS and clamp diodes) are not depicted. See the <a href="parts.html">Parts &amp; Ordering</a> page for the full protection component list.</p>
   </div>
 </section>
 
@@ -473,7 +473,7 @@
   <p>Three springs give a denser, more uniform reverb tail than two-spring tanks. Two-spring designs can produce a metallic "ping" on hard attacks because the two resonant modes are more distinct. Three springs blend into a closer-to-continuous reverb tail — the same reason the original Fender 6G15 and most boutique spring reverbs use 3-spring tanks.</p>
 
   <div class="spec-card">
-    <div class="spec-row"><span class="spec-key">Model code</span><span class="spec-val">9AB3C1B — 9" long tank, A-type spring (long decay), B=3-spring, C=output type, 1=medium resistance, B=medium resistance</span></div>
+    <div class="spec-row"><span class="spec-key">Model code</span><span class="spec-val">9AB3C1B — 3-spring long-decay tank, 8Ω input / 2550Ω output (refer to Accutronics tank catalog for full code decode)</span></div>
     <div class="spec-row"><span class="spec-key">Input Z</span><span class="spec-val">8Ω — matches REB3S secondary directly, no impedance mismatch</span></div>
     <div class="spec-row"><span class="spec-key">Output Z</span><span class="spec-val">2550Ω — requires high-impedance input at U2 recovery stage (OPA2134 FET input: 10¹³Ω)</span></div>
     <div class="spec-row"><span class="spec-key">Decay</span><span class="spec-val">Long — the "A" type. This is the sustained ambient tail Jerry Garcia's clean tone requires at slow tempos.</span></div>
@@ -505,7 +505,7 @@
   <p>R5 (68Ω emitter resistor) provides thermal stability and sets quiescent current. Without C2, R5 degenerates the BD139's gain at audio frequencies — the spring is underdriven and loses high-frequency drive. C2 (100µF low-ESR Nichicon) bypasses R5 at audio frequencies, restoring full gain while keeping the DC stability of R5 intact.</p>
 
   <h4>Recovery Gain — 214× (46dB)</h4>
-  <p>The spring tank's output is 1–5mV. Line level is ~1Vrms. The recovery preamp (U2 OPA2134 in non-inverting configuration) brings the signal up to line level: tank signal enters the (+) input, Rbias (470Ω) holds the (+) input to GND for DC stability, Ri (470Ω) and Rf (100kΩ) form the feedback divider at the (−) pin → gain = 1 + (100k/470) = 214×. This is not unusual — spring tanks are low-output transducers, and this gain is normal for the stage.</p>
+  <p>The spring tank's output is 1–5mV. Line level is ~1Vrms. The recovery preamp (U2 OPA2134 in non-inverting configuration) brings the signal up to line level: tank signal enters the (+) input via C3 (series coupling cap); Rbias (100kΩ) shunts the (+) input to GND for DC stability; Ri (470Ω) and Rf (100kΩ) form the feedback divider at the (−) pin → gain = 1 + (100k/470) = 214×. This is not unusual — spring tanks are low-output transducers, and this gain is normal for the stage.</p>
 </section>
 
 <!-- ── COMPONENT RATIONALE ── -->
@@ -577,7 +577,7 @@
   <p>Military-grade cermet element, gold-plated wiper, stainless shaft, rated 10,000+ cycles. These are overkill for a guitar rig but they will outlast everything else in the build and will never develop contact noise.</p>
 
   <div class="info">
-    <p><strong>Note on taper:</strong> MIL-SPEC pots are only certified in linear taper. Dwell (RV1) is correctly linear. Mix (RV2) and Tone (RV3) are linear as well — acceptable at line level. If audio taper is strongly preferred, substitute Bourns PDB18-B415 (pro audio grade, audio taper available).</p>
+    <p><strong>Note on taper:</strong> For Mix (RV2) and Tone (RV3), <strong>audio taper is the recommended choice</strong> — a 100kΩ linear Mix pot in a passive blend with a 10kΩ dry resistor will feel cramped, with most of the usable range in a narrow arc of rotation. Recommended substitute: <strong>Bourns PDB18-B415</strong> (pro audio grade, available in audio taper, built to equivalent standard as the Vishay/Spectrol). Dwell (RV1) is correctly linear. If MIL-PRF-39023 certification is a hard requirement for all pots, the Vishay/Spectrol 296 linear taper is the only MIL-certified option and will work — it just won't feel as natural on Mix and Tone.</p>
   </div>
 </section>
 
@@ -703,6 +703,7 @@
       <li><strong>Tank orientation: open-side down.</strong> Mount the 9AB3C1B horizontally with the open side (where you can see the springs) facing down. Springs hang below the transducers. If mounted open-side up, springs shift over years and reverb character drifts unpredictably.</li>
       <li><strong>Transformer placement and orientation.</strong> Mount the Triad F-219X as far from the spring tank as the chassis allows. Orient it so the transformer's toroid axis is perpendicular to the tank's spring axis. This minimizes inductive coupling (60Hz hum in the reverb tail).</li>
       <li><strong>Shield the recovery wire.</strong> The wire from the tank's output (2550Ω side, RCA connector) to U2's non-inverting input is the most sensitive signal in the circuit — 1–5mV. Use Belden 8451 shielded cable. Ground the shield at the U2 end only (not the tank end) — one-end grounding prevents a shield ground loop that would induce 60Hz hum directly into the recovery stage.</li>
+      <li><strong>Protective earth: green/yellow wire, star washer.</strong> The IEC C14 inlet earth pin must be bonded directly to the chassis with green/yellow wire. Use a star washer under the lug to cut through any anodizing on the aluminum and ensure a solid metal-to-metal connection. This is a safety earth, not a signal ground — it connects to the chassis, not the audio star ground point. Do not omit it.</li>
     </ol>
   </div>
 
