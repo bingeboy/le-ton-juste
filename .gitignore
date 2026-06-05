@@ -4,3 +4,9 @@ Thumbs.db
 *.log
 node_modules/
 .env
+
+# LTspice simulation artifacts
+docs/reverb-tank/ghost_spring.net
+docs/reverb-tank/ghost_spring.raw
+docs/reverb-tank/__pycache__/
+screens/
