@@ -242,8 +242,8 @@ psu_body = (
     'BR1  Bridge rectifier 2A\n\n'
     'U4   LM7815  →  +15V\n'
     'U5   LM7915  →  −15V\n\n'
-    'C5–C6   2200µF / 50V\n'
-    'C7–C8   100nF bypass'
+    'C11–C12  2200µF / 50V\n'
+    'C13–C16  reg output caps'
 )
 ax.text(ps_x, ps_y - 0.05, psu_body,
         ha='center', va='center', fontsize=6.8,

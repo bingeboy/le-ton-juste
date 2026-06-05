@@ -408,7 +408,7 @@
   <div class="spec-card">
     <div class="spec-row"><span class="spec-key">Spring Tank</span><span class="spec-val">Accutronics 9AB3C1B — 3-spring, long decay, 8Ω input / 2550Ω output</span></div>
     <div class="spec-row"><span class="spec-key">Driver Xfmr</span><span class="spec-val">Accutronics REB3S — dedicated spring reverb driver transformer, 8Ω secondary</span></div>
-    <div class="spec-row"><span class="spec-key">Driver Stage</span><span class="spec-val">BD139 NPN transistor (TO-126) → REB3S primary. Class A, ~19mA quiescent</span></div>
+    <div class="spec-row"><span class="spec-key">Driver Stage</span><span class="spec-val">BD139 NPN transistor (TO-126) → REB3S primary. Class A, ~18mA quiescent</span></div>
     <div class="spec-row"><span class="spec-key">Op-Amps</span><span class="spec-val">OPA2134PA throughout — input buffer, recovery preamp, output buffer</span></div>
     <div class="spec-row"><span class="spec-key">Signal Path</span><span class="spec-val">100% analog. Post-recovery 300Hz HPF on wet signal only</span></div>
     <div class="spec-row"><span class="spec-key">Controls</span><span class="spec-val">Dwell (10kΩ lin) · Mix (100kΩ lin + 47pF silver mica bright cap) · Tone (100kΩ lin)</span></div>
@@ -439,7 +439,7 @@
   → <span class="hi">Input Buffer</span>     <span class="dim">U1 OPA2134 · 1MΩ (R1) input · unity gain · R2 100Ω series output</span>
   → <span class="hi">Dwell Pot</span>       <span class="dim">RV1 10kΩ linear · C1 1µF film coupling cap · controls drive level</span>
   → <span class="hi">BD139 Driver</span>    <span class="dim">Q1 Class A · R3b 6.8k + R4 1k bias divider · R5 68Ω emitter degen
-                   C2 100µF bypass · ~19mA quiescent · D3 1N4148 flyback clamp</span>
+                   C2 100µF bypass · ~18mA quiescent · D3 1N4148 flyback clamp</span>
   → <span class="hi">REB3S Xfmr</span>     <span class="dim">T2 primary (from Q1 collector) → 8Ω secondary</span>
   → <span class="hi">9AB3C1B Tank</span>   <span class="dim">RT1 · 3 springs · long decay · 8Ω input / 2550Ω output</span>
   → <span class="hi">C3 Coupling</span>     <span class="dim">470nF film · blocks DC from tank output terminals</span>
@@ -530,7 +530,7 @@
   </div>
 
   <h4>Transistor — BD139 (TO-126)</h4>
-  <p>High-current NPN bipolar rated 1.5A / 80V. At 19mA quiescent current it runs well within ratings with negligible heat. The TO-126 package mounts flat against the chassis for passive heatsinking if needed. BD139 has excellent hFE linearity at low currents — critical for low distortion in the driver stage.</p>
+  <p>High-current NPN bipolar rated 1.5A / 80V. At 18mA quiescent current it runs well within ratings with negligible heat. The TO-126 package mounts flat against the chassis for passive heatsinking if needed. BD139 has excellent hFE linearity at low currents — critical for low distortion in the driver stage.</p>
 
   <div class="warn">
     <div class="warn-title">Do not substitute</div>
@@ -545,9 +545,9 @@
     <table>
       <tr><th>Ref</th><th>Value</th><th>Function</th><th>Why This Value</th></tr>
       <tr><td>R1</td><td>1MΩ</td><td>Input impedance</td><td>Negligible load on upstream device. High-Z input.</td></tr>
-      <tr><td>R3b</td><td>6.8kΩ</td><td>Upper bias divider</td><td>Sets base voltage to ~1.96V → Vc~1.3V → Ic~19mA</td></tr>
-      <tr><td>R4</td><td>1kΩ</td><td>Lower bias divider</td><td>Divider current (~2mA) = 10× base current → bias stable vs. hFE variation</td></tr>
-      <tr><td>R5</td><td>68Ω</td><td>Emitter degeneration</td><td>Ic = Ve/R5 = 1.3V/68Ω ≈ 19mA. Thermal runaway protection.</td></tr>
+      <tr><td>R3b</td><td>6.8kΩ</td><td>Upper bias divider</td><td>Sets base voltage to ~1.92V → Ve~1.22V → Ic~18mA</td></tr>
+      <tr><td>R4</td><td>1kΩ</td><td>Lower bias divider</td><td>Divider current ~1.92mA. R5 emitter degeneration is the actual bias-stabilizing element — verify by measuring Ve ≈ 1.22V, not the divider math.</td></tr>
+      <tr><td>R5</td><td>68Ω</td><td>Emitter degeneration</td><td>Ic = Ve/R5 = 1.22V/68Ω ≈ 18mA. Primary bias stability and thermal runaway protection.</td></tr>
       <tr><td>Ri</td><td>470Ω</td><td>Gain set — (−) pin to GND</td><td>Gain = 1+(Rf/Ri) = 1+(100k/470) = 214× ≈ 46dB. Tank signal enters (+) pin; Ri forms the lower leg of the feedback divider at the (−) pin.</td></tr>
       <tr><td>Rf</td><td>100kΩ</td><td>Recovery gain (feedback)</td><td>100kΩ keeps thermal noise below OPA2134's own input noise</td></tr>
       <tr><td>R6</td><td>5.6kΩ</td><td>HPF corner</td><td>f = 1/(2π×5600×100n) = 284Hz. Use exactly 5.6kΩ.</td></tr>
@@ -714,7 +714,7 @@
   <ol>
     <li><strong>PSU first.</strong> Install T1, BR1, NTC1, C11/C12, U4, U5, reg output caps (C13/C14 100µF + C5–C10 100nF). Power up with a variac or current-limited bench supply if available. Measure: +15V at U4 output pin, −15V at U5 output pin, &lt;50mV ripple on each rail. <em>Do not proceed until both rails are correct.</em></li>
     <li><strong>Input stage.</strong> Install R1 (1MΩ), C_in (1µF), D_clamp+/D_clamp− (1N4148 pair), TVS1 (SMBJ15CA), U1 (input buffer OPA2134). Inject a 1kHz sine at −20dBV. Scope at U1 output: clean sine, no clipping, gain ≈1.</li>
-    <li><strong>Driver stage.</strong> Install Q1 (BD139), R3/R3b/R4 (bias network), R5 (emitter), C1 (1µF coupling), C2 (100µF bypass), D3 (flyback clamp), T2 (REB3S driver transformer). Connect the tank's 8Ω input side. Scope at T2 primary: sinusoidal drive signal, no ringing or DC offset. Measure Q1 collector DC: should be ~7.5V (≈ halfway to +15V) at zero signal.</li>
+    <li><strong>Driver stage.</strong> Install Q1 (BD139), R3/R3b/R4 (bias network), R5 (emitter), C1 (1µF coupling), C2 (100µF bypass), D3 (flyback clamp), T2 (REB3S driver transformer). Connect the tank's 8Ω input side. Scope at T2 primary: sinusoidal drive signal, no ringing or DC offset. Measure Q1 <em>emitter</em> DC: should be ~1.22V at zero signal (Ic ≈ 18mA through R5). The collector will read ≈ +15V — T2's transformer primary is a near-DC short to the rail, so Vce ≈ 13.8V drops across the transistor itself, not a load resistor. Do not expect a mid-rail reading at the collector.</li>
     <li><strong>Tank output and recovery.</strong> Install C3 (470nF), Rbias (100kΩ), Ri (470Ω), Rf (100kΩ), U2 (recovery OPA2134). Connect the tank's 2550Ω output side. Tap the spring with a finger — you should hear a reverb impulse at U2's output. Scope gain at U2 output vs. U2 (+) input: should be ≈214×.</li>
     <li><strong>HPF and tone.</strong> Install R6 (5.6kΩ), C4 (100nF), RV3 (Tone pot). Verify HPF corner is ~300Hz by sweeping a function generator — signal below 300Hz should attenuate; above 300Hz passes flat.</li>
     <li><strong>Mix and output buffer.</strong> Install Rdry (10kΩ), C_bright (47pF), RV2 (Mix pot), U3 (output buffer OPA2134), R7 (100Ω isolation). Connect input jack J1 and output jack J2. Sweep Mix pot: CCW = dry only, CW = wet only, mid = blend.</li>
@@ -729,7 +729,8 @@
       <tr><td>U4 output pin</td><td>+15.0V ±0.5V DC</td><td>Regulator or rectifier issue</td></tr>
       <tr><td>U5 output pin</td><td>−15.0V ±0.5V DC</td><td>Regulator or rectifier issue</td></tr>
       <tr><td>PSU rails ripple</td><td>&lt;50mV p-p at idle</td><td>Filter cap ESR or wiring issue</td></tr>
-      <tr><td>Q1 collector (no signal)</td><td>~7.5V DC</td><td>Bias resistor values or BD139 fault</td></tr>
+      <tr><td>Q1 emitter (no signal)</td><td>~1.22V DC</td><td>Bias resistors (R3b/R4/R5) or BD139 fault — this is the correct node to measure for bias verification</td></tr>
+      <tr><td>Q1 collector (no signal)</td><td>≈ +15V DC</td><td>T2 primary is near-DC short to rail — a reading well below +15V means T2 is open or Q1 is saturated</td></tr>
       <tr><td>U2 (+) input (signal)</td><td>1–5mV at normal playing level</td><td>Tank not driven, C3 open, or Rbias fault</td></tr>
       <tr><td>U2 output (signal)</td><td>~200–1000mV at normal playing level</td><td>Op-amp fault, Ri/Rf values wrong</td></tr>
       <tr><td>U3 output (idle)</td><td>&lt;5mV DC offset</td><td>DC offset from upstream; check Rbias and Ri</td></tr>
