@@ -86,7 +86,7 @@ label(ax, xs[0], Y1, 'J1', size=7)
 # ── U1: Input Buffer ──────────────────────────────────────────────────────────
 box(ax, xs[1], Y1, BW, BH,
     'U1  OPA2134',
-    'Input Buffer\nUnity gain\nR1 = 1MΩ  R2 = 100Ω',
+    'Input Buffer\nUnity gain\nR1 1MΩ shunt (→GND)\nR2 100Ω output',
     color='#EBF5FB')
 
 # ── Driver Stage (Dwell + BD139) ──────────────────────────────────────────────
@@ -119,8 +119,15 @@ for i in range(len(xs) - 2):
     x_end   = xs[i+1] - BW/2
     wire(ax, x_start, Y1, x_end, Y1, color=DRY)
 
-# Input → Buffer impedance label
-label(ax, (xs[0] + xs[1])/2, Y1 + 0.18, 'R1  1MΩ', color=DRY, size=6.5)
+# Input → Buffer: C_in on wire, R1 shown as shunt to GND from U1(+) node
+label(ax, (xs[0] + xs[1])/2, Y1 + 0.18, 'C_in  1µF', color=DRY, size=6.5)
+# R1 shunt: drop line from U1(+) input node down to GND rail with R1 label
+r1_x = xs[1] - BW/2 - 0.12     # just left of U1 box — the U1(+) node
+r1_y_top = Y1
+r1_y_bot = Y3 + 0.12
+wire(ax, r1_x, r1_y_top, r1_x, r1_y_bot, color=DRY, lw=1.0, style='--')
+ax.plot(r1_x, r1_y_bot, 'v', ms=5, color=DRY, zorder=5)   # GND arrow
+label(ax, r1_x - 0.28, (r1_y_top + r1_y_bot)/2, 'R1\n1MΩ\n(→GND)', color=DRY, size=5.8)
 
 # Buffer → Driver
 label(ax, (xs[1] + xs[2])/2, Y1 + 0.18, 'C1  1µF', color=DRY, size=6.5)
@@ -237,9 +244,10 @@ ax.add_patch(rect_psu)
 ax.text(ps_x, ps_y + psu_h/2 - 0.15, '±15V POWER SUPPLY',
         ha='center', va='top', fontsize=8, fontweight='bold', color=PWRR, zorder=4)
 psu_body = (
-    'T1  Toroidal 30VA\n'
-    '    2 × 15VAC output\n\n'
-    'BR1  Bridge rectifier 2A\n\n'
+    'T1  Triad F-219X  30VA\n'
+    '    2×15VAC secondaries in SERIES\n'
+    '    junction = 0V/GND  (15-0-15)\n\n'
+    'BR1  W04G  2A / 400V\n\n'
     'U4   LM7815  →  +15V\n'
     'U5   LM7915  →  −15V\n\n'
     'C11–C12  2200µF / 50V\n'
