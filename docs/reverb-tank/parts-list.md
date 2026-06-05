@@ -118,7 +118,7 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 |---|---|---|---|
 | Switchcraft 112A ¼" TS jack | 112A | 2 | ~$3.20 each = $6.40 |
 | DIP-8 machine-pin IC socket | A-108-A-LPT | 2 | ~$0.50 each = $1.00 |
-| Schurter EMI-filtered IEC inlet with fuse holder *(upgraded from 4301.0527)* | 5110.1052 | 1 | ~$15.00 |
+| Schurter EMI-filtered IEC inlet with fuse holder *(upgraded from 4301.0527)* — **confirm 5×20mm fuse drawer when ordering** | 5110.1052 | 1 | ~$15.00 |
 | TE SPST rocker switch 6A/250V (mains power) | 1825232-1 | 1 | ~$2.00 |
 | SPDT mini toggle switch (ground lift, rear panel) | 100SP1T1B1M1QEH | 1 | ~$3.50 |
 | 5mm LED — blue or amber (power indicator) | — | 1 | ~$0.50 |

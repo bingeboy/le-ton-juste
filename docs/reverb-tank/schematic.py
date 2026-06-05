@@ -61,7 +61,7 @@ ax.set_facecolor(BG)
 ax.text(W/2, H - 0.35, 'Ghost Spring Reverb — Signal Path Schematic',
         ha='center', va='top', fontsize=13, fontweight='bold', color=EDGE)
 ax.text(W/2, H - 0.72,
-        'Transformer-Coupled Single Spring  •  OPA2134 Solid-State  •  ±15V Linear Supply',
+        'Transformer-Coupled 3-Spring Tank  •  OPA2134 Solid-State  •  ±15V Linear Supply',
         ha='center', va='top', fontsize=8.5, color='#555555')
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -266,6 +266,7 @@ label(ax, 6.0, 0.6,
       size=6.5, color='#555555')
 
 plt.tight_layout(pad=0.3)
-plt.savefig('docs/reverb-tank/schematic.png', dpi=180, bbox_inches='tight',
-            facecolor=BG)
-print("Saved: docs/reverb-tank/schematic.png")
+import os as _os
+_out = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'schematic.png')
+plt.savefig(_out, dpi=180, bbox_inches='tight', facecolor=BG)
+print(f"Saved: {_out}")
