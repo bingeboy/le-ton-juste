@@ -443,8 +443,8 @@
   → <span class="hi">REB3S Xfmr</span>     <span class="dim">T2 primary (from Q1 collector) → 8Ω secondary</span>
   → <span class="hi">9AB3C1B Tank</span>   <span class="dim">RT1 · 3 springs · long decay · 8Ω input / 2550Ω output</span>
   → <span class="hi">C3 Coupling</span>     <span class="dim">470nF film · blocks DC from tank output terminals</span>
-  → <span class="hi">Recovery Preamp</span> <span class="dim">U2 OPA2134 · inverting · Ri=470Ω / Rf=100kΩ → gain=214× (~46dB)
-                   Rbias=470Ω at non-inv input · 1–5mV → ~1Vrms</span>
+  → <span class="hi">Recovery Preamp</span> <span class="dim">U2 OPA2134 · non-inverting · tank → (+) input · Ri=470Ω / Rf=100kΩ → gain=214× (~46dB)
+                   Rbias=470Ω at (+) input to GND · 1–5mV → ~1Vrms</span>
   → <span class="hi">300Hz Wet HPF</span>  <span class="dim">C4 100nF film + R6 5.6kΩ · f = 1/(2π×5600×100n) ≈ 284Hz
                    wet signal only — dry path bypasses this stage</span>
   → <span class="hi">Tone Pot</span>        <span class="dim">RV3 100kΩ · high-shelf on wet signal only</span>
@@ -505,7 +505,7 @@
   <p>R5 (68Ω emitter resistor) provides thermal stability and sets quiescent current. Without C2, R5 degenerates the BD139's gain at audio frequencies — the spring is underdriven and loses high-frequency drive. C2 (100µF low-ESR Nichicon) bypasses R5 at audio frequencies, restoring full gain while keeping the DC stability of R5 intact.</p>
 
   <h4>Recovery Gain — 214× (46dB)</h4>
-  <p>The spring tank's output is 1–5mV. Line level is ~1Vrms. The recovery preamp (U2 OPA2134 in inverting configuration) brings the signal up to line level with Ri=470Ω / Rf=100kΩ → gain = 1 + (100k/470) = 214×. This is not unusual — spring tanks are low-output transducers, and this gain is normal for the stage.</p>
+  <p>The spring tank's output is 1–5mV. Line level is ~1Vrms. The recovery preamp (U2 OPA2134 in non-inverting configuration) brings the signal up to line level: tank signal enters the (+) input, Rbias (470Ω) holds the (+) input to GND for DC stability, Ri (470Ω) and Rf (100kΩ) form the feedback divider at the (−) pin → gain = 1 + (100k/470) = 214×. This is not unusual — spring tanks are low-output transducers, and this gain is normal for the stage.</p>
 </section>
 
 <!-- ── COMPONENT RATIONALE ── -->
@@ -548,7 +548,7 @@
       <tr><td>R3b</td><td>6.8kΩ</td><td>Upper bias divider</td><td>Sets base voltage to ~1.96V → Vc~1.3V → Ic~19mA</td></tr>
       <tr><td>R4</td><td>1kΩ</td><td>Lower bias divider</td><td>Divider current (~2mA) = 10× base current → bias stable vs. hFE variation</td></tr>
       <tr><td>R5</td><td>68Ω</td><td>Emitter degeneration</td><td>Ic = Ve/R5 = 1.3V/68Ω ≈ 19mA. Thermal runaway protection.</td></tr>
-      <tr><td>Ri</td><td>470Ω</td><td>Recovery gain (inverting input)</td><td>Gain = 1+(Rf/Ri) = 1+(100k/470) = 214× ≈ 46dB</td></tr>
+      <tr><td>Ri</td><td>470Ω</td><td>Gain set — (−) pin to GND</td><td>Gain = 1+(Rf/Ri) = 1+(100k/470) = 214× ≈ 46dB. Tank signal enters (+) pin; Ri forms the lower leg of the feedback divider at the (−) pin.</td></tr>
       <tr><td>Rf</td><td>100kΩ</td><td>Recovery gain (feedback)</td><td>100kΩ keeps thermal noise below OPA2134's own input noise</td></tr>
       <tr><td>R6</td><td>5.6kΩ</td><td>HPF corner</td><td>f = 1/(2π×5600×100n) = 284Hz. Use exactly 5.6kΩ.</td></tr>
       <tr><td>Rbias</td><td>470Ω</td><td>U2 non-inv DC path</td><td>Prevents floating input from developing offset → recovery stage clip</td></tr>
