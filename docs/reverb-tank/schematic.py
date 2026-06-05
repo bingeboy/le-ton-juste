@@ -153,7 +153,7 @@ label(ax, tank_x + tank_w/2 + 0.35, (Y1 + Y2)/2, '2550Ω\nout', color=WET, size=
 # ── U2: Recovery Preamp ───────────────────────────────────────────────────────
 box(ax, xs2[1], Y2, BW + 0.1, BH + 0.2,
     'U2  OPA2134',
-    'Recovery Preamp  (non-inverting)\nGain = 1+Rf/Ri = 214×  (~46 dB)\nRi 470Ω   Rf 100kΩ\nC3 470nF  Rbias 470Ω',
+    'Recovery Preamp  (non-inverting)\nGain = 1+Rf/Ri = 214×  (~46 dB)\nRi 470Ω   Rf 100kΩ\nC3 470nF  Rbias 100kΩ',
     color='#EAFAF1')
 wire(ax, tank_x + tank_w/2 - 0.1, Y2, xs2[1] + BW/2 + 0.05, Y2, color=WET)
 label(ax, (tank_x + tank_w/2 + xs2[1])/2 + 0.1, Y2 + 0.22,

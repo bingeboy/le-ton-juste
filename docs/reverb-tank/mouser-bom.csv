@@ -12,11 +12,11 @@ Quantity,Manufacturer Part Number,Description,Customer Reference
 2,UKW1E101MED,Nichicon UKW 100uF 25V audio grade electrolytic,C7 C8 reg output + emitter bypass
 2,UKW1E100MDD,Nichicon UKW 10uF 25V electrolytic,C11 C12 bulk rail decoupling
 5,MFR-25FBF52-1M,Yageo 1M metal film resistor 1% 250mW,R1 input impedance
-5,MFR-25FBF52-100K,Yageo 100k metal film resistor 1% 250mW,Rf gain network
+5,MFR-25FBF52-100K,Yageo 100k metal film resistor 1% 250mW,Rf gain network + Rbias input impedance
 5,MFR-25FBF52-10K,Yageo 10k metal film resistor 1% 250mW,Rdry dry path mixing
 5,MFR-25FBF52-6K8,Yageo 6.8k metal film resistor 1% 250mW,R3b upper bias
 5,MFR-25FBF52-5K6,Yageo 5.6k metal film resistor 1% 250mW,R6 HPF
-5,MFR-25FBF52-470R,Yageo 470R metal film resistor 1% 250mW,Ri recovery gain + Rbias
+5,MFR-25FBF52-470R,Yageo 470R metal film resistor 1% 250mW,Ri recovery gain set
 5,MFR-25FBF52-100R,Yageo 100R metal film resistor 1% 250mW,R2 R7 output isolation
 5,MFR-25FBF52-68R,Yageo 68R metal film resistor 1% 250mW,R5 emitter degeneration
 5,MFR-25FBF52-1K,Yageo 1k metal film resistor 1% 250mW,R3 R4 base bias
