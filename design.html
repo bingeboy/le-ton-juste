@@ -439,7 +439,7 @@
   → <span class="hi">Input Buffer</span>     <span class="dim">U1 OPA2134 · 1MΩ (R1) input · unity gain · R2 100Ω series output</span>
   → <span class="hi">Dwell Pot</span>       <span class="dim">RV1 10kΩ linear · C1 1µF film coupling cap · controls drive level</span>
   → <span class="hi">BD139 Driver</span>    <span class="dim">Q1 Class A · R3b 6.8k + R4 1k bias divider · R5 68Ω emitter degen
-                   C2 100µF bypass · ~19mA quiescent</span>
+                   C2 100µF bypass · ~19mA quiescent · D3 1N4148 flyback clamp</span>
   → <span class="hi">REB3S Xfmr</span>     <span class="dim">T2 primary (from Q1 collector) → 8Ω secondary</span>
   → <span class="hi">9AB3C1B Tank</span>   <span class="dim">RT1 · 3 springs · long decay · 8Ω input / 2550Ω output</span>
   → <span class="hi">C3 Coupling</span>     <span class="dim">470nF film · blocks DC from tank output terminals</span>
@@ -565,7 +565,7 @@
     <table>
       <tr><th>Ref</th><th>Value</th><th>Type</th><th>Why</th></tr>
       <tr><td>C1</td><td>1µF/63V</td><td>WIMA MKS2 film</td><td>Coupling before driver. HPF corner = 1/(2π×1µ×10k) = 16Hz — well below guitar fundamentals.</td></tr>
-      <tr><td>C3</td><td>470nF/63V</td><td>WIMA MKS2 film</td><td>Tank output coupling. Blocks DC offset from tank terminals. Corner at 34Hz with U2 input impedance.</td></tr>
+      <tr><td>C3</td><td>470nF/63V</td><td>WIMA MKS2 film</td><td>Tank output coupling. Blocks DC offset from tank terminals. Corner at ~3Hz with Rbias = 100kΩ — purely DC-blocking, no audio attenuation.</td></tr>
       <tr><td>C4</td><td>100nF/63V</td><td>WIMA MKS2 film</td><td>300Hz HPF with R6. Must be film — ceramic drifts with temperature, shifting the cutoff.</td></tr>
       <tr><td>C_bright</td><td>47pF</td><td>Silver mica</td><td>Bright cap across Mix pot. Silver mica ±1% stability, lowest HF distortion. Do not use ceramic disc.</td></tr>
       <tr><td>C2</td><td>100µF/25V</td><td>Nichicon UKW audio grade</td><td>Emitter bypass. Low-ESR is critical — high-ESR cap won't bypass R5 at high audio frequencies.</td></tr>

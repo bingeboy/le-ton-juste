@@ -42,7 +42,7 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 | LM7815CT/NOPB +15V regulator TO-220 | LM7815CT/NOPB | 1 | ~$0.75 |
 | LM7915CT/NOPB −15V regulator TO-220 | LM7915CT/NOPB | 1 | ~$0.75 |
 | W04G bridge rectifier 2A/400V *(upgraded from W02G)* | W04G | 1 | ~$0.55 |
-| 1N4148 small-signal diode (input clamp pair) | 1N4148 | 2 | ~$0.10 each = $0.20 |
+| 1N4148 small-signal diode (input clamp pair + D3 collector clamp) | 1N4148 | 3 | ~$0.10 each = $0.30 |
 | SMBJ15CA bidirectional TVS diode (input ESD protection) | SMBJ15CA | 1 | ~$0.50 |
 
 ### Protection Components

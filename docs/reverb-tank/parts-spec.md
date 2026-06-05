@@ -25,6 +25,7 @@ This document lists every component with exact values, a suggested part number, 
 | Ref | Part | Package | Why |
 |---|---|---|---|
 | Q1 | BD139 NPN | TO-126 | High-current NPN bipolar transistor rated 1.5A / 80V. Used as the Class A driver amplifier that pushes current through T2's primary. At ~19mA quiescent current it runs well within ratings with minimal heat. The TO-126 package mounts flat to the chassis for passive heatsinking if ever needed. BD139 has high hFE linearity at low currents — critical for low distortion in the driver stage. Do not substitute a TO-92 small-signal transistor (e.g. 2N3904) — insufficient current capacity will clip drive transients and harden the reverb sound. |
+| D3 | 1N4148 fast signal diode | Anode → Q1 collector, cathode → +15V rail | Flyback clamp across T2 primary. When Q1 current changes during audio transients, T2's primary inductance generates a voltage spike at Q1's collector. D3 conducts whenever Vc rises above +15V, clamping the spike harmlessly back into the supply rail. Same part as D_clamp+/D_clamp− (input protection) — no new BOM line, just increment the 1N4148 count to 3. |
 
 ---
 

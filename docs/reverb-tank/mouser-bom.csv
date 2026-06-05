@@ -4,6 +4,7 @@ Quantity,Manufacturer Part Number,Description,Customer Reference
 1,LM7815CT/NOPB,+15V linear regulator TO-220,U4
 1,LM7915CT/NOPB,-15V linear regulator TO-220,U5
 1,W02G-E4/51,Bridge rectifier 1A 200V,BR1
+3,1N4148,Small signal diode,D_clamp+ D_clamp- D3 collector clamp
 1,MKS2C041001B00KSSD,WIMA 1uF 63V film capacitor,C1 driver coupling
 1,MKS2C034700K00KSSD,WIMA 470nF 63V film capacitor,C3 tank output coupling
 8,MKS2C031001A00KSSD,WIMA 100nF 63V film capacitor,C4 HPF + op-amp decoupling

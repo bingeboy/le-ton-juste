@@ -140,6 +140,16 @@ ax.plot(xs[2] + 0.1, Y1 + BH/2 + 0.08, '^', ms=6, color=PWRR, zorder=5)
 label(ax, xs[3] + 0.1, Y1 + BH/2 + 0.18, '+15V', color=PWRR, size=6.5)
 ax.plot(xs[3] + 0.1, Y1 + BH/2 + 0.08, '^', ms=6, color=PWRR, zorder=5)
 
+# D3: flyback clamp diode — anode at Q1 collector junction, cathode to +15V
+# Drawn between driver stage and transformer
+d3_x = (xs[2] + xs[3]) / 2 + 0.1
+d3_y = Y1 - BH/2 - 0.28
+ax.plot([d3_x - 0.18, d3_x + 0.18], [d3_y, d3_y], color=PWRR, lw=1.0, zorder=4)
+ax.plot([d3_x, d3_x], [d3_y, d3_y + 0.18], color=PWRR, lw=0.8, ls='--', zorder=4)
+ax.plot(d3_x, d3_y + 0.18, '^', ms=5, color=PWRR, zorder=5)
+label(ax, d3_x, d3_y - 0.18, 'D3  1N4148\nflyback clamp\nanode→collector  cathode→+15V',
+      color=PWRR, size=5.8)
+
 # ═════════════════════════════════════════════════════════════════════════════
 # BOTTOM ROW  (Y2)  —  Tank out → Recovery → HPF → Tone → Mix → Output
 # ═════════════════════════════════════════════════════════════════════════════
