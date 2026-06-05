@@ -77,7 +77,6 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 |---|---|---|---|
 | 1MΩ | MFR-25FBF52-1M | 5 | ~$0.40 |
 | 100kΩ | MFR-25FBF52-100K | 5 | ~$0.40 |
-| 22kΩ | MFR-25FBF52-22K | 5 | ~$0.40 |
 | 10kΩ | MFR-25FBF52-10K | 5 | ~$0.40 |
 | 6.8kΩ | MFR-25FBF52-6K8 | 5 | ~$0.40 |
 | 5.6kΩ | MFR-25FBF52-5K6 | 5 | ~$0.40 |

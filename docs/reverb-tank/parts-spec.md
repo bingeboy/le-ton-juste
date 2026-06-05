@@ -57,6 +57,20 @@ All resistors: **metal film, 1% tolerance, 250mW** (Yageo MFR or Vishay CMF seri
 | R7 | 100Ω | U3 output (series) | Same role as R2 — isolates U3 from capacitive load of the output cable to the MC100. The MC100's RCA input is ~47kΩ, but the cable itself has capacitance; this resistor prevents U3 oscillation. |
 | Rbias | 470Ω | U2 non-inv input → GND | Bias current compensation for U2. The OPA2134 is FET-input so bias current is negligible (~5pA), but this resistor provides a defined DC path to ground at U2's non-inverting input. Without it, the input is floating through the tank's secondary coil, which can cause an offset voltage to build up and clip the recovery stage. |
 
+### Mix Stage Topology — Passive Blend into Voltage Follower
+
+The Mix node is a **passive resistive blend**, not an active summing network. There are no virtual-ground summing resistors here.
+
+Signal flow:
+- **Dry path:** U1 output → Rdry (10kΩ) → RV2 pin 1 (CCW terminal)
+- **Wet path:** RV3 (Tone) wiper → RV2 pin 3 (CW terminal)
+- **C_bright** (47pF silver mica) bridges RV2 pin 1 to pin 3 — adds air and treble presence on the wet signal as the pot approaches full wet
+- **RV2 wiper** (pin 2) → U3 non-inverting (+) input
+
+At full CCW (dry): wiper is at the Rdry terminal, wet signal is at the other end of the pot and fully attenuated. At full CW (wet): wiper is at the Tone output terminal, dry signal is attenuated through Rdry + pot. At center: passive blend of both paths. The 100kΩ pot value is large enough relative to Rdry (10kΩ) that the Mix pot itself contributes minimal loading to the U3 input.
+
+**U3 (output buffer):** Unity-gain voltage follower. FET input (10¹³Ω) draws negligible current from the wiper — no loading effect on the blend. Output through R7 (100Ω series) to the output jack.
+
 ---
 
 ## Capacitors
@@ -103,7 +117,7 @@ Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-3902
 
 | Ref | Value | Taper | Part Number | Why |
 |---|---|---|---|---|
-| RV1 (Dwell) | 10kΩ | Linear | **Vishay/Spectrol 296UAL503B2** | Driver level control. Linear taper is electrically correct here. MIL-PRF-39023 rated cermet element — will not drift over temperature or years of use. Gold wiper ensures zero contact noise. |
+| RV1 (Dwell) | 10kΩ | Linear | **Vishay/Spectrol 296UAL103B2** | Driver level control. Linear taper is electrically correct here. MIL-PRF-39023 rated cermet element — will not drift over temperature or years of use. Gold wiper ensures zero contact noise. |
 | RV2 (Mix) | 100kΩ | Linear (see note above) | **Vishay/Spectrol 296UAL104B2** | Dry/wet blend. Cermet element rated for 10,000 cycles minimum. Gold wiper. Stainless shaft resists corrosion in rack environments. |
 | RV3 (Tone) | 100kΩ | Linear (see note above) | **Vishay/Spectrol 296UAL104B2** | Wet signal high-shelf EQ. Same part as RV2 for simplified sourcing. |
 

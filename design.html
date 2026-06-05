@@ -589,7 +589,7 @@
 
   <div class="spec-card">
     <div class="spec-row"><span class="spec-key">Topology</span><span class="spec-val">Non-inverting voltage follower (gain = 1×). Output connected to inverting input.</span></div>
-    <div class="spec-row"><span class="spec-key">Input Z</span><span class="spec-val">~1MΩ (R1 at non-inv input) — does not load the Mix pot</span></div>
+    <div class="spec-row"><span class="spec-key">Input Z</span><span class="spec-val">FET input (10¹³Ω) — negligible load on the Mix pot wiper</span></div>
     <div class="spec-row"><span class="spec-key">Output Z</span><span class="spec-val">&lt;1Ω at audio frequencies (op-amp closed-loop). Effectively zero.</span></div>
     <div class="spec-row"><span class="spec-key">Series R</span><span class="spec-val">R7 100Ω — short-circuit protection; prevents oscillation into capacitive cable loads</span></div>
     <div class="spec-row"><span class="spec-key">Bandwidth</span><span class="spec-val">&gt;100kHz — well beyond audio</span></div>
@@ -599,7 +599,6 @@
   <h4>MC100 Interface</h4>
   <ul>
     <li>MC100 has RCA unbalanced inputs with ~100kΩ input impedance</li>
-    <li>Use a high-quality 1/4" TS to RCA cable, or install an RCA jack on the reverb unit's rear panel</li>
     <li>Keep cable under 6ft to minimize hum pickup — the output buffer makes the signal robust to cable capacitance, but length still matters for shielding</li>
     <li>If hum is present after all grounding steps, a ground-lift switch (10Ω resistor + 100nF cap between audio ground and chassis) can help</li>
   </ul>

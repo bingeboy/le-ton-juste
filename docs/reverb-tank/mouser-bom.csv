@@ -13,8 +13,7 @@ Quantity,Manufacturer Part Number,Description,Customer Reference
 2,UKW1E100MDD,Nichicon UKW 10uF 25V electrolytic,C11 C12 bulk rail decoupling
 5,MFR-25FBF52-1M,Yageo 1M metal film resistor 1% 250mW,R1 input impedance
 5,MFR-25FBF52-100K,Yageo 100k metal film resistor 1% 250mW,Rf gain network
-5,MFR-25FBF52-22K,Yageo 22k metal film resistor 1% 250mW,R_L summing
-5,MFR-25FBF52-10K,Yageo 10k metal film resistor 1% 250mW,R_pc phase correct
+5,MFR-25FBF52-10K,Yageo 10k metal film resistor 1% 250mW,Rdry dry path mixing
 5,MFR-25FBF52-6K8,Yageo 6.8k metal film resistor 1% 250mW,R3b upper bias
 5,MFR-25FBF52-5K6,Yageo 5.6k metal film resistor 1% 250mW,R6 HPF
 5,MFR-25FBF52-470R,Yageo 470R metal film resistor 1% 250mW,Ri recovery gain + Rbias
