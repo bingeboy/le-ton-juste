@@ -137,8 +137,10 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 | Kester 44 solder 63/37 0.031" | 24-6337-0027 | 1 roll | ~$18 |
 | Kester 951 flux pen | 2331-ZX | 1 | ~$8.00 |
 | MG Chemicals 422B conformal coating spray | 422B | 1 can | ~$15.00 |
+| TE ring terminal 22-16AWG #8 stud insulated (chassis earth bond) | 34112 | 2 | ~$0.50 each = $1.00 |
+| Green/yellow 18AWG stranded hookup wire — 250mm for IEC earth-to-chassis bond | — | 1 | ~$1 (hardware store) |
 
-**Mouser Subtotal: ~$192–218**
+**Mouser Subtotal: ~$193–219**
 
 ---
 
@@ -185,11 +187,11 @@ Design a custom 2U aluminum panel with:
 | Supplier | Est. Cost |
 |---|---|
 | Amplified Parts | ~$53 |
-| Mouser | ~$192–218 |
+| Mouser | ~$193–219 |
 | Hammond (chassis) | ~$50 |
 | Front Panel Express | ~$35 |
 | Sorbothane grommets | ~$12 |
 | Knobs | ~$15 |
-| **Total** | **~$355–380** |
+| **Total** | **~$357–382** |
 
 > OPA2134PA price confirmed at $7.64 (Mouser, June 2026). All other prices are estimates — verify in the Mouser BOM tool before ordering. Upgraded total reflects full reliability/protection package.

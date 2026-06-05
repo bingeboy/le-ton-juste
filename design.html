@@ -436,7 +436,8 @@
   <p>Every stage in the signal chain with component values inline. Left to right: input from line source, through the spring and back out to the power amp.</p>
 
   <pre><span class="dim">Line In (from Lehle Parallel M)</span>
-  → <span class="hi">Input Buffer</span>     <span class="dim">U1 OPA2134 · 1MΩ (R1) input · unity gain · R2 100Ω series output</span>
+  → <span class="hi">C_in</span>             <span class="dim">1µF film · DC-blocking coupling cap at input jack</span>
+  → <span class="hi">Input Buffer</span>     <span class="dim">U1 OPA2134 · R1 1MΩ from U1(+) to GND (bias return + input Z) · unity gain · R2 100Ω series output</span>
   → <span class="hi">Dwell Pot</span>       <span class="dim">RV1 10kΩ linear · C1 1µF film coupling cap · controls drive level</span>
   → <span class="hi">BD139 Driver</span>    <span class="dim">Q1 Class A · R3b 6.8k + R4 1k bias divider · R5 68Ω emitter degen
                    C2 100µF bypass · ~18mA quiescent · D3 1N4148 flyback clamp</span>
@@ -547,7 +548,7 @@
   <div class="table-wrap">
     <table>
       <tr><th>Ref</th><th>Value</th><th>Function</th><th>Why This Value</th></tr>
-      <tr><td>R1</td><td>1MΩ</td><td>Input impedance</td><td>Negligible load on upstream device. High-Z input.</td></tr>
+      <tr><td>R1</td><td>1MΩ</td><td>U1(+) → GND — bias return and input impedance</td><td>Shunt to GND, placed after C_in. Provides the DC bias return path for U1's FET input — without it, U1(+) has no reference and drifts to a rail. Also sets 1MΩ input impedance (negligible load on upstream device).</td></tr>
       <tr><td>R3b</td><td>6.8kΩ</td><td>Upper bias divider</td><td>Sets base voltage to ~1.92V → Ve~1.22V → Ic~18mA</td></tr>
       <tr><td>R4</td><td>1kΩ</td><td>Lower bias divider</td><td>Divider current ~1.92mA. R5 emitter degeneration is the actual bias-stabilizing element — verify by measuring Ve ≈ 1.22V, not the divider math.</td></tr>
       <tr><td>R5</td><td>68Ω</td><td>Emitter degeneration</td><td>Ic = Ve/R5 = 1.22V/68Ω ≈ 18mA. Primary bias stability and thermal runaway protection.</td></tr>
@@ -572,7 +573,7 @@
       <tr><td>C4</td><td>100nF/63V</td><td>WIMA MKS2 film</td><td>300Hz HPF with R6. Must be film — ceramic drifts with temperature, shifting the cutoff.</td></tr>
       <tr><td>C_bright</td><td>47pF</td><td>Silver mica</td><td>Bright cap across Mix pot. Silver mica ±1% stability, lowest HF distortion. Do not use ceramic disc.</td></tr>
       <tr><td>C2</td><td>100µF/25V</td><td>Nichicon UKW audio grade</td><td>Emitter bypass. Low-ESR is critical — high-ESR cap won't bypass R5 at high audio frequencies.</td></tr>
-      <tr><td>C5–C10</td><td>100nF/63V</td><td>WIMA MKS2 film</td><td>Op-amp supply decoupling — one per supply pin, placed as close as physically possible to IC.</td></tr>
+      <tr><td>C5–C8</td><td>100nF/63V</td><td>WIMA MKS2 film</td><td>Op-amp supply decoupling — one per supply pin, placed as close as physically possible to IC. 4 total: 2 supply pins per DIP-8 package × 2 packages.</td></tr>
     </table>
   </div>
 
@@ -617,7 +618,7 @@
   <div class="table-wrap">
     <table>
       <tr><th>Stage</th><th>Part</th><th>Why</th></tr>
-      <tr><td>Transformer</td><td>Triad F-219X, 30VA dual-primary toroidal (2×115VAC in / 2×15VAC out)</td><td>Toroidal has ~10× lower magnetic field leakage than E-I laminate. Critical — the spring tank is a sensitive magnetic transducer and will pick up 60Hz hum from a nearby transformer. Keep transformer as far from the tank as the chassis allows. Wire the two primary windings in parallel for 120VAC (see build sequence).</td></tr>
+      <tr><td>Transformer</td><td>Triad F-219X, 30VA dual-primary toroidal (2×115VAC in / 2×15VAC out)</td><td>Toroidal has ~10× lower magnetic field leakage than E-I laminate. Critical — the spring tank is a sensitive magnetic transducer and will pick up 60Hz hum from a nearby transformer. Keep transformer as far from the tank as the chassis allows. <strong>Primary wiring:</strong> Wire the two 115VAC primary windings in parallel for 120VAC mains (see build sequence). <strong>Secondary wiring:</strong> Wire the two 15VAC secondary windings in series — the junction of the two windings is the 0V/GND reference (forming 15-0-15), and the outer ends connect to BR1's AC inputs. Wiring the secondaries in parallel gives a single rail with no negative supply — the op-amps and LM7915 will not receive −15V.</td></tr>
       <tr><td>Rectifier</td><td>W04G bridge, 2A/400V</td><td>400V is derated 10× from the 42V peak. 2A rating gives 4× headroom over typical load — reliable even with inrush.</td></tr>
       <tr><td>Filter</td><td>2× 2200µF/50V Nichicon UKW low-ESR</td><td>Ripple stays below 1Vrms at 20mA load. 50V rated for headroom against any transients. Low-ESR minimizes heat and maintains regulation.</td></tr>
       <tr><td>+15V Reg</td><td>LM7815CT (TO-220)</td><td>Linear regulation = zero switching noise. Switching regulators inject kHz noise that passes through op-amp power supply rejection. LM7815 is proven and inexpensive.</td></tr>
@@ -712,7 +713,7 @@
   <div class="build-notes">
     <ol>
       <li><strong>Star grounding.</strong> All grounds — op-amp ground pins, pot grounds, jack grounds, PSU output — connect to a single point on the chassis, near the IEC inlet. No daisy-chaining. Any second chassis ground connection creates a ground loop and 60Hz hum.</li>
-      <li><strong>Decoupling caps physically close.</strong> C5–C10 (100nF film, one per op-amp supply pin) must be placed within 1" of the OPA2134 supply pins on the perfboard. Further than that and they won't suppress high-frequency noise — the circuit will likely oscillate or have a high noise floor.</li>
+      <li><strong>Decoupling caps physically close.</strong> C5–C8 (100nF film, one per op-amp supply pin — 4 total: 2 pins per package × 2 packages) must be placed within 1" of the OPA2134 supply pins on the perfboard. Further than that and they won't suppress high-frequency noise — the circuit will likely oscillate or have a high noise floor.</li>
       <li><strong>Tank orientation: open-side down.</strong> Mount the 9AB3C1B horizontally with the open side (where you can see the springs) facing down. Springs hang below the transducers. If mounted open-side up, springs shift over years and reverb character drifts unpredictably.</li>
       <li><strong>Transformer placement and orientation.</strong> Mount the Triad F-219X as far from the spring tank as the chassis allows. Orient it so the transformer's toroid axis is perpendicular to the tank's spring axis. This minimizes inductive coupling (60Hz hum in the reverb tail).</li>
       <li><strong>Shield the recovery wire.</strong> The wire from the tank's output (2550Ω side, RCA connector) to U2's non-inverting input is the most sensitive signal in the circuit — 1–5mV. Use Belden 8451 shielded cable. Ground the shield at the U2 end only (not the tank end) — one-end grounding prevents a shield ground loop that would induce 60Hz hum directly into the recovery stage.</li>
@@ -726,8 +727,8 @@
   <h4>Build Sequence</h4>
   <p>Build in this order to make each stage testable before adding the next:</p>
   <ol>
-    <li><strong>PSU first.</strong> Before installing T1: the Triad F-219X has two 115VAC primary windings. For 120VAC mains wire them in <strong>parallel</strong> — connect both start leads together and both finish leads together (observe the phasing dots on the datasheet). Wiring them in series is a 230VAC configuration and will give incorrect secondary voltages. Once wired, install T1, BR1, NTC1, C11/C12, U4, U5, reg output caps (C13/C14 100µF + C17/C18 100nF), C15/C16 bulk decoupling. Power up with a variac or current-limited bench supply if available. Measure: +15V at U4 output pin, −15V at U5 output pin, &lt;50mV ripple on each rail. <em>Do not proceed until both rails are correct.</em></li>
-    <li><strong>Input stage.</strong> Install R1 (1MΩ), C_in (1µF), D_clamp+/D_clamp− (1N4148 pair), TVS1 (SMBJ15CA), U1 (input buffer OPA2134). Inject a 1kHz sine at −20dBV. Scope at U1 output: clean sine, no clipping, gain ≈1.</li>
+    <li><strong>PSU first.</strong> Before installing T1, make both wiring connections: <strong>(1) Primaries in parallel for 120VAC</strong> — connect both start leads together and both finish leads together (observe the phasing dots on the datasheet); series wiring gives 230VAC and incorrect secondary voltages. <strong>(2) Secondaries in series for 15-0-15 bipolar supply</strong> — connect one end of winding A to one end of winding B; that junction is the 0V/GND reference. The two remaining outer ends connect to BR1's AC input pins. Wiring the secondaries in parallel gives a single ~15VAC rail with no negative supply — the LM7915 and all op-amp negative supply pins will be unbiased. Once wired, install T1, BR1, NTC1, C11/C12, U4, U5, reg output caps (C13/C14 100µF + C17/C18 100nF), C15/C16 bulk decoupling. Power up with a variac or current-limited bench supply if available. Measure: +15V at U4 output pin, −15V at U5 output pin, &lt;50mV ripple on each rail. <em>Do not proceed until both rails are correct.</em></li>
+    <li><strong>Input stage.</strong> Install C_in (1µF — from input jack to U1(+) node), then R1 (1MΩ — from the same U1(+) node to GND, as a shunt, <em>not</em> in series), D_clamp+/D_clamp− (1N4148 pair — clamp the U1(+) node to ±15V rails), TVS1 (SMBJ15CA — across input jack tip-to-sleeve), U1 (input buffer OPA2134). R1 must be on the downstream (U1) side of C_in to provide a DC bias return path for U1's FET input. Inject a 1kHz sine at −20dBV. Scope at U1 output: clean sine, no clipping, gain ≈1.</li>
     <li><strong>Driver stage.</strong> Install Q1 (BD139), R3/R3b/R4 (bias network), R5 (emitter), C1 (1µF coupling), C2 (100µF bypass — positive lead to Q1 emitter, negative to ground), D3 (flyback clamp), T2 (REB3S driver transformer). Connect the tank's 8Ω input side. Scope at T2 primary: sinusoidal drive signal, no ringing or DC offset. Measure Q1 <em>emitter</em> DC: should be ~1.22V at zero signal (Ic ≈ 18mA through R5). The collector will read ≈ +15V — T2's transformer primary is a near-DC short to the rail, so Vce ≈ 13.8V drops across the transistor itself, not a load resistor. Do not expect a mid-rail reading at the collector.</li>
     <li><strong>Tank output and recovery.</strong> Install C3 (470nF), Rbias (100kΩ), Ri (470Ω), Rf (100kΩ), U2 (recovery OPA2134). Connect the tank's 2550Ω output side. Tap the spring with a finger — you should hear a reverb impulse at U2's output. Scope gain at U2 output vs. U2 (+) input: should be ≈214×.</li>
     <li><strong>HPF and tone.</strong> Install R6 (5.6kΩ), C4 (100nF), RV3 (Tone pot). Verify HPF corner is ~300Hz by sweeping a function generator — signal below 300Hz should attenuate; above 300Hz passes flat.</li>

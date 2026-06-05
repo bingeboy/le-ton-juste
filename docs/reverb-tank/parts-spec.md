@@ -45,7 +45,7 @@ All resistors: **metal film, 1% tolerance, 250mW** (Yageo MFR or Vishay CMF seri
 
 | Ref | Value | Location | Why |
 |---|---|---|---|
-| R1 | 1MΩ | Input to U1 non-inv input | Sets the input impedance seen by the upstream device (Alesis QuadraVerb). 1MΩ places virtually zero load on the QuadraVerb output, preserving the hi-fi signal integrity of the preceding stage. |
+| R1 | 1MΩ | U1(+) pin → GND (shunt — after C_in) | **R1 must be placed after C_in: from U1's non-inverting (+) pin to GND, not in series between the jack and C_in.** This shunt path provides the DC bias return for U1's FET input. Without it, the (+) input has no defined DC reference and will drift to a supply rail. R1 also sets the 1MΩ input impedance seen by the upstream device (Alesis QuadraVerb) — virtually zero load, preserving hi-fi signal integrity. |
 | R2 | 100Ω | U1 output (series) | Isolates the op-amp output from capacitive cable loads. Prevents U1 from oscillating when driving a cable to the next stage. Required on all op-amp outputs driving cable runs. |
 | R3 | 1kΩ | Dwell pot wiper → Q1 base | Limits base drive current into Q1 and damps any tendency to oscillate at high frequencies. Without this resistor, the Dwell pot wiper impedance varies with rotation, causing the driver gain to be nonlinear. |
 | R3b | 6.8kΩ | +15V → Q1 base (upper bias) | Upper leg of the BD139 base voltage divider. With R4, sets base voltage to ~1.92V, which sets emitter at ~1.22V and quiescent collector current at ~18mA. |
@@ -94,7 +94,7 @@ All capacitors in the signal path **must be film type** (WIMA MKS2 or MKP series
 ### Op-Amp Decoupling — Film
 | Ref | Value | Type | Location | Why |
 |---|---|---|---|---|
-| C5–C10 | 100nF / 63V | WIMA MKS2 film | One per op-amp supply pin (6 total — 2 per OPA2134 package, ×3 stages) | Prevents high-frequency noise on the ±15V supply rails from entering the op-amp and appearing as distortion on the output. Must be placed as close to the supply pins as physically possible on the PCB/perfboard. If omitted, the circuit will likely oscillate or have a high noise floor. |
+| C5–C8 | 100nF / 63V | WIMA MKS2 film | One per op-amp supply pin (4 total — 2 supply pins per DIP-8 package × 2 packages) | Prevents high-frequency noise on the ±15V supply rails from entering the op-amp and appearing as distortion on the output. Must be placed as close to the supply pins as physically possible on the PCB/perfboard. If omitted, the circuit will likely oscillate or have a high noise floor. |
 
 ### Op-Amp Decoupling — Bulk Electrolytic
 | Ref | Value | Type | Location | Why |
@@ -139,7 +139,7 @@ Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-3902
 
 | Ref | Part | Spec | Why |
 |---|---|---|---|
-| T1 | Triad F-219X | 30VA, dual-primary (2×115VAC), dual-secondary (2×15VAC) toroidal | Toroidal transformers have ~10× lower magnetic field leakage than standard E-I laminate transformers. This is critical in a reverb unit — the spring tank is a sensitive magnetic transducer and will pick up 60Hz hum from a nearby transformer. The toroidal's closed-core geometry keeps the field contained. 30VA is 10× the actual load (~3VA) for cool, quiet operation. **Primary wiring:** The F-219X has two 115VAC primary windings. For 120VAC mains they must be wired in parallel (observe phasing dots — connect both starts together and both finishes together). Wiring them in series gives a 230VAC transformer and incorrect secondary voltages. |
+| T1 | Triad F-219X | 30VA, dual-primary (2×115VAC), dual-secondary (2×15VAC) toroidal | Toroidal transformers have ~10× lower magnetic field leakage than standard E-I laminate transformers. This is critical in a reverb unit — the spring tank is a sensitive magnetic transducer and will pick up 60Hz hum from a nearby transformer. The toroidal's closed-core geometry keeps the field contained. 30VA is 10× the actual load (~3VA) for cool, quiet operation. **Primary wiring:** The F-219X has two 115VAC primary windings. For 120VAC mains they must be wired in parallel (observe phasing dots — connect both starts together and both finishes together). Wiring them in series gives a 230VAC transformer and incorrect secondary voltages. **Secondary wiring:** The F-219X also has two independent 15VAC secondary windings. These must be wired in series to create a 15-0-15 center-tapped supply: connect one end of winding A to one end of winding B — that junction becomes the 0V/GND reference. The remaining outer ends of the two windings connect to the AC input pins of BR1. Wiring the secondaries in parallel gives a single ~15VAC winding → single ~20V DC rail with no negative rail; the LM7915 and all negative op-amp supply pins will be unbiased. |
 | BR1 | W04G | 2A / 400V bridge rectifier *(upgraded from W02G 1A)* | Converts transformer AC to pulsating DC. Upgraded to 2A for 10× current margin at 200mA load — the rectifier is the one PSU component that fails silently and takes the whole supply down. 400V rating is derated 10× from the 42V peak. Costs $0.10 more than the W02G. |
 | U4 | LM7815 (TO-220) | +15V linear regulator | Sets the positive supply rail. Linear regulators produce zero switching noise — essential for a hi-fi circuit. Switching regulators (buck converters, etc.) inject kHz-range noise that passes through the op-amp supply rejection and appears as distortion. The LM7815 is proven, inexpensive, and stable. Mount to chassis with mica insulating pad and thermal compound. |
 | U5 | LM7915 (TO-220) | −15V linear regulator | Same rationale as U4. The negative rail powers the inverting inputs and negative supply pins of all op-amps. |
@@ -170,8 +170,8 @@ Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-3902
 | Ref | Part | Spec | Why |
 |---|---|---|---|
 | C_in | 1µF / 63V WIMA MKS2 film | Input coupling cap — before U1 | Blocks DC from reaching the circuit. A failing pedal or preamp with a DC offset on its output would otherwise reach U1's input directly through R1. The existing C1 is after the input buffer — C_in sits at the jack itself, first in the signal path. |
-| D_clamp+ | 1N4148 | Input → +15V rail | Overvoltage clamp. If the input exceeds +15.6V, this diode conducts and clamps the voltage. R1 (1MΩ) limits clamp current to safe microamps even at extreme input voltages. Protects U1's input from any source accidentally connected to the input jack. |
-| D_clamp− | 1N4148 | −15V rail → Input | Same clamp on the negative side. Together with D_clamp+ they form a hard limit — input can never exceed the supply rails at U1's gate. |
+| D_clamp+ | 1N4148 | Anode at U1(+) node → cathode at +15V rail | Overvoltage clamp at U1(+) node. Conducts when the node rises above ~+15.6V, pulling excess energy into the supply rail. Clamp current is limited by the source impedance and C_in reactance during transients. Protects U1's input from any source accidentally connected to the input jack. |
+| D_clamp− | 1N4148 | Anode at −15V rail → cathode at U1(+) node | Same clamp on the negative side — clamps node below ~−15.6V. Together D_clamp+/D_clamp− hard-limit the U1(+) node to within ±15.6V of the supply rails. |
 | TVS1 | SMBJ15CA | Bidirectional TVS at input jack | Catches ESD events that 1N4148 diodes are too slow to handle. When you plug in a cable while other gear is running, a static discharge travels down the cable faster than the clamping diodes can respond. The TVS clamps in nanoseconds. Wired directly across the input jack tip to sleeve. |
 
 ### Serviceability
@@ -273,7 +273,7 @@ Standard item — available on Amazon, Mouser, or any hardware supplier. Search 
 
 1. **Grounding:** Use a single-point star ground connected to the chassis at one point. All circuit grounds (op-amp ground pins, pot grounds, jack grounds) run back to this single point. Do not daisy-chain grounds — ground loops cause hum.
 
-2. **Decoupling caps:** Place C5–C10 (100nF film) physically as close to the OPA2134 supply pins as possible. If they are more than 1" away from the IC, they will not effectively suppress HF noise.
+2. **Decoupling caps:** Place C5–C8 (100nF film — 4 total, one per supply pin per OPA2134 package × 2 packages) physically as close to the OPA2134 supply pins as possible. If they are more than 1" away from the IC, they will not effectively suppress HF noise.
 
 3. **Tank orientation:** Mount RT1 open-side down, horizontally. If mounted open-side up, the springs can shift position over time and the reverb character will drift.
 
