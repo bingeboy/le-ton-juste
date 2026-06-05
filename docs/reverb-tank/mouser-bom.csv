@@ -1,5 +1,5 @@
 Quantity,Manufacturer Part Number,Description,Customer Reference
-2,OPA2134PA,Dual audio op-amp FET-input DIP-8,U1 U2 U3 (2 pkgs = 4 sections — 3 used 1 spare)
+2,OPA2134PA,Dual audio op-amp FET-input DIP-8,U1+U2 share pkg 1 · U3 uses half of pkg 2 (spare = pkg 2 second half) — order 2 DIP-8 sockets
 1,BD139,NPN transistor TO-126 high-current driver,Q1
 1,LM7815CT/NOPB,+15V linear regulator TO-220,U4
 1,LM7915CT/NOPB,-15V linear regulator TO-220,U5
