@@ -109,6 +109,8 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 | Molex KK 2-pin housing (transformer secondary × 2, tank RCA × 2, jacks × 2) | 22-01-3027 | 8 | ~$0.25 each = $2.00 |
 | Molex KK 3-pin housing (front panel pots × 3) | 22-01-3037 | 3 | ~$0.25 each = $0.75 |
 | Molex KK crimp terminals (bag of 50) | 08-50-0114 | 1 bag | ~$3.00 |
+| Molex KK 2-pin PCB header straight (board-side mates for 2-pin housings) | 22-27-2021 | 8 | ~$0.20 each = $1.60 |
+| Molex KK 3-pin PCB header straight (board-side mates for 3-pin housings) | 22-27-2031 | 3 | ~$0.20 each = $0.60 |
 
 ### Hardware & Connectors
 
@@ -136,7 +138,7 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 | Kester 951 flux pen | 2331-ZX | 1 | ~$8.00 |
 | MG Chemicals 422B conformal coating spray | 422B | 1 can | ~$15.00 |
 
-**Mouser Subtotal: ~$190–215**
+**Mouser Subtotal: ~$192–218**
 
 ---
 
@@ -183,7 +185,7 @@ Design a custom 2U aluminum panel with:
 | Supplier | Est. Cost |
 |---|---|
 | Amplified Parts | ~$53 |
-| Mouser | ~$190–215 |
+| Mouser | ~$192–218 |
 | Hammond (chassis) | ~$50 |
 | Front Panel Express | ~$35 |
 | Sorbothane grommets | ~$12 |
