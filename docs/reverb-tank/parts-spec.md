@@ -35,7 +35,7 @@ All three signal stages use the same op-amp for consistency of character and sim
 
 | Ref | Part | Package | Qty | Why |
 |---|---|---|---|---|
-| U1, U2, U3 | Texas Instruments OPA2134PA | DIP-8 (dual) | **2 packages** (4 sections — 3 used, 1 spare) | FET-input op-amp with extremely high input impedance (10¹³Ω) — essential for U2 (Recovery), which must load the tank's 2550Ω output without attenuating the signal. THD+N = 0.00008% — audibly transparent. Slew rate 20V/µs eliminates any slew-limiting distortion on pick transients. The OPA2134 is the gold standard for hi-fi audio DIY and is used consistently throughout this circuit so the builder only needs one part number. Do not substitute NE5532 or TL072 — both have higher noise floors and lower input impedance, which will degrade recovery signal quality. |
+| U1, U2, U3 | Texas Instruments OPA2134PA | DIP-8 (dual) | **2 packages** (4 sections — 3 used, 1 spare) | FET-input op-amp with extremely high input impedance (10¹³Ω) — essential for U2 (Recovery), which must load the tank's 2550Ω output without attenuating the signal. THD+N = 0.00008% — audibly transparent. Slew rate 20V/µs eliminates any slew-limiting distortion on pick transients. The OPA2134 is the gold standard for hi-fi audio DIY and is used consistently throughout this circuit so the builder only needs one part number. Do not substitute NE5532 or TL072 — both have higher noise floors and lower input impedance, which will degrade recovery signal quality. **Package mapping:** U1 (input buffer) and U2 (recovery) share one physical OPA2134PA package. U3 (output buffer) occupies the first half of the second package; the second half is unused (spare section). Order 2 DIP-8 sockets — not 3. |
 
 ---
 
