@@ -60,7 +60,7 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 |---|---|---|---|
 | 1µF/63V film (C_in input coupling + C1 driver coupling) | MKS2C041001B00KSSD | 2 | ~$0.50 each = $1.00 |
 | 470nF/63V film | MKS2C034700K00KSSD | 1 | ~$0.35 |
-| 100nF/63V film (HPF + op-amp decoupling) | MKS2C031001A00KSSD | 8 | ~$0.25 each = $2.00 |
+| 100nF/63V film (HPF + op-amp decoupling + reg bypass + ground-lift) | MKS2C031001A00KSSD | 10 | ~$0.25 each = $2.50 |
 | 47pF silver mica (bright cap) | CD15ED470JO3F | 1 | ~$0.40 |
 
 ### Capacitors — Electrolytic (Nichicon)
@@ -92,12 +92,14 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 | 10kΩ / 1W metal film (PSU bleed resistors — 1 per rail) | FMP100JR-52-10K | 2 | ~$0.30 each = $0.60 |
 | 10Ω / 0.5W metal film (ground lift RC network) | MFR-25FBF52-10R | 2 | ~$0.10 each = $0.20 |
 
-### Potentiometers (Vishay/Spectrol 296 — MIL-PRF-39023)
+### Potentiometers
 
 | Item | Mfr Part # | Qty | Est. Price |
 |---|---|---|---|
-| 10kΩ linear (Dwell) | 296UAL103B2 | 1 | ~$10 |
-| 100kΩ linear (Mix + Tone) | 296UAL104B2 | 2 | ~$10 each = $20 |
+| 10kΩ linear (Dwell) — Vishay/Spectrol 296 MIL-PRF-39023 | 296UAL103B2 | 1 | ~$10 |
+| 100kΩ **audio taper** (Mix + Tone) — Bourns PDB181-GTR | PDB181-GTR01-104A0 | 2 | ~$3 each = $6 |
+
+> **Taper note:** Audio taper is specified for Mix and Tone — feel is more natural across the sweep. Builders who prefer MIL-PRF-39023 certification throughout or want linear taper can substitute **Vishay/Spectrol 296UAL104B2** (100kΩ linear, ~$10 each). Circuit is electrically identical either way.
 
 ### Serviceability — Molex KK Connectors
 *Use these at every internal wire connection so components can be swapped without desoldering*
@@ -122,7 +124,7 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 | TO-220 heatsink | V7477X | 2 | ~$1.50 each = $3.00 |
 | TO-220 mica insulating pad | 4880SG | 2 | ~$0.30 each = $0.60 |
 | Thermal compound (Shin-Etsu X-23 or equivalent) | — | 1 small tube | ~$5.00 |
-| Triad F-219X toroidal transformer 15VA dual 15VAC | F-219X | 1 | ~$28 |
+| Triad F-219X toroidal transformer 30VA dual-primary 2×115VAC / dual-secondary 2×15VAC | F-219X | 1 | ~$28 |
 | Vector T44 FR4 perfboard | T44 | 1 | ~$8.00 |
 | Würth M3 nylon standoff 10mm | 971100311 | 4 | ~$0.50 each = $2.00 |
 | Würth M3 stainless screw | 900151030030 | 10 | ~$0.20 each = $2.00 |

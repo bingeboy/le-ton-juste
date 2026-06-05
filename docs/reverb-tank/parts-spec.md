@@ -114,13 +114,15 @@ All capacitors in the signal path **must be film type** (WIMA MKS2 or MKP series
 
 Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-39023 rated construction, gold-plated wiper, stainless shaft, rated to 10,000+ cycles minimum. Far beyond the Alpha consumer pots originally specced.
 
-**Note on taper:** For RV2 (Mix) and RV3 (Tone), **audio taper is the recommended choice**. A 100kΩ linear Mix pot in a passive blend with a 10kΩ dry resistor will feel cramped — most of the useful range is compressed into a narrow arc of rotation. Recommended: **Bourns PDB18-B415** (pro audio grade, available in audio taper, built to equivalent standard). RV1 (Dwell) is correctly linear. The Vishay/Spectrol 296 in linear taper is the only MIL-PRF-39023-certified option and will work electrically, but will not feel as natural on Mix and Tone.
+**Note on taper:** Mix (RV2) and Tone (RV3) are specified as audio taper — **Bourns PDB181-GTR01-104A0**. Audio taper matches how ears perceive level changes; a 100kΩ linear pot in this passive blend against a 10kΩ dry resistor compresses most of the audible range into a narrow arc near minimum rotation. RV1 (Dwell) is correctly linear.
+
+**Builder's note — taper is a preference call:** Substitute **Vishay/Spectrol 296UAL104B2** (100kΩ linear) for RV2/RV3 if MIL-PRF-39023 certification is required throughout or linear feel is preferred. The circuit is electrically identical either way.
 
 | Ref | Value | Taper | Part Number | Why |
 |---|---|---|---|---|
 | RV1 (Dwell) | 10kΩ | Linear | **Vishay/Spectrol 296UAL103B2** | Driver level control. Linear taper is electrically correct here. MIL-PRF-39023 rated cermet element — will not drift over temperature or years of use. Gold wiper ensures zero contact noise. |
-| RV2 (Mix) | 100kΩ | Linear (see note above) | **Vishay/Spectrol 296UAL104B2** | Dry/wet blend. Cermet element rated for 10,000 cycles minimum. Gold wiper. Stainless shaft resists corrosion in rack environments. |
-| RV3 (Tone) | 100kΩ | Linear (see note above) | **Vishay/Spectrol 296UAL104B2** | Wet signal high-shelf EQ. Same part as RV2 for simplified sourcing. |
+| RV2 (Mix) | 100kΩ | Audio | **Bourns PDB181-GTR01-104A0** | Dry/wet blend. Carbon element, 17mm body, D-shaft. Audio taper gives an even-feeling sweep across the blend range. See builder's note above for linear alternative. |
+| RV3 (Tone) | 100kΩ | Audio | **Bourns PDB181-GTR01-104A0** | Wet signal high-shelf EQ. Same part as RV2 for simplified sourcing. See builder's note above for linear alternative. |
 
 ---
 
@@ -137,7 +139,7 @@ Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-3902
 
 | Ref | Part | Spec | Why |
 |---|---|---|---|
-| T1 | Antek AN-0115 (or equivalent toroidal) | 15VA, dual 15VAC secondary | Toroidal transformers have ~10× lower magnetic field leakage than standard E-I laminate transformers. This is critical in a reverb unit — the spring tank is a sensitive magnetic transducer and will pick up 60Hz hum from a nearby transformer. The toroidal's closed-core geometry keeps the field contained. 15VA is sized at 5× the actual load (~3VA) for cool, quiet operation. |
+| T1 | Triad F-219X | 30VA, dual-primary (2×115VAC), dual-secondary (2×15VAC) toroidal | Toroidal transformers have ~10× lower magnetic field leakage than standard E-I laminate transformers. This is critical in a reverb unit — the spring tank is a sensitive magnetic transducer and will pick up 60Hz hum from a nearby transformer. The toroidal's closed-core geometry keeps the field contained. 30VA is 10× the actual load (~3VA) for cool, quiet operation. **Primary wiring:** The F-219X has two 115VAC primary windings. For 120VAC mains they must be wired in parallel (observe phasing dots — connect both starts together and both finishes together). Wiring them in series gives a 230VAC transformer and incorrect secondary voltages. |
 | BR1 | W04G | 2A / 400V bridge rectifier *(upgraded from W02G 1A)* | Converts transformer AC to pulsating DC. Upgraded to 2A for 10× current margin at 200mA load — the rectifier is the one PSU component that fails silently and takes the whole supply down. 400V rating is derated 10× from the 42V peak. Costs $0.10 more than the W02G. |
 | U4 | LM7815 (TO-220) | +15V linear regulator | Sets the positive supply rail. Linear regulators produce zero switching noise — essential for a hi-fi circuit. Switching regulators (buck converters, etc.) inject kHz-range noise that passes through the op-amp supply rejection and appears as distortion. The LM7815 is proven, inexpensive, and stable. Mount to chassis with mica insulating pad and thermal compound. |
 | U5 | LM7915 (TO-220) | −15V linear regulator | Same rationale as U4. The negative rail powers the inverting inputs and negative supply pins of all op-amps. |
@@ -196,7 +198,7 @@ Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-3902
 | IC sockets | 2× DIP-8 machine-pin sockets | Allows the OPA2134 op-amps to be replaced without desoldering. Machine-pin (turned-pin) sockets maintain reliable contact over years of use and do not add audible resistance. Spring-contact (leaf-spring) sockets degrade over time and can cause intermittent noise. |
 | Hookup wire (signal) | Belden 8451 shielded twisted pair, 24AWG | All internal signal connections must be made with shielded wire. The reverb circuit has high-gain stages (U2 at 214×) — any unshielded wire in the high-gain section will act as an antenna and pick up hum. Belden 8451 is the industry standard for internal audio wiring. |
 | Hookup wire (power) | 22AWG stranded, rated 300V | Power connections from the transformer secondary and between regulator components. Stranded wire is mandatory — solid wire will work-harden and break at solder joints over time due to vibration. |
-| Fuse | 500mA slow-blow | Protects the transformer and wiring. Slow-blow type is essential — the transformer inrush current at power-on will blow a fast-blow fuse immediately. 500mA is sized above the ~200mA operating current but below the transformer's thermal limit. |
+| Fuse | 500mA slow-blow | Protects the transformer primary and mains wiring. Slow-blow type is essential — the transformer inrush current at power-on will blow a fast-blow fuse immediately. At 120VAC, the F-219X draws roughly 30VA/120V ≈ 250mA RMS at full load; 500mA is 2× that, sized for inrush and to protect the transformer without nuisance trips. |
 | Power switch | SPST rocker, 6A/250V rated | Interrupts the mains before the transformer primary. 6A rating is massive overkill for this circuit but ensures zero contact heating and long life. |
 
 ---
