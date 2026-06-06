@@ -397,9 +397,12 @@ def build(active_analysis="op"):
         # Ie ~= Ic for Bf=100). Compare to the current actually flowing through R5
         # (I(R5) = Ie = Ic in the bias network) so q1_ic_calc has a real target.
         # The divisor tracks circuit_params.R5 (not a hardcoded 68) so the formula
-        # never silently drifts if R5 changes.
+        # never silently drifts if R5 changes. q1_ve is a 190-200ms AVG, so q1_ic
+        # MUST also be an AVG over the SAME 190-200ms window -- comparing the
+        # windowed-average Ve against a single instantaneous I(R5) point would mix
+        # two different sampling modes and inflate q1_ic_err on any residual ripple.
         b.directive(f".meas TRAN q1_ic_calc PARAM {{q1_ve/{P.R5}}}")
-        b.directive(".meas TRAN q1_ic FIND I(R5) AT=200m")
+        b.directive(".meas TRAN q1_ic AVG I(R5) FROM=190m TO=200m")
         # Flag disagreement: |q1_ic_calc - q1_ic| / q1_ic must stay under 10%.
         b.directive(".meas TRAN q1_ic_err PARAM {abs(q1_ic_calc - q1_ic) / q1_ic}")
         # Settled rail sanity (the bias points depend on them).
@@ -409,7 +412,7 @@ def build(active_analysis="op"):
         # Recovery gain + wet HPF corner. PSU SINE sources have no AC spec (AC=0),
         # so only V1 (AC 1) drives the sweep. .ac dec 100 20 20k.
         b.directive(".ac dec 100 20 20k")
-        b.directive(".meas AC recov_gain FIND V(u2_out)/V(u2_in_pos) AT=1k")
+        b.directive(".meas AC recov_gain FIND mag(V(u2_out)/V(u2_in_pos)) AT=1k")
         # Wet HPF -3dB corner. In the FULL circuit the absolute hpf_out level is
         # shaped by the tank transfer (a resonant "drip" peak near 2kHz) on top of
         # the R6/C4 high-pass, so a 0.7079*ref crossing on V(hpf_out) alone does
@@ -420,9 +423,16 @@ def build(active_analysis="op"):
         # passband of the HPF transfer), find the rising 0.7079*ref crossing.
         b.directive(".meas AC hpf_ref  FIND mag(V(hpf_out)/V(u2_out)) AT=5k")
         b.directive(".meas AC hpf_m3db WHEN mag(V(hpf_out)/V(u2_out))=hpf_ref*0.7079 RISE=1")
-        # Context: end-to-end chain level/gain at 1kHz.
-        b.directive(".meas AC chain_lvl FIND V(v_out) AT=1k")
-        b.directive(".meas AC chain_gain_db FIND 20*log10(V(v_out)/V(vin)) AT=1k")
+        # Recovery-stage gain end-to-end, in dB. This measures the SAME thing as
+        # recov_gain above (V(u2_out)/V(u2_in_pos), the 214x non-inverting stage),
+        # just expressed in dB so it can be pass-checked against RECOV_GAIN_DB_SIM /
+        # CHAIN_GAIN_DB_WINDOW (44.6-48.6 dB). It deliberately does NOT measure the
+        # full vin->v_out chain: the dry path attenuates (~-5 dB) and the wet path
+        # is shaped by the tank+HPF, so 20*log10(V(v_out)/V(vin)) is ~15-21 dB, not
+        # the 46.6 dB recovery gain -- a vin->v_out measurement would fail the
+        # recovery-gain window. Reference level at 1kHz for context.
+        b.directive(".meas AC recov_lvl FIND V(u2_out) AT=1k")
+        b.directive(".meas AC recov_gain_db FIND mag(20*log10(V(u2_out)/V(u2_in_pos))) AT=1k")
     elif active_analysis == "tran":
         # Output peak + no-oscillation. 100mVpk 1kHz signal.
         #

@@ -175,11 +175,16 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 .meas OP off_u3 FIND V(v_out)
 .meas OP q1_ve  FIND V(q1_e)
 
-; Stage 6 — AC: full-chain gain within +/-2dB of the design target.
-;   Target = CHAIN_GAIN_DB_SIM = 46.59 dB (from simulated recov_gain 213.6x);
+; Stage 6 — AC: recovery-stage gain (across U2) in dB, within +/-2dB of target.
+;   recov_gain_db measures the SAME thing as recov_gain above —
+;   20*log10(V(u2_out)/V(u2_in_pos)), the 214x non-inverting recovery stage —
+;   expressed in dB. It deliberately does NOT measure the full vin->v_out chain:
+;   the dry path attenuates (~-5 dB) and the wet path is tank/HPF-shaped, so
+;   20*log10(V(v_out)/V(vin)) is only ~15-21 dB and would fail this window.
+;   Target = CHAIN_GAIN_DB_SIM = 46.59 dB (= simulated recov_gain 213.6x);
 ;   pass window CHAIN_GAIN_DB_WINDOW = 44.6 - 48.6 dB (+/-2 dB).
-.meas AC chain_lvl  FIND V(v_out) AT=1k
-.meas AC chain_gain_db FIND 20*log10(V(v_out)/V(vin)) AT=1k
+.meas AC recov_lvl  FIND V(u2_out) AT=1k
+.meas AC recov_gain_db FIND mag(20*log10(V(u2_out)/V(u2_in_pos))) AT=1k
 ```
 
 | Assertion name | Expression | Pass condition | Fail means |
@@ -187,7 +192,7 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | Stage 1 set | (as above) | all still pass | A later stage regressed the baseline |
 | `off_u1/2/3` | op-amp outputs | \|val\| ≤ 10 mV | Real PSU/driver introduced DC offset |
 | `q1_ve` | `V(q1_e)` | 1.0 – 1.4 V | Bias shifted under regulated rails |
-| `chain_gain_db` | `20log10(V(v_out)/V(vin))` @1k | 44.6 – 48.6 dB (target 46.59 dB ±2 dB) | End-to-end gain drifted out of spec |
+| `recov_gain_db` | `20log10(V(u2_out)/V(u2_in_pos))` @1k | 44.6 – 48.6 dB (target 46.59 dB ±2 dB) | Recovery-stage gain drifted out of spec |
 
 ---
 

@@ -51,4 +51,7 @@ Quantity,Manufacturer Part Number,Description,Customer Reference
 1,2331-ZX,Kester 951 no-clean flux pen,Flux
 1,422B,MG Chemicals 422B acrylic conformal coating spray,PCB conformal coat — apply after all testing complete
 2,34112,TE ring terminal 22-16AWG #8 stud insulated,Earth bond lugs (IEC C14 ground pin to chassis + secondary bond point)
+1,WP7113ID,Kingbright 5mm high-efficiency red LED (dim ~1.2mA from +15V via 10k),Power LED — 10k current-limit resistor from existing qty-5 10k stock (no new resistor line)
+1,593-MBC255-RD,Panel-mount bezel for 5mm LED red,Power LED panel bezel
+4,9600K11,Shore 30A silicone rubber grommet ~6mm ID M3-compatible (McMaster-Carr — NOT stocked at Mouser),Tank isolation grommets — Owner to source: any Shore 30–40 rubber/silicone grommet with M3-compatible ID
 1,1455T2201,Hammond 2U aluminum rackmount chassis rack ears included,Chassis

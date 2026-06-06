@@ -28,7 +28,7 @@ PY = sys.executable
 # Most stages ship only their default op netlist. Stages 5 and 6 additionally
 # carry analysis-specific variants whose .meas assertions live in NO other file:
 #   - stage 5: op (rail DC) + tran (ripple_pos/ripple_neg < 10mVpp)
-#   - stage 6: op (bias) + ac (recov_gain / hpf_m3db / chain_gain_db) + tran
+#   - stage 6: op (bias) + ac (recov_gain / hpf_m3db / recov_gain_db) + tran
 #              (vout_pk / osc_ratio)
 # The FIRST variant in each list is the canonical default (matches the generator's
 # own __main__ default and the bare filename); the rest get a _<analysis> suffix.

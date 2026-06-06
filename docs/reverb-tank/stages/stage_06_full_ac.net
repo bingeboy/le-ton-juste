@@ -62,11 +62,11 @@ Rload v_out 0 47k
 .model BZX84C15L D(BV=15 N=1.6 Rs=2 IBV=5m Cjo=80p Iave=200m)
 .model DN4007 D(Is=14.1n N=1.984 Rs=33.9m Ikf=94.8 Cjo=51.7p M=0.333 Vj=0.7 Bv=1000 Ibv=10u)
 .ac dec 100 20 20k
-.meas AC recov_gain FIND V(u2_out)/V(u2_in_pos) AT=1k
+.meas AC recov_gain FIND mag(V(u2_out)/V(u2_in_pos)) AT=1k
 .meas AC hpf_ref  FIND mag(V(hpf_out)/V(u2_out)) AT=5k
 .meas AC hpf_m3db WHEN mag(V(hpf_out)/V(u2_out))=hpf_ref*0.7079 RISE=1
-.meas AC chain_lvl FIND V(v_out) AT=1k
-.meas AC chain_gain_db FIND 20*log10(V(v_out)/V(vin)) AT=1k
+.meas AC recov_lvl FIND V(u2_out) AT=1k
+.meas AC recov_gain_db FIND mag(20*log10(V(u2_out)/V(u2_in_pos))) AT=1k
 .lib UniversalOpAmp2.lib
 .backanno
 .end

@@ -591,7 +591,7 @@ def check_variant_netlists():
     for path, expected in (
         (NET5_TRAN, {"ripple_pos", "ripple_neg"}),
         (NET6_TRAN, {"vout_pk", "osc_ratio"}),
-        (NET6_AC, {"recov_gain", "hpf_m3db", "chain_gain_db"}),
+        (NET6_AC, {"recov_gain", "hpf_m3db", "recov_gain_db"}),
     ):
         base = os.path.basename(path)
         checks += 1
@@ -626,21 +626,25 @@ def check_q1_ic_crosscheck():
 
 
 # ---------------------------------------------------------------------------
-# 1j. chain_gain_db TARGET (W4): if chain_gain_db is asserted in any committed
+# 1j. recov_gain_db TARGET (W4): if recov_gain_db is asserted in any committed
 #     ac netlist, its documented sim target (test-assertions.md / circuit-params)
-#     must equal CHAIN_GAIN_DB_SIM. Guards a numeric pass target existing at all.
+#     must equal CHAIN_GAIN_DB_SIM. recov_gain_db measures the recovery-stage gain
+#     end-to-end across U2 (20*log10(V(u2_out)/V(u2_in_pos))) in dB; it is NOT the
+#     full vin->v_out chain gain (the original chain_gain_db measured vin->v_out,
+#     which is ~15-21 dB and would have failed the 44.6-48.6 dB window). Guards a
+#     numeric pass target existing at all.
 # ---------------------------------------------------------------------------
 def check_chain_gain_target():
     global checks
     names = _netlist_meas_names(NET6_AC)
-    if names is None or "chain_gain_db" not in names:
-        return  # nothing asserts chain_gain_db -> nothing to cross-check
+    if names is None or "recov_gain_db" not in names:
+        return  # nothing asserts recov_gain_db -> nothing to cross-check
     checks += 1
     with open(ASSERT_MD) as f:
         text = f.read()
     needle = "%g dB" % P.CHAIN_GAIN_DB_SIM
     if needle not in text:
-        fail("test-assertions.md: chain_gain_db target '%s' "
+        fail("test-assertions.md: recov_gain_db target '%s' "
              "(CHAIN_GAIN_DB_SIM) not found" % needle)
 
 

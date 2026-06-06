@@ -189,8 +189,14 @@ RIPPLE_MAX_PP    = 10e-3           # < 10 mVpp on each rail
 RECOV_GAIN_SIM     = 213.6         # V/V @1kHz (= 1 + RF/RI nominal 214)
 RECOV_GAIN_DB_SIM  = 46.59         # dB
 RECOV_GAIN_WINDOW  = (200.0, 228.0)  # V/V pass band
-CHAIN_GAIN_DB_SIM    = 46.59       # dB, from simulated recov_gain 213.6x
-CHAIN_GAIN_DB_WINDOW = (44.6, 48.6)  # +/-2dB
+# recov_gain_db (Stage 6 ac): the recovery stage gain measured END-TO-END across
+# U2 in dB, i.e. 20*log10(V(u2_out)/V(u2_in_pos)). This is the SAME quantity as
+# RECOV_GAIN_DB_SIM above, just the pass target + window used by the .meas
+# recov_gain_db directive. It is NOT the full vin->v_out chain gain (that is only
+# ~15-21 dB: the dry path attenuates and the wet path is tank/HPF-shaped), so the
+# .meas measures U2 directly. Window is +/-2 dB about the 46.59 dB sim result.
+CHAIN_GAIN_DB_SIM    = 46.59       # dB, recovery stage gain end-to-end (= recov_gain 213.6x)
+CHAIN_GAIN_DB_WINDOW = (44.6, 48.6)  # +/-2dB about CHAIN_GAIN_DB_SIM
 HPF_CORNER_SIM     = 312.0         # Hz (measured R6/C4 transfer)
 HPF_CORNER_DESIGN  = 284.0         # Hz = 1/(2*pi*R6*C4)
 HPF_CORNER_WINDOW  = (250.0, 320.0)  # Hz pass band
