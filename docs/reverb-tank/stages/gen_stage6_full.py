@@ -350,11 +350,21 @@ def build(active_analysis="op"):
     # Tone RV3, Mix RV2, output buffer U3.
     b.res("RV3a", P.RV3A, 2180, 600, "hpf_out", "rv3_wiper")
     b.res("RV3b", P.RV3B, 2180, 720, "rv3_wiper", "0")
-    b.res("Rdry", P.RDRY, 640, 360, "u1_buf", "mix_top")
-    b.res("Rwet", P.RWET, 2300, 600, "rv3_wiper", "mix_top")
-    b.res("RV2a", P.RV2A, 2300, 760, "mix_top", "mix_node")
-    b.res("RV2b", P.RV2B, 2300, 880, "mix_node", "0")
-    b.cap("C_bright", P.C_BRIGHT, 2420, 760, "mix_top", "mix_node")
+    # --- Mix RV2: 3-terminal PASSIVE BLEND (not a volume knob). ---------------
+    # Physical wiring (parts-spec "Mix Stage Topology"):
+    #   Dry  (u1_buf) -> Rdry -> RV2 pin 1 (CCW end)  == node mix_dry
+    #   Wet  (rv3_wiper, Tone output) -> RV2 pin 3 (CW end) == node mix_wet
+    #   RV2 wiper (pin 2) -> U3(+)                     == node mix_node
+    #   C_bright (47p) bridges pin1<->pin3 (full pot, mix_dry<->mix_wet)
+    # RV2a = CCW half (pin1->wiper), RV2b = CW half (wiper->pin3). Full-CCW puts
+    # the wiper at mix_dry (100% dry); full-CW puts it at mix_wet (100% wet).
+    # The wet source ties DIRECTLY to mix_wet (no Rwet) so neither end is shorted.
+    b.res("Rdry", P.RDRY, 640, 360, "u1_buf", "mix_dry")
+    b.res("RV2a", P.RV2A, 2300, 760, "mix_dry", "mix_node")   # CCW half of pot
+    b.res("RV2b", P.RV2B, 2300, 880, "mix_node", "mix_wet")   # CW half of pot
+    b.cap("C_bright", P.C_BRIGHT, 2420, 760, "mix_dry", "mix_wet")  # bright cap across full pot
+    # Wet (Tone wiper) connects directly to the CW end of the pot.
+    b.res("Rwet_wire", "0", 2300, 600, "rv3_wiper", "mix_wet")  # direct wire, modelled 0 ohm
     b.opa("U3", 2560, 900, "mix_node", "u3_out", "+15V", "-15V", "u3_out")
     b.res("R7", P.R7, 2640, 844, "u3_out", "v_out")
     b.res("Rload", P.RLOAD, 2760, 844, "v_out", "0")
@@ -383,6 +393,18 @@ def build(active_analysis="op"):
         b.directive(".meas TRAN off_u2 AVG V(u2_out) FROM=190m TO=200m")
         b.directive(".meas TRAN off_u3 AVG V(v_out)  FROM=190m TO=200m")
         b.directive(".meas TRAN q1_ve  AVG V(q1_e)   FROM=190m TO=200m")
+        # Cross-check: Ic implied by the emitter voltage across R5 (Ic ~= Ve/R5,
+        # Ie ~= Ic for Bf=100). Compare to the current actually flowing through R5
+        # (I(R5) = Ie = Ic in the bias network) so q1_ic_calc has a real target.
+        # The divisor tracks circuit_params.R5 (not a hardcoded 68) so the formula
+        # never silently drifts if R5 changes. q1_ve is a 190-200ms AVG, so q1_ic
+        # MUST also be an AVG over the SAME 190-200ms window -- comparing the
+        # windowed-average Ve against a single instantaneous I(R5) point would mix
+        # two different sampling modes and inflate q1_ic_err on any residual ripple.
+        b.directive(f".meas TRAN q1_ic_calc PARAM {{q1_ve/{P.R5}}}")
+        b.directive(".meas TRAN q1_ic AVG I(R5) FROM=190m TO=200m")
+        # Flag disagreement: |q1_ic_calc - q1_ic| / q1_ic must stay under 10%.
+        b.directive(".meas TRAN q1_ic_err PARAM {abs(q1_ic_calc - q1_ic) / q1_ic}")
         # Settled rail sanity (the bias points depend on them).
         b.directive(".meas TRAN rail_pos AVG V(+15V) FROM=190m TO=200m")
         b.directive(".meas TRAN rail_neg AVG V(-15V) FROM=190m TO=200m")
@@ -390,7 +412,7 @@ def build(active_analysis="op"):
         # Recovery gain + wet HPF corner. PSU SINE sources have no AC spec (AC=0),
         # so only V1 (AC 1) drives the sweep. .ac dec 100 20 20k.
         b.directive(".ac dec 100 20 20k")
-        b.directive(".meas AC recov_gain FIND V(u2_out)/V(u2_in_pos) AT=1k")
+        b.directive(".meas AC recov_gain FIND mag(V(u2_out)/V(u2_in_pos)) AT=1k")
         # Wet HPF -3dB corner. In the FULL circuit the absolute hpf_out level is
         # shaped by the tank transfer (a resonant "drip" peak near 2kHz) on top of
         # the R6/C4 high-pass, so a 0.7079*ref crossing on V(hpf_out) alone does
@@ -401,9 +423,16 @@ def build(active_analysis="op"):
         # passband of the HPF transfer), find the rising 0.7079*ref crossing.
         b.directive(".meas AC hpf_ref  FIND mag(V(hpf_out)/V(u2_out)) AT=5k")
         b.directive(".meas AC hpf_m3db WHEN mag(V(hpf_out)/V(u2_out))=hpf_ref*0.7079 RISE=1")
-        # Context: end-to-end chain level/gain at 1kHz.
-        b.directive(".meas AC chain_lvl FIND V(v_out) AT=1k")
-        b.directive(".meas AC chain_gain_db FIND 20*log10(V(v_out)/V(vin)) AT=1k")
+        # Recovery-stage gain end-to-end, in dB. This measures the SAME thing as
+        # recov_gain above (V(u2_out)/V(u2_in_pos), the 214x non-inverting stage),
+        # just expressed in dB so it can be pass-checked against RECOV_GAIN_DB_SIM /
+        # CHAIN_GAIN_DB_WINDOW (44.6-48.6 dB). It deliberately does NOT measure the
+        # full vin->v_out chain: the dry path attenuates (~-5 dB) and the wet path
+        # is shaped by the tank+HPF, so 20*log10(V(v_out)/V(vin)) is ~15-21 dB, not
+        # the 46.6 dB recovery gain -- a vin->v_out measurement would fail the
+        # recovery-gain window. Reference level at 1kHz for context.
+        b.directive(".meas AC recov_lvl FIND V(u2_out) AT=1k")
+        b.directive(".meas AC recov_gain_db FIND mag(20*log10(V(u2_out)/V(u2_in_pos))) AT=1k")
     elif active_analysis == "tran":
         # Output peak + no-oscillation. 100mVpk 1kHz signal.
         #

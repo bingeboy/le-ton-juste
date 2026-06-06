@@ -372,11 +372,16 @@ def build(active_analysis="op"):
     # Tone RV3, Mix RV2, output buffer U3 (unchanged).
     b.res("RV3a", P.RV3A, 2180, 600, "hpf_out", "rv3_wiper")
     b.res("RV3b", P.RV3B, 2180, 720, "rv3_wiper", "0")
-    b.res("Rdry", P.RDRY, 640, 360, "u1_buf", "mix_top")
-    b.res("Rwet", P.RWET, 2300, 600, "rv3_wiper", "mix_top")
-    b.res("RV2a", P.RV2A, 2300, 760, "mix_top", "mix_node")
-    b.res("RV2b", P.RV2B, 2300, 880, "mix_node", "0")
-    b.cap("C_bright", P.C_BRIGHT, 2420, 760, "mix_top", "mix_node")
+    # --- Mix RV2: 3-terminal PASSIVE BLEND (not a volume knob). ---------------
+    # Dry (u1_buf)->Rdry->RV2 pin1 (CCW)==mix_dry; Wet (rv3_wiper)->RV2 pin3
+    # (CW)==mix_wet; wiper (pin2)->U3==mix_node. C_bright bridges pin1<->pin3
+    # (full pot). Wet ties DIRECTLY to mix_wet (no Rwet short). See parts-spec
+    # "Mix Stage Topology". Full-CCW=100% dry, full-CW=100% wet.
+    b.res("Rdry", P.RDRY, 640, 360, "u1_buf", "mix_dry")
+    b.res("RV2a", P.RV2A, 2300, 760, "mix_dry", "mix_node")   # CCW half of pot
+    b.res("RV2b", P.RV2B, 2300, 880, "mix_node", "mix_wet")   # CW half of pot
+    b.cap("C_bright", P.C_BRIGHT, 2420, 760, "mix_dry", "mix_wet")  # bright cap across full pot
+    b.res("Rwet_wire", "0", 2300, 600, "rv3_wiper", "mix_wet")  # direct wire, modelled 0 ohm
     b.opa("U3", 2560, 900, "mix_node", "u3_out", "+15V", "-15V", "u3_out")
     b.res("R7", P.R7, 2640, 844, "u3_out", "v_out")
     b.res("Rload", P.RLOAD, 2760, 844, "v_out", "0")

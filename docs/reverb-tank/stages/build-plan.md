@@ -85,7 +85,7 @@ Stages 2–5 each replace one idealized block of the MVP with its real hardware 
 
 | | |
 |---|---|
-| **What** | Insert the **REB3S** as a coupled-inductor pair: **L1** (primary, in Q1's collector path), **L2** (8 Ω secondary, into the tank input), and **K1** the coupling statement `K1 L1 L2 1`. This **replaces the direct drive** from `C_drive` into the tank lump — the tank input is now fed only by L2. |
+| **What** | Insert the **REB3S** as a coupled-inductor pair: **L1** (primary, in Q1's collector path), **L2** (8 Ω secondary, into the tank input), and **K1** the coupling statement `K1 L1 L2 0.98`. This **replaces the direct drive** from `C_drive` into the tank lump — the tank input is now fed only by L2. |
 | **Why** | The transformer's primary inductance resonates with the tank input impedance to produce the ~2–3 kHz attack peak ("drip") of the original 6G15 — the entire reason this design is transformer-coupled. It also provides galvanic isolation so no DC reaches the tank coil. |
 | **Starting schematic** | `stage_02_driver.asc` |
 | **Output schematic** | `stage_03_transformer.asc` |
@@ -159,8 +159,10 @@ Stages 2–5 each replace one idealized block of the MVP with its real hardware 
 | Check | Pass condition |
 |---|---|
 | All Stage 1 assertions | still pass |
-| Complete DC operating point | within spec (all op-amp outputs ±10 mV; Q1 bias as Stage 2) |
-| Full signal-chain gain | within ±2 dB of design target |
+| Complete DC operating point | within spec (all op-amp outputs ±10 mV *in simulation*; Q1 bias as Stage 2) |
+| Recovery-stage gain (U2), dB | within ±2 dB of design target (46.59 dB) |
+
+> The ±10 mV op-amp-output window is a **simulation** criterion (the SPICE model uses Vos=0). On the **bench**, a real OPA2134 at U2's 214× gain shows **20–150 mV DC at U2's output** (normal; multiplied input offset, blocked by C4) — see [`builder-guide.md`](./builder-guide.md) Stage 2. The ±10 mV bench window applies at U1's output and at the final output after C4 (U3, < 5 mV at J2).
 
 ---
 

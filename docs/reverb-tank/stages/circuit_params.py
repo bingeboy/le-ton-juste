@@ -48,8 +48,7 @@ RI        = "470"    # U2 gain-set lower leg
 RF        = "100k"   # U2 feedback upper leg; gain = 1 + RF/RI
 R6        = "5.6k"   # wet HPF resistor (with C4)
 RBIAS     = "100k"   # U2 (+) input bias / recovery input impedance
-RDRY      = "10k"    # dry-path mixing resistor into Mix node
-RWET      = "0.001"  # wet-path tie Tone wiper -> Mix node (~0 ohm)
+RDRY      = "10k"    # dry-path series R: u1_buf -> RV2 CCW end (mix_dry)
 R7        = "100"    # U3 output isolation
 RLOAD     = "47k"    # MC100 RCA input load (downstream model, not a fitted part)
 
@@ -171,6 +170,7 @@ Q1_VE_WINDOW     = (1.0, 1.4)     # pass band, volts
 Q1_IC_SIM        = 16e-3          # verified sim Ic, amps
 Q1_IC_FIRSTORDER = 18e-3          # first-order estimate
 Q1_IC_WINDOW     = (10e-3, 26e-3)  # pass band, amps
+Q1_IC_ERR_MAX    = 0.10           # max |q1_ic_calc - q1_ic|/q1_ic (10% cross-check tol)
 
 # Op-amp output DC offsets (all share the same window)
 OFFSET_WINDOW    = (-10e-3, 10e-3)  # +/-10 mV
@@ -189,6 +189,14 @@ RIPPLE_MAX_PP    = 10e-3           # < 10 mVpp on each rail
 RECOV_GAIN_SIM     = 213.6         # V/V @1kHz (= 1 + RF/RI nominal 214)
 RECOV_GAIN_DB_SIM  = 46.59         # dB
 RECOV_GAIN_WINDOW  = (200.0, 228.0)  # V/V pass band
+# recov_gain_db (Stage 6 ac): the recovery stage gain measured END-TO-END across
+# U2 in dB, i.e. 20*log10(V(u2_out)/V(u2_in_pos)). This is the SAME quantity as
+# RECOV_GAIN_DB_SIM above, just the pass target + window used by the .meas
+# recov_gain_db directive. It is NOT the full vin->v_out chain gain (that is only
+# ~15-21 dB: the dry path attenuates and the wet path is tank/HPF-shaped), so the
+# .meas measures U2 directly. Window is +/-2 dB about the 46.59 dB sim result.
+CHAIN_GAIN_DB_SIM    = 46.59       # dB, recovery stage gain end-to-end (= recov_gain 213.6x)
+CHAIN_GAIN_DB_WINDOW = (44.6, 48.6)  # +/-2dB about CHAIN_GAIN_DB_SIM
 HPF_CORNER_SIM     = 312.0         # Hz (measured R6/C4 transfer)
 HPF_CORNER_DESIGN  = 284.0         # Hz = 1/(2*pi*R6*C4)
 HPF_CORNER_WINDOW  = (250.0, 320.0)  # Hz pass band

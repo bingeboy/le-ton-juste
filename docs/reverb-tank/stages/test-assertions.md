@@ -55,6 +55,8 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | `vout_pk` | `MAX abs(V(v_out))` | < 14 V | Output clipping into the rails |
 | `osc_ratio` | RMS_late / RMS_early | < 1.05 | Signal growing — oscillation/instability |
 
+> **`off_u2` is a *simulation* window, not a bench expectation.** The SPICE op-amp model uses `Vos=0`, so the simulated `off_u2` settles near 0 V and the ±10 mV window is meaningful in sim. A **real OPA2134** has an input offset (Vos up to ~500 µV) that the 214× recovery gain multiplies to a steady **20–150 mV DC at U2's output** — this is *normal*, and C4 blocks it before the output. **Do not apply the ±10 mV `off_u2` window to the bench measurement at U2's output.** The bench pass/fail for U2 output DC is in [`builder-guide.md`](./builder-guide.md) Stage 2 (20–150 mV typical, normal for OPA2134 at 214× gain; blocked by C4). The ±10 mV bench window *does* still apply at U1's output (`off_u1`) and at the final output after C4 (`off_u3`, < 5 mV at J2).
+
 ---
 
 ## Stage 2 — BD139 driver
@@ -63,6 +65,18 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 ; Stage 2 — OP: Q1 bias point
 .meas OP q1_ve FIND V(q1_e)
 .meas OP q1_ic FIND Ic(Q1)
+
+; Stage 2 — OP cross-check: the collector current implied by the emitter
+;   voltage across R5 (Ic ~= Ie = Ve/R5) must agree with the current actually
+;   flowing through R5. The op variant of stage_06_full.net now emits BOTH the
+;   implied current (q1_ic_calc) AND its real comparison target q1_ic = I(R5),
+;   plus q1_ic_err = |q1_ic_calc - q1_ic| / q1_ic, which must stay under 10%.
+;   This catches an inconsistent bias read (e.g. a wrong R5 or a mis-probed
+;   emitter node) that q1_ve / q1_ic alone would each pass. The divisor tracks
+;   circuit_params.R5, so it never silently drifts if R5 changes:
+.meas TRAN q1_ic_calc PARAM {q1_ve/R5}
+.meas TRAN q1_ic      FIND I(R5) AT=200m
+.meas TRAN q1_ic_err  PARAM {abs(q1_ic_calc - q1_ic) / q1_ic}
 
 ; Stage 2 — TRAN: D3 flyback diode idle during normal drive
 .meas TRAN d3_pk MAX abs(I(D3))
@@ -76,6 +90,9 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 |---|---|---|---|
 | `q1_ve` | `V(q1_e)` | 1.0 – 1.4 V (sim 1.09 V; first-order 1.22 V) | Bias divider/R5 wrong — wrong operating point |
 | `q1_ic` | `Ic(Q1)` | 10 – 26 mA (sim 16 mA; first-order 18 mA) | Quiescent current off — under/over-driven tank |
+| `q1_ic_calc` | `q1_ve/R5` (Ve across R5) | compared to `q1_ic` below | Ve and the R5 current disagree — wrong R5 or mis-probed emitter |
+| `q1_ic` | `I(R5)` (current through R5 = Ic) | 10 – 26 mA | the real comparison target for `q1_ic_calc` |
+| `q1_ic_err` | `\|q1_ic_calc − q1_ic\| / q1_ic` | < 10% | Ve-implied Ic and measured R5 current disagree by > 10% |
 | `d3_pk` | `MAX abs(I(D3))` | < 1 mA | D3 conducting in normal use — clamp engaging wrongly |
 | `drv_pk` | `MAX abs(I(L1))` | within linear swing, no flat-top | Driver clipping the transient |
 
@@ -158,9 +175,16 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 .meas OP off_u3 FIND V(v_out)
 .meas OP q1_ve  FIND V(q1_e)
 
-; Stage 6 — AC: full-chain gain within +/-2dB of design target
-.meas AC chain_lvl  FIND V(v_out) AT=1k
-.meas AC chain_gain_db FIND 20*log10(V(v_out)/V(vin)) AT=1k
+; Stage 6 — AC: recovery-stage gain (across U2) in dB, within +/-2dB of target.
+;   recov_gain_db measures the SAME thing as recov_gain above —
+;   20*log10(V(u2_out)/V(u2_in_pos)), the 214x non-inverting recovery stage —
+;   expressed in dB. It deliberately does NOT measure the full vin->v_out chain:
+;   the dry path attenuates (~-5 dB) and the wet path is tank/HPF-shaped, so
+;   20*log10(V(v_out)/V(vin)) is only ~15-21 dB and would fail this window.
+;   Target = CHAIN_GAIN_DB_SIM = 46.59 dB (= simulated recov_gain 213.6x);
+;   pass window CHAIN_GAIN_DB_WINDOW = 44.6 - 48.6 dB (+/-2 dB).
+.meas AC recov_lvl  FIND V(u2_out) AT=1k
+.meas AC recov_gain_db FIND mag(20*log10(V(u2_out)/V(u2_in_pos))) AT=1k
 ```
 
 | Assertion name | Expression | Pass condition | Fail means |
@@ -168,7 +192,36 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | Stage 1 set | (as above) | all still pass | A later stage regressed the baseline |
 | `off_u1/2/3` | op-amp outputs | \|val\| ≤ 10 mV | Real PSU/driver introduced DC offset |
 | `q1_ve` | `V(q1_e)` | 1.0 – 1.4 V | Bias shifted under regulated rails |
-| `chain_gain_db` | `20log10(V(v_out)/V(vin))` @1k | design target ±2 dB | End-to-end gain drifted out of spec |
+| `recov_gain_db` | `20log10(V(u2_out)/V(u2_in_pos))` @1k | 44.6 – 48.6 dB (target 46.59 dB ±2 dB) | Recovery-stage gain drifted out of spec |
+
+---
+
+## Stage 7 — Mix blend
+
+The Mix pot (RV2) is a **3-terminal passive blend**, not a volume knob: the dry
+signal enters the CCW end (`mix_dry`, fed by `Rdry` from `u1_buf`), the wet
+signal enters the CW end (`mix_wet`, fed directly from the Tone wiper
+`rv3_wiper`), and the wiper (`mix_node`) feeds U3. `C_bright` (47pF) bridges the
+full pot (`mix_dry`↔`mix_wet`). This cannot be expressed as a single `.meas`
+crossing on the current tran/op runs (the pot wiper position is not a swept SPICE
+variable), so the expected behavior is documented here and verified on the bench
+(builder-guide Stage 7a sanity gates) and by `validate.py check_mix_topology()`:
+
+Pre-condition: signal applied to INPUT
+- Mix full-CCW: V(u3_out) ≈ V(u1_buf) (dry only, attenuation < 3dB)
+- Mix full-CW: V(u3_out) contains only wet signal (no dry)
+- Mix noon: both dry and wet present at u3_out
+
+| Assertion name | Expression | Pass condition | Fail means |
+|---|---|---|---|
+| `mix_ccw_dry` | V(u3_out) vs V(u1_buf), Mix full-CCW | dry passes, atten < 3 dB; no wet | Wet bleeds at full-CCW — Rwet short or bridged mix node |
+| `mix_cw_wet` | V(u3_out), Mix full-CW | wet only, dry absent | Dry bleeds at full-CW — pot/Rdry mis-wired |
+| `mix_noon` | V(u3_out), Mix noon | both dry + wet present | One path dead — open pot half or missing wire |
+
+> **Topology guard.** `validate.py` parses `stage_06_full.net` and fails the
+> build if the Mix node is wired as a volume knob (a near-zero `Rwet` shorting
+> the wet source onto the dry node, collapsing the blend). This is the static
+> check that would have caught the original `Rwet = 0.001Ω` bug.
 
 ---
 

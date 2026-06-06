@@ -56,7 +56,10 @@ GENERATED_FILES = [
     os.path.join(STAGES, "stage_03_transformer.net"),
     os.path.join(STAGES, "stage_04_input_protect.net"),
     os.path.join(STAGES, "stage_05_psu.net"),
+    os.path.join(STAGES, "stage_05_psu_tran.net"),
     os.path.join(STAGES, "stage_06_full.net"),
+    os.path.join(STAGES, "stage_06_full_ac.net"),
+    os.path.join(STAGES, "stage_06_full_tran.net"),
     os.path.join(HERE, "circuit-params.md"),
 ]
 
@@ -476,3 +479,310 @@ def test_sync_idempotent():
         for f, data in backups.items():
             with open(f, "wb") as fh:
                 fh.write(data)
+
+
+# ===========================================================================
+# Group 6: structural / topology guards on the COMMITTED stage_06_full.net
+#
+# These are the P1 functional-failure guards. Unlike the value checks above,
+# they assert the WIRING (which node connects to which) so a topology fix that
+# is correct value-wise but mis-wired cannot ship undetected -- the class of
+# bug behind the Mix-pot short (dry shorted to -140 dB with every value right).
+# ===========================================================================
+
+# (gen script basename -> list of (analysis, committed .net basename)) for EVERY
+# variant sync emits. Mirrors sync.py's GENERATORS. Stages 5 and 6 carry multiple
+# analysis variants whose .meas assertions exist in NO other file, so the
+# meta-guard must regenerate and diff EACH variant -- otherwise a broken ac/tran
+# generator branch ships green (W2). The FIRST entry per generator is the
+# canonical default (bare filename); others get the _<analysis> suffix.
+GEN_TO_NETS = {
+    "gen_stage2_asc.py": [("op", "stage_02_driver.net")],
+    "gen_stage3_asc.py": [("ac", "stage_03_transformer.net")],
+    "gen_stage4_asc.py": [("op", "stage_04_input_protect.net")],
+    "gen_stage5_psu.py": [("op", "stage_05_psu.net"),
+                          ("tran", "stage_05_psu_tran.net")],
+    "gen_stage6_full.py": [("op", "stage_06_full.net"),
+                           ("ac", "stage_06_full_ac.net"),
+                           ("tran", "stage_06_full_tran.net")],
+}
+
+# Flattened (gen_file, analysis, net_name) cases for the meta-guard parametrize:
+# (stage2, op), (stage3, ac), (stage4, op), (stage5, op), (stage5, tran),
+# (stage6, op), (stage6, ac), (stage6, tran).
+GEN_NET_CASES = [
+    (gen, analysis, net_name)
+    for gen, variants in GEN_TO_NETS.items()
+    for analysis, net_name in variants
+]
+
+
+def _strip_path_header(text):
+    """Drop the leading '* <abspath>.asc' comment line that every generator
+    writes first (it embeds the output path and so differs between the real
+    tree and a tmp_path regeneration). Everything else must match exactly."""
+    lines = text.splitlines()
+    if lines and lines[0].startswith("* ") and lines[0].rstrip().endswith(".asc"):
+        lines = lines[1:]
+    return lines
+
+
+def cards_of(netlist_text):
+    """{instance: token-list} for every element card (skip *comments/.directives)."""
+    out = {}
+    for raw in netlist_text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("*") or line.startswith("."):
+            continue
+        parts = line.split()
+        out[parts[0]] = parts
+    return out
+
+
+# ---------------------------------------------------------------------------
+# P1.1 -- committed netlist == generator output (the META-GUARD). Regenerate
+# every stage into tmp_path and compare line-for-line (minus the path header)
+# against the committed file. Catches a topology fix applied to a generator but
+# never re-cascaded into the committed netlist (or a hand-edited netlist).
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("gen_file, analysis, net_name", GEN_NET_CASES)
+def test_committed_netlist_matches_generator(stages_copy, gen_file, analysis, net_name):
+    out = stages_copy / ("regen_" + net_name)
+    run_generator(stages_copy, gen_file, out, analysis=analysis)
+    regenerated = _strip_path_header(out.read_text())
+    committed = _strip_path_header(open(os.path.join(STAGES, net_name)).read())
+    assert regenerated == committed, (
+        "%s diverges from %s output -- a fix to the generator was not "
+        "re-cascaded into the committed netlist (run sync.py). First diff:\n%s"
+        % (net_name, gen_file,
+           next(("  committed: %r\n  generated: %r" % (c, g)
+                 for c, g in zip(committed + [None] * len(regenerated),
+                                 regenerated + [None] * len(committed))
+                 if c != g), "(length differs only)"))
+    )
+
+
+def test_meta_guard_detects_divergence(stages_copy):
+    """Red-before-green for P1.1: if the committed netlist is hand-edited away
+    from generator output, the meta-guard must notice. We regenerate, then
+    corrupt a COPY of the committed file and confirm the line-for-line compare
+    fails on it."""
+    out = stages_copy / "regen_check.net"
+    run_generator(stages_copy, "gen_stage6_full.py", out, analysis="op")
+    regenerated = _strip_path_header(out.read_text())
+
+    committed = open(NET6).read()
+    # Hand-edit: bump R5's value, as if someone patched the netlist directly.
+    tampered = committed.replace("R5 q1_e 0 68", "R5 q1_e 0 75", 1)
+    assert tampered != committed, "anchor for tamper not found"
+    tampered_lines = _strip_path_header(tampered)
+    assert regenerated != tampered_lines, \
+        "meta-guard would MISS a hand-edited netlist diverging from generator"
+
+
+# ---------------------------------------------------------------------------
+# P1.2 -- Mix topology structural check (the original-bug guard).
+# ---------------------------------------------------------------------------
+def test_mix_topology_structure():
+    """stage_06_full.net wires RV2 as a 3-terminal passive blend, not a volume
+    knob. Asserts the exact node wiring that the Rwet=0.001 short violated."""
+    text = open(NET6).read()
+    cards = cards_of(text)
+
+    rdry = cards.get("Rdry")
+    rv2a = cards.get("RV2a")
+    rv2b = cards.get("RV2b")
+    assert rdry and rv2a and rv2b, "Rdry/RV2a/RV2b missing from netlist"
+
+    # Rdry: dry source u1_buf -> CCW end mix_dry.
+    assert set(rdry[1:3]) == {"u1_buf", "mix_dry"}, \
+        "Rdry must connect u1_buf<->mix_dry, got %s" % set(rdry[1:3])
+    # RV2a: CCW half mix_dry -> wiper mix_node.
+    assert set(rv2a[1:3]) == {"mix_dry", "mix_node"}, \
+        "RV2a must connect mix_dry<->mix_node, got %s" % set(rv2a[1:3])
+    # RV2b: CW half mix_node -> wet end mix_wet.
+    assert set(rv2b[1:3]) == {"mix_node", "mix_wet"}, \
+        "RV2b must connect mix_node<->mix_wet, got %s" % set(rv2b[1:3])
+
+    # The wet signal reaches mix_wet (here via Rwet_wire from the Tone wiper).
+    wet_on_mix_wet = any(
+        "mix_wet" in set(p[1:3]) and ("rv3_wiper" in set(p[1:3]))
+        for p in cards.values()
+    )
+    assert wet_on_mix_wet, \
+        "wet signal (rv3_wiper / Tone output) must reach mix_wet"
+
+    # mix_dry and mix_wet are DIFFERENT nodes.
+    assert "mix_dry" != "mix_wet"
+    dry_nodes = set(rdry[1:3])
+    assert "mix_wet" not in dry_nodes, \
+        "dry end (Rdry) must not land on mix_wet -- that collapses the blend"
+
+    # No near-short (<=0.01) resistor ties both the dry node and the wet signal
+    # to the same node (the Rwet=0.001 bug).
+    def rval(tok):
+        try:
+            return float(tok)
+        except ValueError:
+            return None
+    for name, p in cards.items():
+        if name[0] not in ("R", "r") or len(p) < 4:
+            continue
+        v = rval(p[3])
+        if v is not None and v <= 0.01:
+            nodes = set(p[1:3])
+            assert "mix_dry" not in nodes, \
+                ("%s is a near-short (%s) on the dry node mix_dry -- the "
+                 "Rwet short bug" % (name, p[3]))
+
+
+def test_validate_catches_broken_mix_topology(tmp_path):
+    """Red-before-green for P1.2: inject the volume-knob/short wiring into a COPY
+    of the netlist and confirm validate.py's check_mix_topology() fails on it.
+    The real netlist is never touched."""
+    tree = tmp_path / "reverb-tank"
+    shutil.copytree(HERE, tree, ignore=shutil.ignore_patterns("__pycache__"))
+    bad_net = tree / "stages" / "stage_06_full.net"
+
+    text = bad_net.read_text()
+    # Re-wire RV2b so both pot halves share the SAME two nodes (volume-knob /
+    # collapsed blend): RV2a and RV2b both span mix_dry<->mix_node.
+    assert "RV2b mix_node mix_wet 50k" in text
+    text = text.replace("RV2b mix_node mix_wet 50k",
+                        "RV2b mix_dry mix_node 50k", 1)
+    bad_net.write_text(text)
+
+    result = subprocess.run([PY, str(tree / "validate.py")],
+                            capture_output=True, text=True)
+    assert result.returncode != 0, \
+        "validate.py did NOT catch the broken mix topology:\n%s" % result.stdout
+    assert "mix topology" in result.stdout, \
+        "validate.py failed but not on mix topology:\n%s" % result.stdout
+
+
+# ---------------------------------------------------------------------------
+# P1.3 -- HPF on the wet path only; dry path DC-coupled.
+# ---------------------------------------------------------------------------
+def test_hpf_wet_path_only():
+    """C4/R6 form the wet HPF (between U2 out and the Tone/Mix stage); the dry
+    path u1_buf->mix_dry carries NO series capacitor (DC-coupled)."""
+    text = open(NET6).read()
+    cards = cards_of(text)
+
+    c4, r6, rdry = cards.get("C4"), cards.get("R6"), cards.get("Rdry")
+    assert c4 and r6 and rdry, "C4/R6/Rdry missing"
+
+    # C4 + R6 are the wet HPF, both on wet-chain nodes (not dry).
+    assert set(c4[1:3]) == {"u2_out", "hpf_out"}, \
+        "C4 must couple u2_out<->hpf_out (wet), got %s" % set(c4[1:3])
+    assert set(r6[1:3]) == {"hpf_out", "0"}, \
+        "R6 must shunt hpf_out<->0 (wet HPF), got %s" % set(r6[1:3])
+
+    # Dry path: Rdry connects u1_buf directly to mix_dry, purely resistive.
+    assert set(rdry[1:3]) == {"u1_buf", "mix_dry"}, \
+        "Rdry must connect u1_buf<->mix_dry directly, got %s" % set(rdry[1:3])
+    assert rdry[0][0] in ("R", "r"), "dry coupler Rdry must be a resistor"
+
+    # No capacitor sits on the dry source node u1_buf (a series coupling cap),
+    # and no cap touches mix_dry except the legitimate C_bright pot bridge.
+    for name, p in cards.items():
+        if name[0] not in ("C", "c") or len(p) < 3:
+            continue
+        nodes = set(p[1:3])
+        assert "u1_buf" not in nodes, \
+            "cap %s on dry source node u1_buf -- dry path must be DC-coupled" % name
+        if "mix_dry" in nodes:
+            assert nodes == {"mix_dry", "mix_wet"}, \
+                ("cap %s on mix_dry with other end %s -- only the C_bright "
+                 "pot-bridge mix_dry<->mix_wet is allowed"
+                 % (name, nodes - {"mix_dry"}))
+
+
+def test_validate_catches_cap_in_dry_path(tmp_path):
+    """Red-before-green for P1.3: insert a series cap into the dry path in a COPY
+    of the netlist and confirm validate.py flags it."""
+    tree = tmp_path / "reverb-tank"
+    shutil.copytree(HERE, tree, ignore=shutil.ignore_patterns("__pycache__"))
+    bad_net = tree / "stages" / "stage_06_full.net"
+
+    text = bad_net.read_text()
+    assert "Rdry u1_buf mix_dry 10k" in text
+    # Drop a coupling cap onto the dry source node u1_buf.
+    text = text.replace("Rdry u1_buf mix_dry 10k",
+                        "Rdry u1_buf mix_dry 10k\nCdrybad u1_buf mix_dry 1u", 1)
+    bad_net.write_text(text)
+
+    result = subprocess.run([PY, str(tree / "validate.py")],
+                            capture_output=True, text=True)
+    assert result.returncode != 0, \
+        "validate.py did NOT catch a cap in the dry path:\n%s" % result.stdout
+    assert "hpf wet-only" in result.stdout, \
+        "validate.py failed but not on the dry-path cap:\n%s" % result.stdout
+
+
+# ---------------------------------------------------------------------------
+# P1.5 -- decoupling caps present on the correct rails.
+# ---------------------------------------------------------------------------
+def test_decoupling_caps_on_rails():
+    """C5/C7 bridge +15V->0 and C6/C8 bridge -15V->0; all four present."""
+    cards = cards_of(open(NET6).read())
+    for name, expect in (
+        ("C5", {"+15V", "0"}), ("C7", {"+15V", "0"}),
+        ("C6", {"-15V", "0"}), ("C8", {"-15V", "0"}),
+    ):
+        card = cards.get(name)
+        assert card is not None, "%s (supply decoupling) missing from netlist" % name
+        assert set(card[1:3]) == expect, \
+            "%s must bridge %s, got %s" % (name, expect, set(card[1:3]))
+
+
+def test_validate_catches_missing_decoupling(tmp_path):
+    """Red-before-green for P1.5: delete a decoupling cap in a COPY of the
+    netlist and confirm validate.py flags the missing supply bypass."""
+    tree = tmp_path / "reverb-tank"
+    shutil.copytree(HERE, tree, ignore=shutil.ignore_patterns("__pycache__"))
+    bad_net = tree / "stages" / "stage_06_full.net"
+
+    text = bad_net.read_text()
+    assert "C7 +15V 0 100n\n" in text
+    text = text.replace("C7 +15V 0 100n\n", "", 1)
+    bad_net.write_text(text)
+
+    result = subprocess.run([PY, str(tree / "validate.py")],
+                            capture_output=True, text=True)
+    assert result.returncode != 0, \
+        "validate.py did NOT catch the missing decoupling cap:\n%s" % result.stdout
+    assert "decoupling" in result.stdout or "C7" in result.stdout, \
+        "validate.py failed but not on the missing decoupling cap:\n%s" % result.stdout
+
+
+# ---------------------------------------------------------------------------
+# P1.6 -- D3 flyback clamp present and correctly oriented.
+# ---------------------------------------------------------------------------
+def test_d3_flyback_present_and_oriented():
+    """D3 clamps Q1's collector to the +15V rail: anode=q1_c, cathode=+15V.
+    In SPICE the D card is 'D3 <anode> <cathode> <model>', so the line must be
+    'D3 q1_c +15V ...'. A reversed/missing D3 would let the transformer flyback
+    spike destroy Q1."""
+    text = open(NET6).read()
+    line = net_line(text, "D3")
+    assert line is not None, "D3 flyback clamp missing from netlist"
+    parts = line.split()
+    assert parts[0] == "D3"
+    assert parts[1] == "q1_c", \
+        "D3 anode must be q1_c (collector), got %s" % parts[1]
+    assert parts[2] == "+15V", \
+        "D3 cathode must be +15V rail, got %s" % parts[2]
+
+
+def test_d3_reversed_orientation_is_detectable():
+    """Red-before-green for P1.6: confirm the orientation assertion is real --
+    a swapped D3 (anode/cathode reversed) would NOT match the expected card.
+    We synthesise the reversed line and check the same assertion logic rejects
+    it (no file write needed; this exercises the guard's discriminating power)."""
+    reversed_line = "D3 +15V q1_c 1N4148"
+    parts = reversed_line.split()
+    # The committed-netlist assertion requires anode=q1_c, cathode=+15V; the
+    # reversed card has them swapped, so the guard must reject it.
+    assert not (parts[1] == "q1_c" and parts[2] == "+15V"), \
+        "a reversed D3 must NOT satisfy the orientation guard"

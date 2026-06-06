@@ -8,6 +8,12 @@ with circuit_params.py (the single source of truth):
   1. stages/stage_06_full.net  - every R/C/L/K value matches the constant.
   1b. per-stage netlists       - driver stages carry R5=68; stage_05_psu places
                                  RF2/RF3 on the DC rails (not the AC secondary).
+  1c. mix topology             - RV2 (Mix) is wired as a 3-terminal PASSIVE
+                                 BLEND, not a volume knob: Rdry feeds the pot's
+                                 dry end (not the wiper), RV2a/RV2b form a chain
+                                 through the wiper, no near-zero Rwet shorts the
+                                 dry node, and C_bright spans the full pot. This
+                                 is the guard for the Rwet=0.001 short bug.
   2. circuit-params.md         - spot-check key derived values AND check every
                                  R/C component row's value against the constant.
   3. stages/test-assertions.md - pass-window numbers match the tolerance tuples.
@@ -29,6 +35,9 @@ sys.path.insert(0, STAGES)
 import circuit_params as P  # noqa: E402
 
 NET = os.path.join(STAGES, "stage_06_full.net")
+NET6_AC = os.path.join(STAGES, "stage_06_full_ac.net")
+NET6_TRAN = os.path.join(STAGES, "stage_06_full_tran.net")
+NET5_TRAN = os.path.join(STAGES, "stage_05_psu_tran.net")
 PARAMS_MD = os.path.join(HERE, "circuit-params.md")
 ASSERT_MD = os.path.join(STAGES, "test-assertions.md")
 
@@ -68,7 +77,7 @@ NET_VALUE_MAP = {
     # resistors
     "R1": P.R1, "R2": P.R2, "R3": P.R3, "R3b": P.R3B, "R4": P.R4, "R5": P.R5,
     "Ri": P.RI, "Rf": P.RF, "R6": P.R6, "Rbias": P.RBIAS, "Rdry": P.RDRY,
-    "Rwet": P.RWET, "R7": P.R7, "Rload": P.RLOAD,
+    "R7": P.R7, "Rload": P.RLOAD,
     "R_tank_in": P.R_TANK_IN, "R_tank_mech": P.R_TANK_MECH,
     "R_tank_out": P.R_TANK_OUT,
     "R_bleed1": P.R_BLEED1, "R_bleed2": P.R_BLEED2, "RF2": P.RF2, "RF3": P.RF3,
@@ -177,6 +186,466 @@ def check_stage_netlists():
                 if card[3] != val:
                     fail("%s: %s value '%s' != circuit_params '%s'"
                          % (stage, fuse, card[3], val))
+
+
+# ---------------------------------------------------------------------------
+# 1c. MIX TOPOLOGY (W3): stage_06_full.net must wire the Mix pot (RV2) as a
+#     3-terminal PASSIVE BLEND, not a volume knob. The original bug shorted the
+#     wet source onto the SAME node as the dry path through a near-zero Rwet
+#     (Rwet = 0.001Ω), which clamps that node to the wet signal and attenuates
+#     the dry path to ~-140dB. This guard is what would have caught it:
+#       - Rdry must feed u1_buf into a DRY node that is NOT the wiper itself.
+#       - RV2a and RV2b must form a CHAIN (dry_end -> wiper -> wet_end), i.e.
+#         they must NOT both terminate on the same node (that is the volume-knob
+#         topology: both halves to the wiper / both ends shorted).
+#       - No near-zero (<=0.01Ω) resistor may tie the wet source onto the SAME
+#         node Rdry feeds (the dry end) -- that is the short that killed the dry
+#         path.
+#       - C_bright must span the DRY end to the WET end (the full pot), not a
+#         single half.
+# ---------------------------------------------------------------------------
+def _net_value_float(tok):
+    """Parse a SPICE resistor value token to ohms, or None if unparseable."""
+    return _spice_to_float(tok)
+
+
+def check_mix_topology():
+    global checks
+    with open(NET) as f:
+        cards = {}
+        for raw in f:
+            line = raw.strip()
+            if not line or line.startswith("*") or line.startswith("."):
+                continue
+            parts = line.split()
+            cards[parts[0]] = parts  # last card wins (names are unique anyway)
+
+    rdry = cards.get("Rdry")
+    rv2a = cards.get("RV2a")
+    rv2b = cards.get("RV2b")
+    cbright = cards.get("C_bright")
+
+    # (a) Rdry: u1_buf -> dry_end. dry_end must NOT be the wiper (mix_node).
+    checks += 1
+    if rdry is None or len(rdry) < 4:
+        fail("mix topology: Rdry card missing/malformed in stage_06_full.net")
+        dry_end = None
+    else:
+        rdry_nodes = rdry[1:3]
+        if "u1_buf" not in rdry_nodes:
+            fail("mix topology: Rdry must connect from u1_buf, got %s" % rdry_nodes)
+        dry_end = rdry_nodes[1] if rdry_nodes[0] == "u1_buf" else rdry_nodes[0]
+        if dry_end == "mix_node":
+            fail("mix topology: Rdry feeds the wiper (mix_node) directly -- the "
+                 "dry path must land on the pot's CCW end, not the wiper")
+
+    # (b) RV2a / RV2b must form a chain, not both point at the same node.
+    checks += 1
+    if rv2a is None or rv2b is None or len(rv2a) < 3 or len(rv2b) < 3:
+        fail("mix topology: RV2a/RV2b card missing/malformed")
+    else:
+        a_nodes = set(rv2a[1:3])
+        b_nodes = set(rv2b[1:3])
+        # A chain shares EXACTLY one node (the wiper, mix_node) and each half has
+        # one distinct end. Volume-knob wiring shares both ends (a == b) or both
+        # halves dead-end on the wiper.
+        if a_nodes == b_nodes:
+            fail("mix topology: RV2a and RV2b span the SAME two nodes %s -- that "
+                 "is a volume-knob/short, not a 3-terminal blend" % a_nodes)
+        shared = a_nodes & b_nodes
+        if shared != {"mix_node"}:
+            fail("mix topology: RV2a/RV2b must share exactly the wiper node "
+                 "mix_node; shared=%s (RV2a=%s RV2b=%s)"
+                 % (shared, a_nodes, b_nodes))
+
+    # (c) No near-zero R may tie a wet source onto the SAME node Rdry feeds.
+    #     Scan every resistor; if a <=0.01Ω resistor touches dry_end, it is the
+    #     classic Rwet short that collapses the blend.
+    checks += 1
+    if dry_end is not None:
+        for name, parts in cards.items():
+            if not name[0] in ("R", "r"):
+                continue
+            if len(parts) < 4:
+                continue
+            val = _net_value_float(parts[3])
+            if val is None:
+                continue
+            nodes = set(parts[1:3])
+            if val <= 0.01 and dry_end in nodes:
+                fail("mix topology: %s is a near-zero (%sΩ) resistor tying %s "
+                     "onto the dry node %s -- this shorts the dry path (the "
+                     "original Rwet=0.001 bug)"
+                     % (name, parts[3], nodes - {dry_end}, dry_end))
+
+    # (d) C_bright must span the full pot: dry_end <-> wet_end (the two pot ends,
+    #     NOT including the wiper mix_node).
+    checks += 1
+    if cbright is None or len(cbright) < 3:
+        fail("mix topology: C_bright card missing/malformed")
+    elif dry_end is not None:
+        cb_nodes = set(cbright[1:3])
+        # Wet end = RV2b's end that is not the wiper.
+        wet_end = None
+        if rv2b is not None and len(rv2b) >= 3:
+            b_nodes = rv2b[1:3]
+            wet_end = b_nodes[1] if b_nodes[0] == "mix_node" else b_nodes[0]
+        if "mix_node" in cb_nodes:
+            fail("mix topology: C_bright touches the wiper (mix_node) -- it must "
+                 "bridge the two pot ends (dry<->wet), not a single half")
+        if dry_end not in cb_nodes:
+            fail("mix topology: C_bright must include the dry end %s; got %s"
+                 % (dry_end, cb_nodes))
+        if wet_end is not None and wet_end not in cb_nodes:
+            fail("mix topology: C_bright must include the wet end %s; got %s"
+                 % (wet_end, cb_nodes))
+
+
+# ---------------------------------------------------------------------------
+# 1d. HPF wired to the WET path only (P1.3): the post-recovery high-pass
+#     (C4 + R6) must sit in the WET signal chain between U2's output and the
+#     Tone/Mix stage, and the DRY path (u1_buf -> mix_dry) must be DC-coupled
+#     (purely resistive, NO series capacitor). The bug class this guards: a cap
+#     accidentally inserted in the dry path (rolling off dry bass) or the HPF
+#     wandering onto the dry node.
+# ---------------------------------------------------------------------------
+def _load_cards(path):
+    """Return {instance: token-list} for every element card in a netlist."""
+    cards = {}
+    with open(path) as f:
+        for raw in f:
+            line = raw.strip()
+            if not line or line.startswith("*") or line.startswith("."):
+                continue
+            parts = line.split()
+            cards[parts[0]] = parts
+    return cards
+
+
+def check_hpf_wet_only():
+    global checks
+    cards = _load_cards(NET)
+
+    c4 = cards.get("C4")
+    r6 = cards.get("R6")
+    rdry = cards.get("Rdry")
+
+    # (a) C4 and R6 are the wet HPF: C4 from u2_out (recovery output) into
+    #     hpf_out, R6 shunting hpf_out to ground. Both nodes are wet-chain nodes.
+    checks += 1
+    if c4 is None or len(c4) < 4:
+        fail("hpf wet-only: C4 card missing/malformed in stage_06_full.net")
+    else:
+        c4_nodes = set(c4[1:3])
+        if c4_nodes != {"u2_out", "hpf_out"}:
+            fail("hpf wet-only: C4 must couple u2_out<->hpf_out (wet chain), "
+                 "got %s" % c4_nodes)
+
+    checks += 1
+    if r6 is None or len(r6) < 4:
+        fail("hpf wet-only: R6 card missing/malformed")
+    else:
+        r6_nodes = set(r6[1:3])
+        if r6_nodes != {"hpf_out", "0"}:
+            fail("hpf wet-only: R6 must shunt hpf_out<->0 (wet HPF), got %s"
+                 % r6_nodes)
+
+    # (b) The DRY path u1_buf -> mix_dry must be a single resistive hop (Rdry),
+    #     with NO capacitor in series. Trace every component on u1_buf toward
+    #     mix_dry and assert nothing on that path is a capacitor.
+    checks += 1
+    if rdry is None or len(rdry) < 4:
+        fail("hpf wet-only: Rdry card missing/malformed")
+    else:
+        rdry_nodes = set(rdry[1:3])
+        if rdry_nodes != {"u1_buf", "mix_dry"}:
+            fail("hpf wet-only: Rdry must connect u1_buf<->mix_dry directly, "
+                 "got %s" % rdry_nodes)
+        if not rdry[0][0] in ("R", "r"):
+            fail("hpf wet-only: dry coupler %s is not a resistor" % rdry[0])
+
+    # (c) The dry SERIES path u1_buf -> mix_dry must be DC-coupled: no capacitor
+    #     in series with it. A series-coupling cap would sit on u1_buf (the dry
+    #     source node feeding Rdry), so forbid ANY cap on u1_buf. (C_bright is
+    #     legitimately allowed: it bridges the two pot ends mix_dry<->mix_wet,
+    #     i.e. it is in PARALLEL across the pot, not in series in the dry path;
+    #     a cap on mix_dry is only forbidden if its other end is NOT the wet pot
+    #     end mix_wet -- that would interrupt/AC-couple the dry signal flow.)
+    checks += 1
+    for name, parts in cards.items():
+        if name[0] not in ("C", "c") or len(parts) < 3:
+            continue
+        nodes = set(parts[1:3])
+        if "u1_buf" in nodes:
+            fail("hpf wet-only: capacitor %s sits on the dry source node u1_buf "
+                 "-- the dry path u1_buf->mix_dry must be DC-coupled (no series "
+                 "cap)" % name)
+        elif "mix_dry" in nodes and nodes != {"mix_dry", "mix_wet"}:
+            fail("hpf wet-only: capacitor %s touches the dry node mix_dry with "
+                 "other end %s (only the C_bright bridge mix_dry<->mix_wet is "
+                 "allowed) -- the dry path must be DC-coupled"
+                 % (name, nodes - {"mix_dry"}))
+
+
+# ---------------------------------------------------------------------------
+# 1e. OP-AMP FEEDBACK topology (P1.4): each op-amp's feedback wiring must be
+#     correct, read from the X§Un subckt cards.
+#       Card form: X§Un <in+> <in-> <V+> <V-> <out> level2 ...
+#     U1 (input buffer)  : unity-gain follower -> out tied to inverting input
+#                          (directly, or through R2 which is acceptable).
+#     U2 (recovery 214x) : Ri u2_inv->0 (lower leg), Rf u2_out->u2_inv
+#                          (feedback), signal into u2_in_pos (non-inverting),
+#                          and 1 + Rf/Ri must land in RECOV_GAIN_WINDOW.
+#     U3 (output buffer) : unity-gain follower -> out tied to inverting input.
+# ---------------------------------------------------------------------------
+def _opamp_pins(cards, inst):
+    """Return (in_pos, in_neg, out) for op-amp instance 'Un' from its X§Un card,
+    or None if absent/malformed. The netlist names it 'X§Un'."""
+    card = cards.get("X§" + inst)
+    if card is None or len(card) < 6:
+        return None
+    # X§Un <in+> <in-> <V+> <V-> <out> ...
+    return card[1], card[2], card[5]
+
+
+def check_opamp_feedback():
+    global checks
+    cards = _load_cards(NET)
+
+    # --- U1: unity-gain follower (out == inverting input, direct or via R2) ---
+    checks += 1
+    u1 = _opamp_pins(cards, "U1")
+    if u1 is None:
+        fail("opamp feedback: U1 (X§U1) card missing/malformed")
+    else:
+        in_pos, in_neg, out = u1
+        direct = (in_neg == out)
+        via_r2 = False
+        r2 = cards.get("R2")
+        if r2 is not None and len(r2) >= 3:
+            via_r2 = set(r2[1:3]) == {out, in_neg}
+        if not (direct or via_r2):
+            fail("opamp feedback: U1 must be a unity follower -- inverting "
+                 "input (%s) tied to output (%s) directly or through R2; got "
+                 "neither" % (in_neg, out))
+
+    # --- U2: non-inverting 214x. Ri u2_inv->0, Rf u2_out->u2_inv, sig at in+ ---
+    u2 = _opamp_pins(cards, "U2")
+    ri = cards.get("Ri")
+    rf = cards.get("Rf")
+
+    checks += 1
+    if u2 is None:
+        fail("opamp feedback: U2 (X§U2) card missing/malformed")
+    else:
+        in_pos, in_neg, out = u2
+        if in_pos != "u2_in_pos":
+            fail("opamp feedback: U2 signal must enter the non-inverting input "
+                 "u2_in_pos; got in+=%s" % in_pos)
+        if in_neg != "u2_inv":
+            fail("opamp feedback: U2 inverting input expected u2_inv; got %s"
+                 % in_neg)
+        if out != "u2_out":
+            fail("opamp feedback: U2 output expected u2_out; got %s" % out)
+
+    checks += 1
+    if ri is None or len(ri) < 4:
+        fail("opamp feedback: Ri (U2 lower feedback leg) card missing/malformed")
+    elif set(ri[1:3]) != {"u2_inv", "0"}:
+        fail("opamp feedback: Ri must connect u2_inv<->0 (gain-set lower leg), "
+             "got %s" % set(ri[1:3]))
+
+    checks += 1
+    if rf is None or len(rf) < 4:
+        fail("opamp feedback: Rf (U2 feedback resistor) card missing/malformed")
+    elif set(rf[1:3]) != {"u2_out", "u2_inv"}:
+        fail("opamp feedback: Rf must connect u2_out<->u2_inv (feedback), got %s"
+             % set(rf[1:3]))
+
+    # Gain formula: 1 + Rf/Ri within RECOV_GAIN_WINDOW.
+    checks += 1
+    rf_val = _spice_to_float(rf[3]) if rf and len(rf) >= 4 else None
+    ri_val = _spice_to_float(ri[3]) if ri and len(ri) >= 4 else None
+    if rf_val is None or ri_val is None or ri_val == 0:
+        fail("opamp feedback: cannot derive U2 gain (Rf=%r, Ri=%r)"
+             % (rf[3] if rf else None, ri[3] if ri else None))
+    else:
+        gain = 1.0 + rf_val / ri_val
+        lo, hi = P.RECOV_GAIN_WINDOW
+        if not (lo <= gain <= hi):
+            fail("opamp feedback: U2 gain 1+Rf/Ri = %g outside RECOV_GAIN_WINDOW "
+                 "%s" % (gain, P.RECOV_GAIN_WINDOW))
+
+    # --- U3: unity-gain follower (out == inverting input) ---
+    checks += 1
+    u3 = _opamp_pins(cards, "U3")
+    if u3 is None:
+        fail("opamp feedback: U3 (X§U3) card missing/malformed")
+    else:
+        in_pos, in_neg, out = u3
+        if in_neg != out:
+            fail("opamp feedback: U3 must be a unity follower -- inverting "
+                 "input (%s) tied to output (%s); got in-=%s out=%s"
+                 % (in_neg, out, in_neg, out))
+
+
+# ---------------------------------------------------------------------------
+# 1f. DECOUPLING caps on the correct rails (P1.5): C5/C7 must bridge +15V->0
+#     and C6/C8 must bridge -15V->0. All four must exist (a missing supply
+#     bypass invites HF instability / oscillation that no value-only check sees).
+# ---------------------------------------------------------------------------
+def check_decoupling_caps():
+    global checks
+    cards = _load_cards(NET)
+    for name, expect in (
+        ("C5", {"+15V", "0"}), ("C7", {"+15V", "0"}),
+        ("C6", {"-15V", "0"}), ("C8", {"-15V", "0"}),
+    ):
+        checks += 1
+        card = cards.get(name)
+        if card is None or len(card) < 3:
+            fail("decoupling: %s card missing/malformed (supply bypass absent)"
+                 % name)
+            continue
+        nodes = set(card[1:3])
+        if nodes != expect:
+            fail("decoupling: %s must bridge %s, got %s" % (name, expect, nodes))
+
+
+# ---------------------------------------------------------------------------
+# 1g. DERIVED transfer functions (P1.8): confirm the component VALUES actually
+#     produce the specified transfer function, not just that they exist.
+#       recovery gain = 1 + Rf/Ri          -> RECOV_GAIN_WINDOW
+#       hpf corner    = 1/(2*pi*R6*C4)     -> HPF_CORNER_WINDOW
+# ---------------------------------------------------------------------------
+def check_derived_transfer():
+    global checks
+    import math
+    cards = _load_cards(NET)
+
+    rf = cards.get("Rf")
+    ri = cards.get("Ri")
+    r6 = cards.get("R6")
+    c4 = cards.get("C4")
+
+    # Gain derived from the netlist values.
+    checks += 1
+    rf_val = _spice_to_float(rf[3]) if rf and len(rf) >= 4 else None
+    ri_val = _spice_to_float(ri[3]) if ri and len(ri) >= 4 else None
+    if rf_val is None or ri_val is None or ri_val == 0:
+        fail("derived: cannot compute gain from netlist (Rf=%r, Ri=%r)"
+             % (rf[3] if rf and len(rf) >= 4 else None,
+                ri[3] if ri and len(ri) >= 4 else None))
+    else:
+        gain = 1.0 + rf_val / ri_val
+        lo, hi = P.RECOV_GAIN_WINDOW
+        if not (lo <= gain <= hi):
+            fail("derived: gain 1+Rf/Ri = %g (Rf=%s Ri=%s) outside "
+                 "RECOV_GAIN_WINDOW %s" % (gain, rf[3], ri[3], P.RECOV_GAIN_WINDOW))
+
+    # HPF corner derived from the netlist values.
+    checks += 1
+    r6_val = _spice_to_float(r6[3]) if r6 and len(r6) >= 4 else None
+    c4_val = _spice_to_float(c4[3]) if c4 and len(c4) >= 4 else None
+    if not r6_val or not c4_val:
+        fail("derived: cannot compute HPF corner from netlist (R6=%r, C4=%r)"
+             % (r6[3] if r6 and len(r6) >= 4 else None,
+                c4[3] if c4 and len(c4) >= 4 else None))
+    else:
+        corner = 1.0 / (2.0 * math.pi * r6_val * c4_val)
+        lo, hi = P.HPF_CORNER_WINDOW
+        if not (lo <= corner <= hi):
+            fail("derived: HPF corner 1/(2*pi*R6*C4) = %g Hz (R6=%s C4=%s) "
+                 "outside HPF_CORNER_WINDOW %s"
+                 % (corner, r6[3], c4[3], P.HPF_CORNER_WINDOW))
+
+
+# ---------------------------------------------------------------------------
+# 1h. ANALYSIS-VARIANT netlists (C1/W2): the ripple, AC, and tran assertions
+#     live ONLY in their analysis-specific netlist. The committed op netlist
+#     never runs them, so without a tran/ac variant the < 10mVpp ripple spec
+#     (and the recov_gain / hpf_m3db / vout_pk / osc_ratio specs) are documented
+#     but verified in NO committed file. Confirm each variant exists and carries
+#     its expected .meas directives.
+# ---------------------------------------------------------------------------
+def _netlist_meas_names(path):
+    """Return the set of .meas result names declared in a netlist (the token
+    after the analysis type), or None if the file is missing."""
+    if not os.path.exists(path):
+        return None
+    names = set()
+    with open(path) as f:
+        for raw in f:
+            line = raw.strip()
+            if not line.lower().startswith(".meas"):
+                continue
+            parts = line.split()
+            # .meas <ANALYSIS> <name> ...
+            if len(parts) >= 3:
+                names.add(parts[2])
+    return names
+
+
+def check_variant_netlists():
+    global checks
+    for path, expected in (
+        (NET5_TRAN, {"ripple_pos", "ripple_neg"}),
+        (NET6_TRAN, {"vout_pk", "osc_ratio"}),
+        (NET6_AC, {"recov_gain", "hpf_m3db", "recov_gain_db"}),
+    ):
+        base = os.path.basename(path)
+        checks += 1
+        names = _netlist_meas_names(path)
+        if names is None:
+            fail("variant netlist missing: %s (run sync.py)" % base)
+            continue
+        missing = expected - names
+        if missing:
+            fail("%s: missing .meas directive(s): %s"
+                 % (base, ", ".join(sorted(missing))))
+
+
+# ---------------------------------------------------------------------------
+# 1i. Q1 Ic CROSS-CHECK (C2): the op netlist must carry BOTH q1_ic_calc (Ve/R5)
+#     AND a real comparison target q1_ic (FIND I(R5)) plus the q1_ic_err PARAM
+#     that flags their disagreement. Without q1_ic the cross-check compares
+#     against nothing.
+# ---------------------------------------------------------------------------
+def check_q1_ic_crosscheck():
+    global checks
+    names = _netlist_meas_names(NET)
+    checks += 1
+    if names is None:
+        fail("q1_ic cross-check: %s missing" % os.path.basename(NET))
+        return
+    for needed in ("q1_ic", "q1_ic_calc", "q1_ic_err"):
+        checks += 1
+        if needed not in names:
+            fail("%s: missing .meas %s (Ic cross-check has no comparison target)"
+                 % (os.path.basename(NET), needed))
+
+
+# ---------------------------------------------------------------------------
+# 1j. recov_gain_db TARGET (W4): if recov_gain_db is asserted in any committed
+#     ac netlist, its documented sim target (test-assertions.md / circuit-params)
+#     must equal CHAIN_GAIN_DB_SIM. recov_gain_db measures the recovery-stage gain
+#     end-to-end across U2 (20*log10(V(u2_out)/V(u2_in_pos))) in dB; it is NOT the
+#     full vin->v_out chain gain (the original chain_gain_db measured vin->v_out,
+#     which is ~15-21 dB and would have failed the 44.6-48.6 dB window). Guards a
+#     numeric pass target existing at all.
+# ---------------------------------------------------------------------------
+def check_chain_gain_target():
+    global checks
+    names = _netlist_meas_names(NET6_AC)
+    if names is None or "recov_gain_db" not in names:
+        return  # nothing asserts recov_gain_db -> nothing to cross-check
+    checks += 1
+    with open(ASSERT_MD) as f:
+        text = f.read()
+    needle = "%g dB" % P.CHAIN_GAIN_DB_SIM
+    if needle not in text:
+        fail("test-assertions.md: recov_gain_db target '%s' "
+             "(CHAIN_GAIN_DB_SIM) not found" % needle)
 
 
 # ---------------------------------------------------------------------------
@@ -347,6 +816,14 @@ def check_assertions_md():
 def main():
     check_netlist()
     check_stage_netlists()
+    check_mix_topology()
+    check_hpf_wet_only()
+    check_opamp_feedback()
+    check_decoupling_caps()
+    check_derived_transfer()
+    check_variant_netlists()
+    check_q1_ic_crosscheck()
+    check_chain_gain_target()
     check_params_md()
     check_assertions_md()
 

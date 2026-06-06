@@ -45,11 +45,11 @@ C4 u2_out hpf_out 100n
 R6 hpf_out 0 5.6k
 RV3a hpf_out rv3_wiper 50k
 RV3b rv3_wiper 0 50k
-Rdry u1_buf mix_top 10k
-Rwet rv3_wiper mix_top 0.001
-RV2a mix_top mix_node 50k
-RV2b mix_node 0 50k
-C_bright mix_top mix_node 47p
+Rdry u1_buf mix_dry 10k
+RV2a mix_dry mix_node 50k
+RV2b mix_node mix_wet 50k
+C_bright mix_dry mix_wet 47p
+Rwet_wire rv3_wiper mix_wet 0
 X§U3 mix_node u3_out +15V -15V u3_out level2 Avol=1Meg GBW=8Meg Slew=20Meg Ilimit=25m Rail=0 Rinc=1T Vos=0 En=0 Enk=0 In=0 Ink=0 Rin=500Meg
 R7 u3_out v_out 100
 Rload v_out 0 47k

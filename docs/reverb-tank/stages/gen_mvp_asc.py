@@ -134,12 +134,14 @@ a.res("R6", "5.6k", 2060, 240, "hpf_out", "0")
 # === Stage 4: tone RV3, mix RV2, output buffer U3 ===
 a.res("RV3a", "50k", 2180, 60, "hpf_out", "rv3_wiper")
 a.res("RV3b", "50k", 2180, 180, "rv3_wiper", "0")
-# wet (rv3_wiper) and dry (via Rdry) both meet at mix_top
-a.res("Rdry", "10k", 640, 360, "u1_buf", "mix_top")
-a.res("Rwet", "0.001", 2300, 60, "rv3_wiper", "mix_top")  # ~wire (tone wiper -> RV2 top)
-a.res("RV2a", "50k", 2300, 200, "mix_top", "mix_node")
-a.res("RV2b", "50k", 2300, 320, "mix_node", "0")
-a.cap("C_bright", "47p", 2420, 200, "mix_top", "mix_node")
+# Mix RV2: 3-terminal passive blend. Dry (u1_buf)->Rdry->RV2 pin1(CCW)=mix_dry;
+# wet (rv3_wiper)->RV2 pin3(CW)=mix_wet; wiper(pin2)->U3=mix_node. C_bright spans
+# the full pot. Full-CCW=100% dry, full-CW=100% wet (NOT a volume knob).
+a.res("Rdry", "10k", 640, 360, "u1_buf", "mix_dry")
+a.res("RV2a", "50k", 2300, 200, "mix_dry", "mix_node")     # CCW half of pot
+a.res("RV2b", "50k", 2300, 320, "mix_node", "mix_wet")     # CW half of pot
+a.cap("C_bright", "47p", 2420, 200, "mix_dry", "mix_wet")  # bright cap across full pot
+a.res("Rwet_wire", "0", 2300, 60, "rv3_wiper", "mix_wet")  # direct wire (tone wiper -> RV2 CW end)
 a.opa("U3", 2560, 400, "mix_node", "u3_out", "+15V", "-15V", "u3_out")  # unity follower
 a.res("R7", "100", 2640, 344, "u3_out", "v_out")
 a.res("Rload", "47k", 2760, 344, "v_out", "0")
