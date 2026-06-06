@@ -226,7 +226,7 @@ Military-spec grade. Vishay/Spectrol 296 series — cermet element, MIL-PRF-3902
 | Item | Spec | Why |
 |---|---|---|
 | BD139 heatsink | Small TO-126 clip-on heatsink (e.g. Aavid 577002) | At the verified ~16mA quiescent (Ve ≈ 1.09V), Vce ≈ 15V − 1.09V ≈ 13.9V, so dissipation ≈ 13.9V × 16mA ≈ 220mW (≈250mW at the first-order 18mA bound) — within the TO-126 rating but warm. A clip-on heatsink keeps the junction temperature below 50°C and prevents long-term hFE drift that would shift the bias point over years of use. |
-| LM7815 / LM7915 heatsinks | 2× TO-220 heatsink + insulating mica pad + M3 screw (e.g. Aavid 530002) | Each regulator drops ~6V at ~100mA = ~600mW dissipation. Without a heatsink they will thermally throttle and the supply voltage will sag under load. The **insulating mica pad is mandatory** — the TO-220 tab is electrically connected to the output pin; without isolation, mounting both regulators to the same chassis creates a short between +15V and −15V through the chassis. |
+| LM7815 / LM7915 heatsinks | 2× TO-220 heatsink + insulating mica pad + M3 screw (e.g. Aavid 530002) | Each regulator drops ~5.4V (≈20.4V bus − 15V) at the unit's ~30–50mA idle load = ~0.15–0.3W dissipation. Modest, but in a closed 2U chassis an un-heatsinked TO-220 still climbs to 60–70°C and will thermally throttle (rail sags) before it faults — fit the heatsink. Without a heatsink they will thermally throttle and the supply voltage will sag under load. The **insulating mica pad is mandatory** — the TO-220 tab is electrically connected to the output pin; without isolation, mounting both regulators to the same chassis creates a short between +15V and −15V through the chassis. |
 
 ---
 
