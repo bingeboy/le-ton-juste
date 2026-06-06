@@ -60,8 +60,8 @@ Stages 2–5 each replace one idealized block of the MVP with its real hardware 
 
 | | |
 |---|---|
-| **What** | Replace `R_drive` with a Class-A discrete driver: **Q1** (BD139), **R3** 1 kΩ (base series), **R3b** 6.8 kΩ (upper bias), **R4** 1 kΩ (lower bias), **R5** 68 Ω (emitter degeneration), **C2** 100 µF (emitter bypass), **D3** 1N4148 (flyback clamp, collector→+15 V). Keep **C1** 1 µF on the Dwell input and add **`C_drive`** (1 µF) between the collector node and the tank-side load to block the collector's DC bias from the tank. |
-| **Why** | The op-amp can't source the ~18 mA needed to drive an 8 Ω tank through a transformer. Q1 is the current driver. R3b/R4 set the base voltage (~1.92 V); R5 sets quiescent current (Ic ≈ Ve/R5 ≈ 1.22 V/68 Ω ≈ 18 mA) and gives thermal stability. C2 bypasses R5 for full AC gain. D3 clamps the transformer flyback spike into the +15 V rail. `C_drive` fixes the DC-bias problem: without it the collector's quiescent DC would sit across the tank/transformer winding. |
+| **What** | Replace `R_drive` with a Class-A discrete driver: **Q1** (BD139), **R3** 1 kΩ (base series), **R3b** 6.8 kΩ (upper bias), **R4** 1 kΩ (lower bias), **R5** 68 Ω (emitter degeneration), **C2** 100 µF (emitter bypass), **D3** 1N4148 (flyback clamp, collector→+15 V). Keep the 1 µF Dwell-input coupling cap (BOM ref **C1**, named **`C_drive`** in the netlist) between the Dwell wiper and Q1's base, blocking the buffer's DC from the driver. (Note: the collector-side DC block from the tank/transformer winding is provided by the transformer's galvanic isolation — L1 is in the collector path, L2 feeds the tank — so no series collector cap is needed.) |
+| **Why** | The op-amp can't source the ~16 mA needed to drive an 8 Ω tank through a transformer. Q1 is the current driver. R3b/R4 set the base voltage (~1.92 V open-circuit); R5 sets quiescent current and gives thermal stability. First-order, Ve ≈ Vb − Vbe ≈ 1.92 V − 0.7 V ≈ 1.22 V → Ic ≈ 1.22 V/68 Ω ≈ 18 mA. In the verified SPICE model the divider is loaded by Q1's base current and the real Vbe is higher at this current, so the *settled* operating point is **Ve ≈ 1.09 V → Ic ≈ 16 mA** (see `stage_06_full` op run). Both sit comfortably inside the 1.0–1.4 V / 10–26 mA pass band. C2 bypasses R5 for full AC gain. D3 clamps the transformer flyback spike into the +15 V rail. `C_drive` fixes the DC-bias problem: without it the collector's quiescent DC would sit across the tank/transformer winding. |
 | **Starting schematic** | `mvp_reverb.asc` |
 | **Output schematic** | `stage_02_driver.asc` |
 | **Tests** | `.op` (bias point), `.tran 0 100m 0 1u` (drive current) |
@@ -70,8 +70,8 @@ Stages 2–5 each replace one idealized block of the MVP with its real hardware 
 
 | Check | Pass condition |
 |---|---|
-| Q1 emitter voltage `V(q1_e)` | 1.0 – 1.4 V (target 1.22 V) |
-| Q1 collector current `Ic(Q1)` | 10 – 26 mA (target 18 mA; range covers hFE 40–250 spread) |
+| Q1 emitter voltage `V(q1_e)` | 1.0 – 1.4 V (first-order target 1.22 V; verified sim 1.09 V) |
+| Q1 collector current `Ic(Q1)` | 10 – 26 mA (first-order target 18 mA; verified sim 16 mA; range covers hFE 40–250 spread) |
 | D3 flyback current `I(D3)` peak | < 1 mA (not conducting in normal operation) |
 | Drive current into load | clean, no clipping of the collector swing |
 

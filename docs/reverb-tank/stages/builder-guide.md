@@ -25,7 +25,7 @@ The assembly order below (visual → power → driver → transformer → input 
 
 The SPICE assertions were run with the controls in defined positions. Set the pots the same way before each bench test or your numbers will not match the simulation. If a pot isn't fitted yet at a given stage, ignore its row.
 
-| Control | Ref / Value | Stage 3 (driver bias + signal) | Stage 4 (resonance) | Stage 6 (full chain) |
+| Control | Ref / Value | Stage 3 (driver bias + signal) | Stage 4 (resonance) | Stage 7 (full chain) |
 |---|---|---|---|---|
 | **Dwell** | RV1 10kΩ linear | **Fully CW (max drive)** — gives the largest, easiest-to-see collector swing and the worst-case clipping check | **Fully CW** — you want maximum drive into the tank so the resonant peak is unambiguous | **~50% (noon)** for the sound check; **fully CW** when verifying recovery gain / headroom |
 | **Mix** | RV2 100kΩ audio | n/a | n/a | **Recovery-gain / HPF tests: fully CW (full wet)** so the dry path doesn't sum in and skew the reading. **Sound + phase check: 50/50 (noon).** **Output-DC-offset test: any position — DC offset is independent of mix** |
@@ -69,10 +69,10 @@ Corresponds to SPICE **Stage 2** `.op` (`q1_ve` 1.0–1.4V, `q1_ic` 10–26mA). 
 
 | Test point | Expected | Instrument | Fail action |
 |---|---|---|---|
-| Q1 emitter (R5 top) to GND | 1.0–1.4V DC (target 1.22V) | DMM DC | Low: check R3b (6.8k) / R4 (1k) divider. Zero: Q1 reversed or open |
-| Q1 base to GND | ~1.7–2.0V DC (target 1.92V) | DMM DC | Check R3b, R4, R3 (1k base series) |
+| Q1 emitter (R5 top) to GND | 1.0–1.4V DC (sim 1.09V; first-order 1.22V) | DMM DC | Low: check R3b (6.8k) / R4 (1k) divider. Zero: Q1 reversed or open |
+| Q1 base to GND | ~1.7–2.0V DC (open-circuit 1.92V; loaded ~1.9V) | DMM DC | Check R3b, R4, R3 (1k base series) |
 | Q1 collector to GND | ~13–14V DC | DMM DC | High (=+15V): Q1 not conducting — check bias chain |
-| Across R5 (68Ω) | ~65–95mV | DMM DC | Ic = V/68Ω should land 10–26mA (target ~18mA) |
+| Across R5 (68Ω) | ~1.0–1.3V (R5's bottom is GND, so this equals Ve) | DMM DC | Ic = V/68Ω should land 10–26mA (sim ~16mA) |
 
 > The collector sits a volt or two below +15V because L1 (transformer primary) is a near-DC-short to the +15V rail, so the collector idles close to the rail and only swings *down* under drive. Don't expect a mid-rail collector here — this is a transformer-loaded collector, not a resistor-loaded one.
 

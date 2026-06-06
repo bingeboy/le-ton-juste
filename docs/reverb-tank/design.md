@@ -29,7 +29,7 @@ Solid State (100%)
 - **Driver transistor:** BD139 (high-current NPN, drives transformer primary)
 - **Driver transformer:** Accutronics REB3S (dedicated spring reverb driver transformer, 8Ω secondary matches tank)
 - **Spring tank:** Accutronics 9AB3C1B (Long, 3-spring, long decay, 8Ω input / 2550Ω output)
-- **Power supply:** ±15V internal linear (toroidal 15VA, LM7815/LM7915)
+- **Power supply:** ±15V internal linear (toroidal 30VA Triad F-219X, LM7815/LM7915)
 
 ### Why the 9AB3C1B
 Three springs vs. two: denser, more uniform reverb tail with less of the metallic "ping" two-spring tanks can produce on hard attacks. The closest equivalent to the tank used in the original Fender 6G15 — Jerry Garcia's reverb unit of choice.
@@ -96,7 +96,7 @@ graph LR
 
 ## 7. Power Supply
 - **Type:** Internal linear supply
-- **Transformer:** Toroidal 15VA (low magnetic interference)
+- **Transformer:** Toroidal 30VA Triad F-219X (low magnetic interference; ~10× the ~3VA load for cool, quiet operation)
 - **Regulation:** ±15V DC (LM7815/LM7915) for maximum op-amp headroom
 
 ---
