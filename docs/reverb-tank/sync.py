@@ -45,7 +45,16 @@ GENERATORS = [
     (os.path.join(STAGES, "gen_stage6_full.py"),
      [("op", os.path.join(STAGES, "stage_06_full.net")),
       ("ac", os.path.join(STAGES, "stage_06_full_ac.net")),
-      ("tran", os.path.join(STAGES, "stage_06_full_tran.net"))]),
+      ("tran", os.path.join(STAGES, "stage_06_full_tran.net")),
+      # Stage 7 pot-position sweep (GitHub issue #43): pot-extreme variants whose
+      # .meas assertions live in NO other file. Each drives one pot to a travel
+      # rail (the others held at noon) and gates the failure mode it exposes.
+      ("dwell_min", os.path.join(STAGES, "stage_06_full_dwell_min.net")),
+      ("dwell_max", os.path.join(STAGES, "stage_06_full_dwell_max.net")),
+      ("mix_ccw", os.path.join(STAGES, "stage_06_full_mix_ccw.net")),
+      ("mix_cw", os.path.join(STAGES, "stage_06_full_mix_cw.net")),
+      ("dwell_max_mix_cw",
+       os.path.join(STAGES, "stage_06_full_dwell_max_mix_cw.net"))]),
 ]
 PARAMS_MD_GEN = os.path.join(STAGES, "gen_circuit_params_md.py")
 PARAMS_MD = os.path.join(HERE, "circuit-params.md")

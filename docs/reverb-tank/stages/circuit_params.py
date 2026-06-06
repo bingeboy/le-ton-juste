@@ -213,3 +213,50 @@ U1POS_CLAMP_WINDOW = (-16.0, 16.0)  # V under 20Vpp overload
 
 # Bench noise floor (Stage 7)
 NOISE_FLOOR_MAX_VRMS = 1e-3        # < 1 mVrms at J2
+
+# ============================================================================
+# POT POSITION SWEEP (Stage 7 — pot-extreme coverage, GitHub issue #43)
+# ============================================================================
+# All baseline sims hardcode every pot at 50% (equal halves). These constants
+# drive the pot-extreme variants of gen_stage6_full.py, which sweep one pot to a
+# rail while holding the others at noon, exercising the real failure modes at
+# the travel extremes (zero drive, hard clip, dry/wet bleed, tone cut/peak).
+
+# Pot positions (fraction of full travel: 0.0 = CCW/min, 0.5 = noon, 1.0 = CW/max)
+POT_MIN  = 0.0
+POT_MID  = 0.5
+POT_MAX  = 1.0
+
+# Pot total values (each = sum of the two modelled halves, confirms the netlist:
+# RV1a+RV1b = 5k+5k = 10k; RV2a+RV2b = 50k+50k = 100k; RV3a+RV3b = 50k+50k = 100k)
+RV1_TOTAL = "10k"   # Dwell — linear
+RV2_TOTAL = "100k"  # Mix — audio taper (modelled as linear in SPICE)
+RV3_TOTAL = "100k"  # Tone — audio taper (modelled as linear in SPICE)
+
+# Minimum non-zero pot half (a SPICE-singularity guard: a true 0 Ω half can make
+# the wiper node float/short, so the CCW/CW rail uses 0.001 instead of 0).
+POT_MIN_OHMS = "0.001"
+
+# --- Pot sweep pass windows -------------------------------------------------
+# Grounded in the actual circuit and verified against the LTspice 26 sim of the
+# pot-extreme variants (200ms tran, 100mVpk 1kHz stimulus). The "level" windows
+# are measured as MAX abs() over a settled tail (a sine's raw AVG is ~0, so the
+# .meas directives that gate a SIGNAL LEVEL use MAX abs(); AVG is reserved for
+# the DC-bias reads q1_e, where the bypassed emitter has no AC content).
+#
+# Dry-path level: u1_buf carries the 100mVpk input through the unity U1 buffer
+# (+R2 100Ω). At Mix noon the dry signal is divided by the pot/Rdry network
+# before mix_node, so the dry contribution observed at v_out lands near ~0.1V pk.
+# Window is generous (0.05–0.15) to pass a correct circuit and catch a dead path.
+DWELL_MIN_DRY_WINDOW   = (0.05, 0.15)   # ~0.1V pk dry still passes at min Dwell
+DWELL_MAX_WIPER_PK_WINDOW = (0.03, 0.15)  # at max drive the wiper sees most of u1_buf
+                                        # (~100mVpk) through near-zero series R; C_drive
+                                        # loading brings it to ~40-100mVpk depending on
+                                        # drive; window catches a dead path (< 0.03) or
+                                        # weird amplification (> 0.15)
+DWELL_MAX_U2_PK_MAX    = 13.5           # U2 output must not rail beyond the +/-15V supply
+MIX_CCW_VOUT_WINDOW    = (0.05, 0.15)   # dry signal present at full-CCW (wet muted)
+MIX_CCW_WET_BLEED_WINDOW = (0.90, 1.05)  # mix_node/dry_lvl ratio; at full-CCW wiper ≈ mix_dry so ratio ≈ 1
+MIX_CW_VOUT_PK_MIN  = 0.01              # V pk; wet path must deliver some signal at full-CW
+MIX_CW_DRY_ATTN_MAX = 0.50             # dry_lvl/mix_node ratio; dry should be < 50% of wiper at full-CW
+WORST_CASE_SETTLE_MAX  = 0.5            # DC at U2 out settles back to ~0 after any clip

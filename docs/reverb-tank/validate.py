@@ -38,6 +38,12 @@ NET = os.path.join(STAGES, "stage_06_full.net")
 NET6_AC = os.path.join(STAGES, "stage_06_full_ac.net")
 NET6_TRAN = os.path.join(STAGES, "stage_06_full_tran.net")
 NET5_TRAN = os.path.join(STAGES, "stage_05_psu_tran.net")
+# Stage 7 pot-position sweep variants (GitHub issue #43).
+NET6_DWELL_MIN = os.path.join(STAGES, "stage_06_full_dwell_min.net")
+NET6_DWELL_MAX = os.path.join(STAGES, "stage_06_full_dwell_max.net")
+NET6_MIX_CCW = os.path.join(STAGES, "stage_06_full_mix_ccw.net")
+NET6_MIX_CW = os.path.join(STAGES, "stage_06_full_mix_cw.net")
+NET6_DWELL_MAX_MIX_CW = os.path.join(STAGES, "stage_06_full_dwell_max_mix_cw.net")
 PARAMS_MD = os.path.join(HERE, "circuit-params.md")
 ASSERT_MD = os.path.join(STAGES, "test-assertions.md")
 
@@ -592,6 +598,14 @@ def check_variant_netlists():
         (NET5_TRAN, {"ripple_pos", "ripple_neg"}),
         (NET6_TRAN, {"vout_pk", "osc_ratio"}),
         (NET6_AC, {"recov_gain", "hpf_m3db", "recov_gain_db"}),
+        # Stage 7 pot-position sweep (GitHub issue #43): each pot-extreme variant
+        # carries the .meas assertions that gate its specific failure mode and
+        # that exist in NO other netlist.
+        (NET6_DWELL_MIN, {"dwell_min_vout", "dwell_min_dry"}),
+        (NET6_DWELL_MAX, {"dwell_max_vout_pk", "dwell_max_wiper_pk"}),
+        (NET6_MIX_CCW, {"mix_ccw_vout_pk", "mix_ccw_wet_bleed"}),
+        (NET6_MIX_CW, {"mix_cw_vout_pk", "mix_cw_dry_attn"}),
+        (NET6_DWELL_MAX_MIX_CW, {"worst_case_pk", "worst_case_settle"}),
     ):
         base = os.path.basename(path)
         checks += 1
@@ -811,6 +825,30 @@ def check_assertions_md():
     expect("rail_pos window", "%g – %g V" % (P.RAIL_POS_WINDOW[0], P.RAIL_POS_WINDOW[1]))
     # ripple: < 10 mVpp
     expect("ripple max", "< %g mVpp" % (P.RIPPLE_MAX_PP * 1e3))
+
+    # ----- Stage 7 pot-position sweep windows (H1/H3): every window defined in
+    # circuit_params.py MUST be enforced in test-assertions.md or it is a silent
+    # test. These expect() calls fail if a Stage-7 row drops its numeric bound.
+    # dwell_min_dry: 0.05 – 0.15 V
+    expect("dwell_min_dry window",
+           "%g – %g V" % (P.DWELL_MIN_DRY_WINDOW[0], P.DWELL_MIN_DRY_WINDOW[1]))
+    # dwell_max_wiper_pk: 0.03 – 0.15 V
+    expect("dwell_max_wiper_pk window",
+           "%g – %g V" % (P.DWELL_MAX_WIPER_PK_WINDOW[0], P.DWELL_MAX_WIPER_PK_WINDOW[1]))
+    # dwell_max_vout_pk: < 13.5 V
+    expect("dwell_max_u2_pk max", "< %g V" % P.DWELL_MAX_U2_PK_MAX)
+    # mix_ccw_vout_pk: 0.05 – 0.15 V
+    expect("mix_ccw_vout window",
+           "%g – %g V" % (P.MIX_CCW_VOUT_WINDOW[0], P.MIX_CCW_VOUT_WINDOW[1]))
+    # mix_ccw_wet_bleed: 0.9 – 1.05
+    expect("mix_ccw_wet_bleed window",
+           "%g – %g" % (P.MIX_CCW_WET_BLEED_WINDOW[0], P.MIX_CCW_WET_BLEED_WINDOW[1]))
+    # mix_cw_vout_pk: > 0.01 V
+    expect("mix_cw_vout_pk min", "> %g V" % P.MIX_CW_VOUT_PK_MIN)
+    # mix_cw_dry_attn: < 0.5
+    expect("mix_cw_dry_attn max", "< %g" % P.MIX_CW_DRY_ATTN_MAX)
+    # worst_case_settle: < 0.5
+    expect("worst_case_settle max", "< %g V" % P.WORST_CASE_SETTLE_MAX)
 
 
 def main():
