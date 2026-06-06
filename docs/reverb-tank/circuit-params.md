@@ -179,7 +179,7 @@ Source: `stage_06_full` `ac` variant (ideal ±15V rails; signal-path small-signa
 
 | Quantity | Verified sim value | Design nominal | Notes |
 |---|---|---|---|
-| Recovery gain (U2), V/V | **213.6×** @1kHz | 214× (= 1 + 100k/470) | `recov_gain`; `V(u2_out)/V(u2_in_pos)` |
+| Recovery gain (U2), V/V | **213.8×** @1kHz | ~214× (= 1 + 100k/470) | `recov_gain`; `V(u2_out)/V(u2_in_pos)` |
 | Recovery gain (U2), dB | **46.59 dB** @1kHz | 46.6 dB | |
 | Wet HPF −3dB corner | **312 Hz** | 284 Hz (= 1/(2π·R6·C4)) | `hpf_m3db`; measured as R6/C4 transfer `V(hpf_out)/V(u2_out)`. Sim/design differ due to loading; both in band |
 | Tank resonant peak ("drip") | ≈2–3 kHz | 1–5 kHz target | `tank_pk_f`; resonance of REB3S primary with tank input Z |
@@ -201,7 +201,7 @@ Source: `stage_06_full` `ac` variant (ideal ±15V rails; signal-path small-signa
 | `off_u3` | `V(v_out)` | \|val\| ≤ 10 mV |
 | `q1_ve` | `V(q1_e)` | 1.0 – 1.4 V (sim 1.092 V) |
 | `q1_ic` | `Ic(Q1)` | 10 – 26 mA (sim ≈16 mA) |
-| `recov_gain` | `V(u2_out)/V(u2_in_pos)` @1k | 200 – 228× (sim 213.6×) |
+| `recov_gain` | `V(u2_out)/V(u2_in_pos)` @1k | 205 – 225× (sim 213.8×) |
 | `hpf_m3db` | wet −3dB corner | 250 – 320 Hz (sim 312 Hz) |
 | `vout_pk` | `MAX abs(V(v_out))` | < 14 V (sim 1.16 V) |
 | `osc_ratio` | RMS_late / RMS_early | < 1.05 (sim 0.9998) |

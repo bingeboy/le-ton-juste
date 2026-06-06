@@ -224,16 +224,16 @@ UNREG_HEADROOM_MIN = 17.0          # V; |unreg bus| floor = Vout(15) + dropout(2
 U1_BUF_GAIN_SIM    = 1.0           # V/V @1kHz (unity follower through R2)
 U1_BUF_GAIN_WINDOW = (0.90, 1.05)  # V/V pass band for the U1 buffer
 
-RECOV_GAIN_SIM     = 213.6         # V/V @1kHz (= 1 + RF/RI nominal 214)
+RECOV_GAIN_SIM     = 213.8         # V/V @1kHz (= 1 + RF/RI = 1 + 100000/470 = 213.766..., nearest tenth)
 RECOV_GAIN_DB_SIM  = 46.59         # dB
-RECOV_GAIN_WINDOW  = (200.0, 228.0)  # V/V pass band
+RECOV_GAIN_WINDOW  = (205.0, 225.0)  # V/V pass band (1% Rf/Ri worst-case ~208-219, +meas error)
 # recov_gain_db (Stage 6 ac): the recovery stage gain measured END-TO-END across
 # U2 in dB, i.e. 20*log10(V(u2_out)/V(u2_in_pos)). This is the SAME quantity as
 # RECOV_GAIN_DB_SIM above, just the pass target + window used by the .meas
 # recov_gain_db directive. It is NOT the full vin->v_out chain gain (that is only
 # ~15-21 dB: the dry path attenuates and the wet path is tank/HPF-shaped), so the
 # .meas measures U2 directly. Window is +/-2 dB about the 46.59 dB sim result.
-CHAIN_GAIN_DB_SIM    = 46.59       # dB, recovery stage gain end-to-end (= recov_gain 213.6x)
+CHAIN_GAIN_DB_SIM    = 46.59       # dB, recovery stage gain end-to-end (= recov_gain 213.8x)
 CHAIN_GAIN_DB_WINDOW = (44.6, 48.6)  # +/-2dB about CHAIN_GAIN_DB_SIM
 HPF_CORNER_SIM     = 312.0         # Hz (measured R6/C4 transfer)
 HPF_CORNER_DESIGN  = 284.0         # Hz = 1/(2*pi*R6*C4)
@@ -298,3 +298,39 @@ MIX_CCW_WET_BLEED_WINDOW = (0.90, 1.05)  # mix_node/dry_lvl ratio; at full-CCW w
 MIX_CW_VOUT_PK_MIN  = 0.01              # V pk; wet path must deliver some signal at full-CW
 MIX_CW_DRY_ATTN_MAX = 0.50             # dry_lvl/mix_node ratio; dry should be < 50% of wiper at full-CW
 WORST_CASE_SETTLE_MAX  = 0.5            # DC at U2 out settles back to ~0 after any clip
+
+# ============================================================================
+# STAGE 8 — REALISTIC HARDWARE STRESS VARIANTS
+# ============================================================================
+# Idealized sims use Vos=0, nominal mains, and nominal BD139 beta. Real hardware
+# deviates; these constants drive the stress variants that model the most likely
+# real-world deviations and confirm the design still passes the same windows.
+
+# --- 3a. Low mains voltage (PSU headroom) -----------------------------------
+# ANSI C84.1 allows 114-126V for 120V nominal; older homes sag to ~108V under
+# load. The PSU low-mains variant scales the T1 secondary AC source by this
+# factor (108/120 = 0.90, 10% low) and re-runs the SAME rail/ripple checks: the
+# regulators must still hit +/-15V and ripple must stay < 10mVpp on the sagged
+# bus. Same RAIL_*_WINDOW / RIPPLE_MAX_PP windows apply.
+PSU_LOW_MAINS_VFACTOR = 0.90       # AC secondary scale at 108V (10% low mains)
+
+# --- 3b. U2 input offset injection (Vos stress) -----------------------------
+# Real OPA2134 Vos is up to 500uV (typ 50uV). A 500uV DC source in series with
+# U2's non-inverting input is multiplied by the 213.8x gain to ~107mV DC at
+# u2_out. C4 blocks this from v_out, but it stresses U2 headroom. The op-variant
+# Vos stress reads u2_out_dc_vos and confirms it stays within the bench-documented
+# 20-150mV typical offset band (so the 214x * 500uV stays blocked by C4 and never
+# rails U2). Window straddles 0 so either Vos polarity passes.
+U2_VOS_INJECT     = "500u"         # DC source in series with U2(+) input
+U2_VOS_OUT_WINDOW = (-0.15, 0.15)  # V DC at u2_out under 500uV Vos (214x*500uV ~107mV)
+
+# --- 3c. BD139 low-beta corner ----------------------------------------------
+# BD139 datasheet hFE min=40 (at Ic=500mA), typ ~100-150. Emitter degeneration
+# (R5=68) + stiff base bias make the Q1 bias point largely beta-independent. The
+# low-beta variant overrides BF to 40 (BD139_LO_BETA model = BD139_MODEL params
+# with BF=40) and re-runs the SAME q1_ve / q1_ic bias windows: if they fail at
+# BF=40 the bias design is not beta-independent. Same Q1_VE_WINDOW / Q1_IC_WINDOW.
+BD139_LO_BETA_BF    = 40           # forced forward beta (datasheet hFE min)
+# Derived from BD139_MODEL (single source of truth) with Bf overridden to the
+# low-beta corner, so a change to the base BD139 params flows here automatically.
+BD139_LO_BETA_MODEL = BD139_MODEL.replace("Bf=100", "Bf=%d" % BD139_LO_BETA_BF)

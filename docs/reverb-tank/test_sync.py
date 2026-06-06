@@ -57,6 +57,8 @@ GENERATED_FILES = [
     os.path.join(STAGES, "stage_04_input_protect.net"),
     os.path.join(STAGES, "stage_05_psu.net"),
     os.path.join(STAGES, "stage_05_psu_tran.net"),
+    # Stage 8 stress variant (low mains).
+    os.path.join(STAGES, "stage_05_psu_low_mains.net"),
     os.path.join(STAGES, "stage_06_full.net"),
     os.path.join(STAGES, "stage_06_full_ac.net"),
     os.path.join(STAGES, "stage_06_full_tran.net"),
@@ -66,6 +68,9 @@ GENERATED_FILES = [
     os.path.join(STAGES, "stage_06_full_mix_ccw.net"),
     os.path.join(STAGES, "stage_06_full_mix_cw.net"),
     os.path.join(STAGES, "stage_06_full_dwell_max_mix_cw.net"),
+    # Stage 8 stress variants (U2 Vos injection, BD139 low-beta corner).
+    os.path.join(STAGES, "stage_06_full_vos.net"),
+    os.path.join(STAGES, "stage_06_full_lo_beta.net"),
     os.path.join(HERE, "circuit-params.md"),
 ]
 
@@ -532,7 +537,9 @@ GEN_TO_NETS = {
     "gen_stage3_asc.py": [("ac", "stage_03_transformer.net")],
     "gen_stage4_asc.py": [("op", "stage_04_input_protect.net")],
     "gen_stage5_psu.py": [("op", "stage_05_psu.net"),
-                          ("tran", "stage_05_psu_tran.net")],
+                          ("tran", "stage_05_psu_tran.net"),
+                          # Stage 8 stress: 108V (10%-low) mains variant.
+                          ("psu_low_mains", "stage_05_psu_low_mains.net")],
     "gen_stage6_full.py": [("op", "stage_06_full.net"),
                            ("ac", "stage_06_full_ac.net"),
                            ("tran", "stage_06_full_tran.net"),
@@ -545,7 +552,10 @@ GEN_TO_NETS = {
                            ("mix_ccw", "stage_06_full_mix_ccw.net"),
                            ("mix_cw", "stage_06_full_mix_cw.net"),
                            ("dwell_max_mix_cw",
-                            "stage_06_full_dwell_max_mix_cw.net")],
+                            "stage_06_full_dwell_max_mix_cw.net"),
+                           # Stage 8 stress: U2 Vos injection + BD139 low-beta.
+                           ("stage6_vos", "stage_06_full_vos.net"),
+                           ("lo_beta", "stage_06_full_lo_beta.net")],
 }
 
 # Flattened (gen_file, analysis, net_name) cases for the meta-guard parametrize:
@@ -1022,3 +1032,93 @@ def test_pot_split_drives_halves_to_rail():
         "dwell_min must leave the Mix pot at noon"
     assert net_line(mccw, "RV1a").split()[3] == P.RV1A, \
         "mix_ccw must leave the Dwell pot at noon"
+
+
+# ===========================================================================
+# Group 8: Stage 8 realistic-hardware stress variants
+#
+# Idealized sims use Vos=0, nominal mains, nominal BD139 beta. These guard the
+# stress variants: that each exists, carries the .meas assertion gating its
+# failure mode, and that the modelled deviation is actually applied (not the
+# nominal). The meta-guard above (GEN_NET_CASES) already regenerates+diffs each.
+# ===========================================================================
+def test_psu_low_mains_variant_scales_secondary(P):
+    """The low-mains variant scales the T1 secondary by PSU_LOW_MAINS_VFACTOR
+    (0.90, = 108V on 120V nominal) and re-runs the SAME ripple/rail checks."""
+    path = os.path.join(STAGES, "stage_05_psu_low_mains.net")
+    assert os.path.exists(path), "stage_05_psu_low_mains.net missing -- run sync.py"
+    text = open(path).read()
+    # Same ripple checks as the nominal tran variant.
+    names = _meas_names(text)
+    for needed in ("ripple_pos", "ripple_neg", "rail_pos", "rail_neg",
+                   "unreg_pos", "unreg_neg"):
+        assert needed in names, \
+            "low-mains variant missing .meas %s (got %s)" % (needed, sorted(names))
+    # The secondary peak must be the nominal 21.2Vpk scaled by 0.90 = 19.08.
+    vsec = net_line(text, "Vsec_p")
+    assert vsec is not None, "Vsec_p missing from low-mains netlist"
+    nominal_pk = 21.2  # P.VSEC_SINE peak
+    expected_pk = nominal_pk * P.PSU_LOW_MAINS_VFACTOR
+    assert ("%g" % expected_pk) in vsec, \
+        "low-mains Vsec_p must carry the %gV-scaled peak %g, got %r" \
+        % (P.PSU_LOW_MAINS_VFACTOR, expected_pk, vsec)
+    # And must NOT be the nominal 21.2 peak.
+    assert "21.2" not in vsec, \
+        "low-mains variant still drives the NOMINAL 21.2Vpk secondary"
+
+
+def test_vos_variant_injects_offset_at_u2(P):
+    """The Vos-stress variant inserts a 500uV DC source in SERIES at U2's
+    non-inverting input and reads the settled DC at u2_out (gain unaffected)."""
+    path = os.path.join(STAGES, "stage_06_full_vos.net")
+    assert os.path.exists(path), "stage_06_full_vos.net missing -- run sync.py"
+    text = open(path).read()
+    names = _meas_names(text)
+    assert "u2_out_dc_vos" in names, \
+        "vos variant missing .meas u2_out_dc_vos (got %s)" % sorted(names)
+    # Vos_u2 sits between the network node (u2_in_pos_src) and U2(+) (u2_in_pos).
+    vos = net_line(text, "Vos_u2")
+    assert vos is not None, "Vos_u2 source missing from vos netlist"
+    assert set(vos.split()[1:3]) == {"u2_in_pos", "u2_in_pos_src"}, \
+        "Vos_u2 must be in series at U2(+); got %s" % set(vos.split()[1:3])
+    assert vos.split()[3] == P.U2_VOS_INJECT, \
+        "Vos_u2 value %r != U2_VOS_INJECT %r" % (vos.split()[3], P.U2_VOS_INJECT)
+    # The C3/Rbias network now feeds the SOURCE node, not U2(+) directly.
+    assert set(net_line(text, "C3").split()[1:3]) == {"tank_out", "u2_in_pos_src"}, \
+        "C3 must feed u2_in_pos_src (network node) in the vos variant"
+    assert set(net_line(text, "Rbias").split()[1:3]) == {"u2_in_pos_src", "0"}, \
+        "Rbias must shunt u2_in_pos_src->0 in the vos variant"
+
+
+def test_lo_beta_variant_forces_bf_40(P):
+    """The low-beta corner overrides the BD139 model with BF=40 (datasheet hFE
+    min) and re-runs the SAME q1_ve / q1_ic bias windows."""
+    path = os.path.join(STAGES, "stage_06_full_lo_beta.net")
+    assert os.path.exists(path), "stage_06_full_lo_beta.net missing -- run sync.py"
+    text = open(path).read()
+    names = _meas_names(text)
+    for needed in ("q1_ve", "q1_ic"):
+        assert needed in names, \
+            "lo_beta variant missing .meas %s (got %s)" % (needed, sorted(names))
+    # Q1 references the low-beta model.
+    assert net_line(text, "Q1").split()[4] == "BD139_lo", \
+        "Q1 must reference BD139_lo in the lo_beta variant"
+    # The model card forces BF to the low-beta corner.
+    assert ".model BD139_lo" in text, "lo_beta variant missing .model BD139_lo"
+    assert "Bf=%d" % P.BD139_LO_BETA_BF in P.BD139_LO_BETA_MODEL, \
+        "BD139_LO_BETA_MODEL must force Bf=%d" % P.BD139_LO_BETA_BF
+
+
+def test_stress_variant_constants_are_consistent(P):
+    """Stage 8 stress constants are well-formed and self-consistent."""
+    # Low-mains factor is a fraction below 1 (a sag, not a boost).
+    assert 0.0 < P.PSU_LOW_MAINS_VFACTOR < 1.0, \
+        "PSU_LOW_MAINS_VFACTOR must be a sag fraction in (0,1)"
+    # U2 Vos output window straddles 0 (either offset polarity) and covers the
+    # 214x * 500uV ~ 107mV worst case.
+    lo, hi = P.U2_VOS_OUT_WINDOW
+    assert lo < 0 < hi, "U2_VOS_OUT_WINDOW must straddle 0: %r" % (P.U2_VOS_OUT_WINDOW,)
+    assert hi >= 0.107, "U2_VOS_OUT_WINDOW must cover the ~107mV worst case"
+    # Low-beta BF is the datasheet hFE minimum and below the nominal Bf=100.
+    assert P.BD139_LO_BETA_BF == 40
+    assert "Bf=100" in P.BD139_MODEL and "Bf=40" in P.BD139_LO_BETA_MODEL

@@ -49,7 +49,7 @@ Stages 2–5 each replace one idealized block of the MVP with its real hardware 
 | Check | Pass condition |
 |---|---|
 | DC offset, all op-amp outputs | within ±10 mV of 0 V |
-| Recovery gain `V(u2_out)/V(u2_in_pos)` @ 1 kHz | 200× – 228× (214× ±3%) |
+| Recovery gain `V(u2_out)/V(u2_in_pos)` @ 1 kHz | 205× – 225× (~214× ±5%) |
 | Wet HPF −3 dB corner | 250 – 320 Hz (target ~284 Hz) |
 | Output peak `V(v_out)` | < 14 V (not clipping) |
 | Oscillation: RMS(last 10 ms)/RMS(first 10 ms) | < 1.05 |

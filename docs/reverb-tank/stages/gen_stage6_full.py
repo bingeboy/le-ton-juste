@@ -29,7 +29,7 @@ Stage 1 assertion suite (test-assertions.md), now re-run on the FULL circuit:
   | off_u2     | V(u2_out)                           | +/-10mV        |
   | off_u3     | V(v_out)                            | +/-10mV        |
   | q1_ve      | V(q1_e)                             | 1.0..1.4V      |
-  | recov_gain | V(u2_out)/V(u2_in_pos) @1kHz        | 200..228x      |
+  | recov_gain | V(u2_out)/V(u2_in_pos) @1kHz        | 205..225x      |
   | hpf_m3db   | -3dB corner of wet (hpf_out)        | 250..320Hz     |
   | vout_pk    | MAX abs(V(v_out))                   | < 14V          |
   | osc_ratio  | RMS(last 10ms)/RMS(first 10ms) vout | < 1.05         |
@@ -49,7 +49,7 @@ Analysis variants (ONE active at a time):
           (AC defaults to 0), so they are invisible to a .ac sweep - only the
           signal source V1 (AC 1) drives the small-signal analysis. .ac dec 100
           20 20k:
-            recov_gain = V(u2_out)/V(u2_in_pos) AT=1k  in 200..228
+            recov_gain = V(u2_out)/V(u2_in_pos) AT=1k  in 205..225
             hpf_m3db   = freq where V(hpf_out) = 0.7079*ref(@5k)  in 250..320Hz
   tran  : output peak + no-oscillation. 100ms run, 100mVpk 1kHz signal:
             vout_pk   = MAX abs(V(v_out))                     < 14V
@@ -362,8 +362,8 @@ def build(active_analysis="op"):
     # Input source. For op (DC bias) the signal is KILLED (amplitude 0) so the
     # op-amp outputs / driver emitter read pure DC. For ac the AC=1 token drives
     # the small-signal sweep. For tran it's the 100mVpk 1kHz test stimulus.
-    if active_analysis == "op":
-        # No signal -> off_u1/2/3 and q1_ve read pure DC bias.
+    if active_analysis in ("op", "stage6_vos", "lo_beta"):
+        # No signal -> off_u1/2/3, q1_ve and the stress reads are pure DC bias.
         b.vsrc("V1", P.V1_SINE_KILLED, 64, 160, "vin", "0", value2=P.V1_AC_TOKEN)
     else:
         b.vsrc("V1", P.V1_SINE_NORMAL, 64, 160, "vin", "0", value2=P.V1_AC_TOKEN)
@@ -391,7 +391,9 @@ def build(active_analysis="op"):
     b.res("R3b", P.R3B, 1000, 40, "+15V", "q1_base")
     b.res("R4", P.R4, 1000, 200, "q1_base", "0")
     b.res("R3", P.R3, 880, 300, "q1_drv", "q1_base")
-    b.npn("Q1", "BD139", 1140, 360, "q1_c", "q1_base", "q1_e")
+    # Q1 references the low-beta model in the lo_beta corner variant, else BD139.
+    q1_model = "BD139_lo" if active_analysis == "lo_beta" else "BD139"
+    b.npn("Q1", q1_model, 1140, 360, "q1_c", "q1_base", "q1_e")
     b.res("R5", P.R5, 1140, 520, "q1_e", "0")
     b.cap("C2", P.C2, 1280, 520, "q1_e", "0")
     b.diode("D3", P.D_1N4148, 1140, 220, "q1_c", "+15V")
@@ -410,9 +412,21 @@ def build(active_analysis="op"):
     b.res("R_tank_out", P.R_TANK_OUT, 1660, 60, "tank_mid", "tank_out")
     b.ind("L_tank_out", P.L_TANK_OUT, 1660, 240, "tank_out", "0")
 
-    # Recovery preamp U2.
-    b.cap("C3", P.C3, 1780, 144, "tank_out", "u2_in_pos")
-    b.res("Rbias", P.RBIAS, 1900, 240, "u2_in_pos", "0")
+    # Recovery preamp U2. In the Vos-stress variant a small DC source (500uV) is
+    # inserted IN SERIES between the C3/Rbias network node and U2's non-inverting
+    # input, modelling the OPA2134's worst-case input offset voltage. The network
+    # (C3 coupling + Rbias to GND) stays on u2_in_pos_src; the Vos source drives
+    # U2(+) at u2_in_pos. For all other variants the Vos source is absent and the
+    # network feeds U2(+) directly at u2_in_pos.
+    if active_analysis == "stage6_vos":
+        b.cap("C3", P.C3, 1780, 144, "tank_out", "u2_in_pos_src")
+        b.res("Rbias", P.RBIAS, 1900, 240, "u2_in_pos_src", "0")
+        # Vos_u2: 500uV DC offset in series at U2's + input (u2_in_pos_src -> +).
+        b.vsrc("Vos_u2", P.U2_VOS_INJECT, 1960, 120, "u2_in_pos", "u2_in_pos_src")
+        b.text(1900, 80, "Vos_u2: 500uV OPA2134 worst-case input offset in series at U2(+).", 2)
+    else:
+        b.cap("C3", P.C3, 1780, 144, "tank_out", "u2_in_pos")
+        b.res("Rbias", P.RBIAS, 1900, 240, "u2_in_pos", "0")
     b.opa("U2", 2060, 200, "u2_in_pos", "u2_inv", "+15V", "-15V", "u2_out")
     b.res("Ri", P.RI, 2000, 360, "u2_inv", "0")
     b.res("Rf", P.RF, 2120, 360, "u2_out", "u2_inv")
@@ -446,6 +460,10 @@ def build(active_analysis="op"):
 
     # === Models ===
     b.directive(f".model BD139 {BD139_MODEL}")
+    # Low-beta corner: BD139_lo copies the BD139 params with BF forced to the
+    # datasheet hFE minimum (40). Q1 references it only in the lo_beta variant.
+    if active_analysis == "lo_beta":
+        b.directive(f".model BD139_lo {P.BD139_LO_BETA_MODEL}")
     b.directive(f".model BZX84C15L {BZX84C15L_MODEL}")
     b.directive(f".model DN4007 {DN4007_MODEL}")
 
@@ -493,6 +511,33 @@ def build(active_analysis="op"):
         # Flag disagreement: |q1_ic_calc - q1_ic| / q1_ic must stay under 10%.
         b.directive(".meas TRAN q1_ic_err PARAM {abs(q1_ic_calc - q1_ic) / q1_ic}")
         # Settled rail sanity (the bias points depend on them).
+        b.directive(".meas TRAN rail_pos AVG V(+15V) FROM=190m TO=200m")
+        b.directive(".meas TRAN rail_neg AVG V(-15V) FROM=190m TO=200m")
+    elif active_analysis == "stage6_vos":
+        # Stress 3b: U2 input offset (Vos) injection. A 500uV DC source sits in
+        # series at U2's non-inverting input; the 213.8x recovery gain multiplies
+        # it to ~107mV DC at u2_out. C4 blocks this from v_out, but it stresses U2
+        # headroom. Run the same signal-killed transient as the op variant and read
+        # the SETTLED DC at u2_out over the 190-200ms tail: it must stay within
+        # U2_VOS_OUT_WINDOW (+/-150mV = the bench-documented 20-150mV typical band).
+        # The recovery GAIN is unaffected by Vos (gain is an AC property), so this
+        # variant only adds the DC-offset stress read; the AC gain stays in the ac
+        # variant. (Run as .tran because the real PSU is degenerate at .op.)
+        b.directive(".tran 0 200m 0 2u")
+        b.directive(".meas TRAN u2_out_dc_vos AVG V(u2_out) FROM=190m TO=200m")
+        # Context: the U2 + input node now carries the injected offset.
+        b.directive(".meas TRAN u2_inpos_vos AVG V(u2_in_pos) FROM=190m TO=200m")
+        b.directive(".meas TRAN rail_pos AVG V(+15V) FROM=190m TO=200m")
+        b.directive(".meas TRAN rail_neg AVG V(-15V) FROM=190m TO=200m")
+    elif active_analysis == "lo_beta":
+        # Stress 3c: BD139 low-beta corner (BF=40, datasheet hFE min). The emitter
+        # degeneration (R5=68) + stiff base bias make the Q1 bias point largely
+        # beta-independent, so the SAME q1_ve / q1_ic windows must still pass; if
+        # they fail at BF=40 the bias design is not beta-independent. Same
+        # signal-killed transient + 190-200ms tail read as the op variant.
+        b.directive(".tran 0 200m 0 2u")
+        b.directive(".meas TRAN q1_ve AVG V(q1_e) FROM=190m TO=200m")
+        b.directive(".meas TRAN q1_ic AVG I(R5) FROM=190m TO=200m")
         b.directive(".meas TRAN rail_pos AVG V(+15V) FROM=190m TO=200m")
         b.directive(".meas TRAN rail_neg AVG V(-15V) FROM=190m TO=200m")
     elif active_analysis == "ac":
@@ -592,7 +637,7 @@ def build(active_analysis="op"):
 
     b.text(16, 1620,
            "Active analysis: ." + active_analysis +
-           ". Regenerate with gen_stage6_full.py {op|ac|tran} -- ONE analysis at a time.", 2)
+           ". Regenerate with gen_stage6_full.py {op|ac|tran|stage6_vos|lo_beta} -- ONE analysis at a time.", 2)
 
     return b
 

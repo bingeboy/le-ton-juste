@@ -246,8 +246,24 @@ class Build:
         open(net_path, "w").write("\n".join(net) + "\n")
 
 
+def _low_mains_sine():
+    """Return the T1 secondary SINE() string scaled to the low-mains corner.
+
+    Nominal is VSEC_SINE = 'SINE(0 21.2 60)' (21.2Vpk = 15Vrms*sqrt(2)). The
+    low-mains variant scales the peak amplitude by PSU_LOW_MAINS_VFACTOR (0.90,
+    = 108V on a 120V nominal mains) and leaves offset/frequency untouched, so the
+    bridge+caps see a 10%-low secondary. Parses the nominal string so a change to
+    VSEC_SINE flows here (single source of truth)."""
+    inner = P.VSEC_SINE[P.VSEC_SINE.index("(") + 1:P.VSEC_SINE.rindex(")")]
+    off, peak, freq = inner.split()
+    scaled = float(peak) * P.PSU_LOW_MAINS_VFACTOR
+    return "SINE(%s %g %s)" % (off, scaled, freq)
+
+
 def build(active_analysis="op"):
-    """active_analysis in {'op','tran'}. Only ONE analysis active at a time."""
+    """active_analysis in {'op','tran','psu_low_mains'}. Only ONE analysis active
+    at a time. psu_low_mains is the 'tran' variant with the T1 secondary scaled to
+    the 108V (10%-low) mains corner; it runs the SAME ripple/rail checks."""
     b = Build()
     b.text(16, -40, "Ghost Spring Stage 5 - +/-15V Linear Power Supply (T1, BR1, C11/C12, U4 LM7815, U5 LM7915)", 4)
     b.text(16, 8, "Stage 4 signal path UNCHANGED, now fed from the real PSU. T1 15-0-15VAC (two SINE(0 21.2 60), center tap=GND) -> BR1 (4x 1N4007) -> C11/C12 2200u bulk + 10k bleed -> U4 LM7815 / U5 LM7915 -> C13/C14 100u + C17/C18 100n -> F2/F3 polyfuses (0.5ohm) on DC rails -> +/-15V rails. Connectivity by net labels (FLAG at each pin).", 2)
@@ -258,9 +274,15 @@ def build(active_analysis="op"):
     # T1 secondary: 15-0-15VAC, center tap = GND. Two anti-phase 60Hz SINE
     # sources, 21.2V peak = 15Vrms * sqrt(2). Vsec_n is written 0 -> ac_neg so
     # ac_neg swings opposite ac_pos (true center-tapped winding).
-    b.vsrc("Vsec_p", P.VSEC_SINE, 64, 1000, "ac_pos", "0")
-    b.vsrc("Vsec_n", P.VSEC_SINE, 224, 1000, "0", "ac_neg")
-    b.text(64, 960, "T1 Triad F-219X 15-0-15VAC. Center tap = GND. 21.2Vpk = 15Vrms*sqrt(2).", 2)
+    # Low-mains variant scales the secondary peak to the 108V (10%-low) corner;
+    # all other analyses use the nominal 21.2Vpk secondary.
+    sec_sine = _low_mains_sine() if active_analysis == "psu_low_mains" else P.VSEC_SINE
+    b.vsrc("Vsec_p", sec_sine, 64, 1000, "ac_pos", "0")
+    b.vsrc("Vsec_n", sec_sine, 224, 1000, "0", "ac_neg")
+    if active_analysis == "psu_low_mains":
+        b.text(64, 960, "T1 secondary scaled to 108V (10%% low mains, 0.90x). Center tap = GND.", 2)
+    else:
+        b.text(64, 960, "T1 Triad F-219X 15-0-15VAC. Center tap = GND. 21.2Vpk = 15Vrms*sqrt(2).", 2)
 
     # BR1 = W04G full-wave bridge off the center-tapped winding, 4x 1N4007.
     # D-prefix instance names (DBR1a..d). pos_rect = +ve bus, neg_rect = -ve bus.
@@ -409,9 +431,12 @@ def build(active_analysis="op"):
         # Cheap downstream bias regression.
         b.directive(".meas TRAN q1_ve AVG V(q1_e) FROM=100m TO=120m")
         b.directive(".meas TRAN off_u3 AVG V(v_out) FROM=100m TO=120m")
-    elif active_analysis == "tran":
+    elif active_analysis in ("tran", "psu_low_mains"):
         # Stage 5 green #3/#4: ripple on the regulated rails after caps settle.
         # 150ms run, ripple window 100ms..120ms (>= 1 full 120Hz ripple period).
+        # psu_low_mains runs the IDENTICAL checks on a 108V (10%-low) secondary:
+        # the regulators must still hit +/-15V and ripple stays < 10mVpp, AND the
+        # unregulated bus must keep its dropout headroom on the sagged mains.
         b.directive(".tran 0 150m 0 10u")
         b.directive(".meas TRAN ripple_pos PP V(+15V) FROM=100m TO=120m")
         b.directive(".meas TRAN ripple_neg PP V(-15V) FROM=100m TO=120m")
@@ -420,10 +445,17 @@ def build(active_analysis="op"):
         b.directive(".meas TRAN rail_neg_avg AVG V(-15V) FROM=100m TO=120m")
         b.directive(".meas TRAN unreg_pos_pp PP V(pos_rect) FROM=100m TO=120m")
         b.directive(".meas TRAN unreg_neg_pp PP V(neg_rect) FROM=100m TO=120m")
+        if active_analysis == "psu_low_mains":
+            # On low mains the unregulated bus sags toward the dropout floor, so
+            # guard rail regulation AND unreg-bus headroom on the sagged supply.
+            b.directive(".meas TRAN rail_pos AVG V(+15V) FROM=100m TO=120m")
+            b.directive(".meas TRAN rail_neg AVG V(-15V) FROM=100m TO=120m")
+            b.directive(".meas TRAN unreg_pos AVG V(pos_rect) FROM=100m TO=120m")
+            b.directive(".meas TRAN unreg_neg AVG V(neg_rect) FROM=100m TO=120m")
 
     b.text(16, 1620,
            "Active analysis: ." + active_analysis +
-           ". Regenerate with gen_stage5_psu.py {op|tran} -- ONE analysis at a time.", 2)
+           ". Regenerate with gen_stage5_psu.py {op|tran|psu_low_mains} -- ONE analysis at a time.", 2)
 
     return b
 

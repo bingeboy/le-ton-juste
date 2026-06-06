@@ -41,7 +41,10 @@ GENERATORS = [
      [("op", os.path.join(STAGES, "stage_04_input_protect.net"))]),
     (os.path.join(STAGES, "gen_stage5_psu.py"),
      [("op", os.path.join(STAGES, "stage_05_psu.net")),
-      ("tran", os.path.join(STAGES, "stage_05_psu_tran.net"))]),
+      ("tran", os.path.join(STAGES, "stage_05_psu_tran.net")),
+      # Stage 8 stress variant: 108V (10%-low) mains, same ripple/rail checks.
+      ("psu_low_mains",
+       os.path.join(STAGES, "stage_05_psu_low_mains.net"))]),
     (os.path.join(STAGES, "gen_stage6_full.py"),
      [("op", os.path.join(STAGES, "stage_06_full.net")),
       ("ac", os.path.join(STAGES, "stage_06_full_ac.net")),
@@ -54,7 +57,11 @@ GENERATORS = [
       ("mix_ccw", os.path.join(STAGES, "stage_06_full_mix_ccw.net")),
       ("mix_cw", os.path.join(STAGES, "stage_06_full_mix_cw.net")),
       ("dwell_max_mix_cw",
-       os.path.join(STAGES, "stage_06_full_dwell_max_mix_cw.net"))]),
+       os.path.join(STAGES, "stage_06_full_dwell_max_mix_cw.net")),
+      # Stage 8 stress variants: U2 input-offset (Vos) injection and BD139
+      # low-beta corner. Each carries .meas assertions in NO other file.
+      ("stage6_vos", os.path.join(STAGES, "stage_06_full_vos.net")),
+      ("lo_beta", os.path.join(STAGES, "stage_06_full_lo_beta.net"))]),
 ]
 PARAMS_MD_GEN = os.path.join(STAGES, "gen_circuit_params_md.py")
 PARAMS_MD = os.path.join(HERE, "circuit-params.md")

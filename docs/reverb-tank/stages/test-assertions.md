@@ -27,7 +27,7 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 .meas OP off_u3 FIND V(v_out)
 
 ; Stage 1 — AC: recovery stage gain = 1 + Rf/Ri = 1 + 100k/470 = 213.8x nominal
-;   (component values per stage_06_full.net; pass band below covers +/-3% + tolerance)
+;   (component values per stage_06_full.net; pass band below covers 1% Rf/Ri parts + meas error)
 .meas AC recov_gain FIND V(u2_out)/V(u2_in_pos) AT=1k
 
 ; Stage 1 — AC: wet HPF -3dB corner. DESIGN corner = 1/(2*pi*R6*C4)
@@ -50,7 +50,7 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | `off_u1` | `V(u1_out)` | \|val\| ≤ 10 mV | U1 has a DC offset — bias/coupling error |
 | `off_u2` | `V(u2_out)` | \|val\| ≤ 10 mV | Recovery DC offset — Rbias/C3 issue, will clip mix |
 | `off_u3` | `V(v_out)` | \|val\| ≤ 10 mV | Output offset — DC to the MC100 |
-| `recov_gain` | `V(u2_out)/V(u2_in_pos)` @1k | 200 – 228 | Wrong Rf/Ri ratio — recovery gain off |
+| `recov_gain` | `V(u2_out)/V(u2_in_pos)` @1k | 205 – 225 | Wrong Rf/Ri ratio — recovery gain off |
 | `hpf_m3db` | freq where wet = 0.7079×ref | 250 – 320 Hz | HPF corner wrong — R6/C4 value error |
 | `vout_pk` | `MAX abs(V(v_out))` | < 14 V | Output clipping into the rails |
 | `osc_ratio` | RMS_late / RMS_early | < 1.05 | Signal growing — oscillation/instability |
@@ -211,7 +211,7 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 ;   expressed in dB. It deliberately does NOT measure the full vin->v_out chain:
 ;   the dry path attenuates (~-5 dB) and the wet path is tank/HPF-shaped, so
 ;   20*log10(V(v_out)/V(vin)) is only ~15-21 dB and would fail this window.
-;   Target = CHAIN_GAIN_DB_SIM = 46.59 dB (= simulated recov_gain 213.6x);
+;   Target = CHAIN_GAIN_DB_SIM = 46.59 dB (= simulated recov_gain 213.8x);
 ;   pass window CHAIN_GAIN_DB_WINDOW = 44.6 - 48.6 dB (+/-2 dB).
 .meas AC recov_lvl  FIND V(u2_out) AT=1k
 .meas AC recov_gain_db FIND mag(20*log10(V(u2_out)/V(u2_in_pos))) AT=1k
@@ -332,6 +332,89 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 > headroom. As with the Mix-blend section, the **wiper position is not a swept
 > SPICE variable**, so each pot extreme is a SEPARATE generated netlist rather
 > than one parametric `.meas`.
+
+---
+
+## Stage 8 — Stress variants (realistic hardware conditions)
+
+The baseline op/ac/tran sims are **idealized**: every op-amp uses `Vos=0`, the
+mains sits at its nominal voltage, and the BD139 uses its nominal forward beta.
+Real hardware won't be ideal. These variants re-run the relevant pass criteria
+under the **most likely real-world deviations** and confirm the design still
+passes the **same windows** — a deviation that pushes any quantity out of its
+existing window is a real design weakness, not a modelling artifact.
+
+Each variant is a separate generated netlist (`sync.py`) and is structurally
+guarded by `validate.py check_variant_netlists()` + the `test_sync.py` meta-guard.
+
+### 8a — Low mains voltage (PSU headroom)
+
+ANSI C84.1 allows **114–126 V** for a 120 V nominal mains; older homes can sag to
+**~108 V** under load. The `psu_low_mains` variant scales the T1 secondary AC
+source by `PSU_LOW_MAINS_VFACTOR = 0.9×` (108 V = 10 % low) and re-runs the
+**identical** Stage 5 ripple/rail checks. With ~+19 V of unregulated bus at
+nominal mains there is ample dropout headroom, so even at 0.90× the regulators
+must still hold ±15 V and ripple must stay in spec. **Same windows apply** —
+`rail_pos`/`rail_neg` (14.85 – 15.15 V), `ripple_pos`/`ripple_neg` (< 10 mVpp),
+and `unreg_pos`/`unreg_neg` (> 17 V dropout headroom on the sagged bus).
+
+```spice
+; psu_low_mains — T1 secondary scaled to 108V (0.90x), SAME ripple/rail checks
+.meas TRAN ripple_pos PP V(+15V) FROM=100m TO=120m
+.meas TRAN ripple_neg PP V(-15V) FROM=100m TO=120m
+.meas TRAN rail_pos AVG V(+15V) FROM=100m TO=120m
+.meas TRAN rail_neg AVG V(-15V) FROM=100m TO=120m
+.meas TRAN unreg_pos AVG V(pos_rect) FROM=100m TO=120m
+.meas TRAN unreg_neg AVG V(neg_rect) FROM=100m TO=120m
+```
+
+| Variant | Assertion | Pass condition | Fail means |
+|---|---|---|---|
+| `psu_low_mains` (0.90×) | `ripple_pos` / `ripple_neg` | < 10 mVpp | Ripple rejection fails on low mains |
+| `psu_low_mains` (0.90×) | `rail_pos` / `rail_neg` | 14.85 – 15.15 V | Regulator drops out on low mains |
+| `psu_low_mains` (0.90×) | `unreg_pos` / `unreg_neg` | > 17 V | Bus below dropout — rail unregulates |
+
+### 8b — U2 input offset injection (Vos stress)
+
+A real **OPA2134** has an input offset voltage **Vos up to 500 µV** (typ 50 µV).
+The `stage6_vos` variant inserts a 500 µV DC source (`Vos_u2`) **in series** at
+U2's non-inverting input; the **213.8× recovery gain** multiplies it to **~107 mV
+DC at u2_out**. The recovery **gain** is an AC property and is *unaffected* by
+Vos, so `recov_gain_db` stays in its window (verified in the `ac` variant). The
+new check is the **settled DC offset at U2's output**: `u2_out_dc_vos` must land
+within `U2_VOS_OUT_WINDOW = ±150 mV` — confirming 214× × 500 µV stays inside the
+bench-documented **20–150 mV** typical band and is blocked by C4 before v_out.
+
+```spice
+; stage6_vos — 500uV in series at U2(+); settled DC at u2_out (gain unaffected)
+.meas TRAN u2_out_dc_vos AVG V(u2_out) FROM=190m TO=200m
+.meas TRAN u2_inpos_vos  AVG V(u2_in_pos) FROM=190m TO=200m
+```
+
+| Variant | Assertion | Pass condition | Fail means |
+|---|---|---|---|
+| `stage6_vos` (500 µV) | `u2_out_dc_vos` | \|val\| ≤ 150 mV | Vos×214 exceeds C4-blockable headroom — U2 near clip |
+
+### 8c — BD139 low-beta corner
+
+The BD139 datasheet specifies **hFE min = 40** (at Ic = 500 mA); typical is
+~100–150. The emitter degeneration (R5 = 68 Ω) plus the stiff R3b/R4 base-bias
+divider make the Q1 bias point **largely beta-independent**. The `lo_beta`
+variant overrides the model with `.model BD139_lo NPN(... BF=40 ...)` (the BD139
+params with **BF=40**) and re-runs the **same** Q1 bias checks. If `q1_ve`/`q1_ic`
+fall out of window at BF=40, the bias design is *not* beta-independent — a real
+defect.
+
+```spice
+; lo_beta — BD139 with BF=40 (datasheet hFE min); SAME Q1 bias windows
+.meas TRAN q1_ve AVG V(q1_e) FROM=190m TO=200m
+.meas TRAN q1_ic AVG I(R5)   FROM=190m TO=200m
+```
+
+| Variant | Assertion | Pass condition | Fail means |
+|---|---|---|---|
+| `lo_beta` (BF=40) | `q1_ve` | 1.0 – 1.4 V | Bias shifts with beta — divider too soft / R5 wrong |
+| `lo_beta` (BF=40) | `q1_ic` | 10 – 26 mA | Quiescent current beta-dependent — under/over-driven tank |
 
 ---
 

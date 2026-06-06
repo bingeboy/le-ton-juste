@@ -44,6 +44,10 @@ NET6_DWELL_MAX = os.path.join(STAGES, "stage_06_full_dwell_max.net")
 NET6_MIX_CCW = os.path.join(STAGES, "stage_06_full_mix_ccw.net")
 NET6_MIX_CW = os.path.join(STAGES, "stage_06_full_mix_cw.net")
 NET6_DWELL_MAX_MIX_CW = os.path.join(STAGES, "stage_06_full_dwell_max_mix_cw.net")
+# Stage 8 realistic hardware stress variants.
+NET5_LOW_MAINS = os.path.join(STAGES, "stage_05_psu_low_mains.net")
+NET6_VOS = os.path.join(STAGES, "stage_06_full_vos.net")
+NET6_LO_BETA = os.path.join(STAGES, "stage_06_full_lo_beta.net")
 PARAMS_MD = os.path.join(HERE, "circuit-params.md")
 ASSERT_MD = os.path.join(STAGES, "test-assertions.md")
 
@@ -639,6 +643,13 @@ def check_variant_netlists():
         (NET6_MIX_CCW, {"mix_ccw_vout_pk", "mix_ccw_wet_bleed"}),
         (NET6_MIX_CW, {"mix_cw_vout_pk", "mix_cw_dry_attn"}),
         (NET6_DWELL_MAX_MIX_CW, {"worst_case_pk", "worst_case_settle"}),
+        # Stage 8 stress variants (idealized -> realistic hardware deviations).
+        # 3a low mains: same ripple/rail checks on a 108V secondary.
+        (NET5_LOW_MAINS, {"ripple_pos", "ripple_neg"}),
+        # 3b U2 Vos: settled DC at u2_out under a 500uV input offset.
+        (NET6_VOS, {"u2_out_dc_vos"}),
+        # 3c BD139 low-beta corner: same Q1 bias checks at BF=40.
+        (NET6_LO_BETA, {"q1_ve", "q1_ic"}),
     ):
         base = os.path.basename(path)
         checks += 1
@@ -903,7 +914,7 @@ def check_assertions_md():
            "%g – %g" % (P.U1_BUF_GAIN_WINDOW[0], P.U1_BUF_GAIN_WINDOW[1]))
     # Unregulated-bus headroom: |bus| > 17 V
     expect("unreg headroom min", "> %g V" % P.UNREG_HEADROOM_MIN)
-    # recov_gain: 200 - 228
+    # recov_gain: 205 - 225
     expect("recov_gain window", "%g – %g" % (P.RECOV_GAIN_WINDOW[0], P.RECOV_GAIN_WINDOW[1]))
     # hpf: 250 - 320 Hz
     expect("hpf window", "%g – %g Hz" % (P.HPF_CORNER_WINDOW[0], P.HPF_CORNER_WINDOW[1]))
@@ -939,6 +950,17 @@ def check_assertions_md():
     expect("mix_cw_dry_attn max", "< %g" % P.MIX_CW_DRY_ATTN_MAX)
     # worst_case_settle: < 0.5
     expect("worst_case_settle max", "< %g V" % P.WORST_CASE_SETTLE_MAX)
+
+    # ----- Stage 8 stress-variant windows: every new pass criterion must be
+    # documented in test-assertions.md or it is a silent test.
+    # 3a low mains: the 0.90 scale factor (108V on 120V nominal). Same rail/ripple
+    # windows apply; document the drive factor so the variant is traceable.
+    expect("psu low-mains factor", "%g×" % P.PSU_LOW_MAINS_VFACTOR)
+    # 3b U2 Vos output DC window: |val| <= 150 mV (214x * 500uV ~107mV, blocked by C4)
+    expect("u2_out_dc_vos window",
+           "%g mV" % (P.U2_VOS_OUT_WINDOW[1] * 1e3))
+    # 3c BD139 low-beta corner: BF forced to the datasheet hFE minimum (40).
+    expect("bd139 low-beta BF", "BF=%g" % P.BD139_LO_BETA_BF)
 
 
 def main():

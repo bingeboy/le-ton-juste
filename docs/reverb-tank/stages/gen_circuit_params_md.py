@@ -324,7 +324,7 @@ def build_md():
     w("")
     w("| Quantity | Verified sim value | Design nominal | Notes |")
     w("|---|---|---|---|")
-    w("| Recovery gain (U2), V/V | **%g×** @1kHz | 214× (= 1 + 100k/470) | `recov_gain`; `V(u2_out)/V(u2_in_pos)` |" % P.RECOV_GAIN_SIM)
+    w("| Recovery gain (U2), V/V | **%g×** @1kHz | ~214× (= 1 + 100k/470) | `recov_gain`; `V(u2_out)/V(u2_in_pos)` |" % P.RECOV_GAIN_SIM)
     w("| Recovery gain (U2), dB | **%g dB** @1kHz | 46.6 dB | |" % P.RECOV_GAIN_DB_SIM)
     w("| Wet HPF −3dB corner | **%g Hz** | %g Hz (= 1/(2π·R6·C4)) | `hpf_m3db`; measured as R6/C4 transfer `V(hpf_out)/V(u2_out)`. Sim/design differ due to loading; both in band |" % (P.HPF_CORNER_SIM, P.HPF_CORNER_DESIGN))
     w("| Tank resonant peak (\"drip\") | ≈2–3 kHz | %s target | `tank_pk_f`; resonance of REB3S primary with tank input Z |" % khz_range(P.TANK_PEAK_WINDOW))

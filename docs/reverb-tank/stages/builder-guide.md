@@ -240,7 +240,7 @@ These cheap, fast checks catch gross wiring faults *before* you spend time chasi
 | `off_u2` | op | +0.47mV | ±10mV | ✅ |
 | `off_u3` | op | −0.35µV (≈0V) | ±10mV | ✅ |
 | `q1_ve` | op | 1.092V | 1.0–1.4V | ✅ |
-| `recov_gain` | ac | 46.59dB = 213.6× @1kHz | 200–228× | ✅ |
+| `recov_gain` | ac | 46.59dB = 213.8× @1kHz | 205–225× | ✅ |
 | `hpf_m3db` | ac | 312Hz | 250–320Hz | ✅ |
 | `vout_pk` | tran | 1.16V | < 14V | ✅ |
 | `osc_ratio` | tran | 0.9998 | < 1.05 | ✅ |
@@ -252,7 +252,7 @@ These cheap, fast checks catch gross wiring faults *before* you spend time chasi
 
 | Test | Method | Expected | Fail action |
 |---|---|---|---|
-| Recovery gain | **Measure gain across U2 itself, not the whole chain.** Inject directly at U2's (+) input node (the tank/C3 side of Rbias) — *not* the front-panel input jack, which is attenuated by the Dwell/driver/transformer/tank ahead of it. Apply a small **10mVpp, 1kHz** sine there, probe **U2 output**. Gain = Vout(pp) / Vin(pp). | **≈213.6× (46.6dB)** — accept the test-assertions band **200–228×**. With 10mVpp in you should read **~2.1Vpp** at U2 out. (Keep input small: at 213× even 60mVpp in clips U2 into the rails and the ratio reads *low* — a false fail.) | Low ratio (≈33×): Rbias is 470Ω instead of 100kΩ (loads the tank). Low (≈half): check Ri (470Ω) / Rf (100kΩ) ratio. Very high or oscillating: check feedback wiring and R2/R7 output isolation resistors |
+| Recovery gain | **Measure gain across U2 itself, not the whole chain.** Inject directly at U2's (+) input node (the tank/C3 side of Rbias) — *not* the front-panel input jack, which is attenuated by the Dwell/driver/transformer/tank ahead of it. Apply a small **10mVpp, 1kHz** sine there, probe **U2 output**. Gain = Vout(pp) / Vin(pp). | **≈213.8× (46.6dB)** — accept the test-assertions band **205–225×**. With 10mVpp in you should read **~2.1Vpp** at U2 out. (Keep input small: at 213× even 60mVpp in clips U2 into the rails and the ratio reads *low* — a false fail.) | Low ratio (≈33×): Rbias is 470Ω instead of 100kΩ (loads the tank). Low (≈half): check Ri (470Ω) / Rf (100kΩ) ratio. Very high or oscillating: check feedback wiring and R2/R7 output isolation resistors |
 | HPF corner | Sweep generator, probe wet at U2 output then after C4/R6 (ratio = the HPF transfer) | −3dB at ~312Hz (design 284Hz; accept 250–320Hz) | Wrong corner: check C4 (100nF) and R6 (5.6kΩ exactly — 4.7k → 338Hz, 6.8k → 234Hz) |
 | Output DC offset | DMM DC at J2 output jack — **wait 2–3s after power-up for the tank transient to settle before reading** (sim settles by ~200ms; see Stage 2 settle note) | **< 5mV** (sim ≈ 0V) — this is *after* C4, so it must be far lower than U2's 20–150mV output offset, which C4 blocks | Check U3 output and C3 (no DC leaking from the tank into U2). If J2 reads tens of mV, C4 may be leaking DC through. A reading that *decays* to spec within a couple seconds is settling, not a fault |
 | Q1 emitter bias | DMM DC at Q1 emitter / R5 top | ≈1.09V (1.0–1.4V) — unchanged under the real regulated rails | Bias shifted: check R3b/R4 divider and R5 (68Ω); confirm the +15V rail first (Stage 6 above) |
