@@ -63,8 +63,8 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 
 | Assertion name | Expression | Pass condition | Fail means |
 |---|---|---|---|
-| `q1_ve` | `V(q1_e)` | 1.0 – 1.4 V (≈1.22 V) | Bias divider/R5 wrong — wrong operating point |
-| `q1_ic` | `Ic(Q1)` | 10 – 26 mA (≈18 mA) | Quiescent current off — under/over-driven tank |
+| `q1_ve` | `V(q1_e)` | 1.0 – 1.4 V (sim 1.09 V; first-order 1.22 V) | Bias divider/R5 wrong — wrong operating point |
+| `q1_ic` | `Ic(Q1)` | 10 – 26 mA (sim 16 mA; first-order 18 mA) | Quiescent current off — under/over-driven tank |
 | `d3_pk` | `MAX abs(I(D3))` | < 1 mA | D3 conducting in normal use — clamp engaging wrongly |
 | `drv_pk` | `MAX abs(I(L1))` | within linear swing, no flat-top | Driver clipping the transient |
 

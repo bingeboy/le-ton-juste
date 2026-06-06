@@ -1,5 +1,7 @@
 # Reverb Tank — Rackmount Enclosure
 
+> **Authoritative sources:** for the *final* build, [`parts-spec.md`](./parts-spec.md), [`parts-list.md`](./parts-list.md) and [`mouser-bom.csv`](./mouser-bom.csv) are ground truth. This doc is the mechanical/layout overview; where a number here disagrees with parts-spec, parts-spec wins. Known fixed-up points: the chassis is **aluminum Hammond 1455T2201** (steel is explicitly wrong — it interacts with the toroid), the transformer is **30VA Triad F-219X** (not 15VA), the op-amps are **OPA2134** (not NE5532), and the mains fuse is **500mA slow-blow** (not 1A). Send/Return/XLR jacks are *not* part of this build.
+
 ## Form Factor
 
 **2U rackmount chassis** (~3.5" × 19" × variable depth). A 1U chassis is possible but very tight once a spring tank is mounted internally. 2U provides comfortable space for the tank, PCB, power supply, and ventilation.
@@ -8,10 +10,11 @@
 
 | Manufacturer | Model | Notes |
 |---|---|---|
-| Hammond | RM2U | Steel, black, vented top/bottom |
-| Bud Industries | RM-14215 | Aluminum, 15" depth |
-| Penn Elcom | Custom | Blank chassis, drill yourself |
-| eBay / generic | 2U rack chassis | Various depths and finishes |
+| **Hammond** | **1455T2201** | **Specified part — aluminum, 2U, rack ears included. Aluminum is mandatory: a steel chassis interacts with the toroid's residual field (see parts-spec).** |
+| Bud Industries | RM-14215 | Aluminum, 15" depth — acceptable alternative |
+| Penn Elcom | Custom | Blank aluminum chassis, drill yourself |
+
+> Avoid steel rackmount chassis (e.g. Hammond RM2U) — steel couples to the toroidal transformer field and can inject 60Hz hum into the spring tank. Use aluminum only.
 
 ## Internal Layout (Top-Down View)
 
@@ -63,7 +66,7 @@ The Accutronics/Belton tank must be mounted:
 | Send | 1/4" TS (optional) | To external tank |
 | Return | 1/4" TS (optional) | From external tank |
 | Balanced Out | XLR-M (Neutrik NC3MD) (optional) | For future use |
-| IEC Power | IEC C14 inlet with fuse holder (1A, slow-blow) | Standard power cable |
+| IEC Power | Schurter 5110.1052 EMI-filtered IEC C14 inlet with fuse holder (500mA slow-blow) | Standard power cable |
 
 ### Front Panel
 
@@ -84,13 +87,13 @@ The Accutronics/Belton tank must be mounted:
 
 ## Thermal Considerations
 
-- The NE5532 op-amps consume ~8mA each — negligible heat
-- If a tube driver/recovery stage is used, the tube adds ~2-5W of heat — add ventilation slots above the tube area
+- The OPA2134 op-amps consume only a few mA each — negligible heat
+- The BD139 driver (~0.22W) and the LM7815/LM7915 regulators (~0.15–0.3W each) are the only warm parts — heatsink the regulators (mica-isolated) and clip a small heatsink on Q1; see parts-spec Heatsinks
 - Power transformer generates mild heat — keep away from the spring tank and ensure some airflow
-- No fan needed for solid state design
+- No fan needed for this solid-state design
 
 ## Ventilation
 
-- Use a vented chassis (Hammond RM2U has perforated top/bottom)
+- Prefer a vented aluminum chassis; the specified Hammond 1455T2201 can be vented by drilling/milling near the PSU area if its stock venting is insufficient
 - If using a blank chassis, drill a pattern of small holes or mill slots near the PSU area
 - Don't block vents when rackmounted — leave 1U of space above/below if possible
