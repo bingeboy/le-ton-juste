@@ -1,6 +1,7 @@
 # Ghost Spring Reverb — Exact Parts Specification
 
 > **Authority scope (single source of truth).** This file is **THE authority for design rationale** — *why* each value or part was chosen. It is **not** the authority for the numbers themselves. When you need an authoritative number, go to its owner:
+> - **Component values and pass windows:** see [circuit-params.md](circuit-params.md) — the canonical human-readable parameter table.
 > - **Component values** (R/C/L, ratios): [`stage_06_full.net`](./stages/stage_06_full.net) — the netlist is ground truth.
 > - **Pass criteria** (measurement windows): [`test-assertions.md`](./stages/test-assertions.md).
 > - **Parts** (Mouser PNs, quantities, packages): [`mouser-bom.csv`](./mouser-bom.csv).

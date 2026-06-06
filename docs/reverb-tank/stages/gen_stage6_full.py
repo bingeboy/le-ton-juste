@@ -65,32 +65,25 @@ Generator fixes applied (per Stage 6 spec):
   3. .OPTIONS ALLOW_AMBIGUOUS_MODELS is the third line of every .net.
 """
 
-OPA_PARAMS = "Avol=1Meg GBW=8Meg Slew=20Meg Ilimit=25m Rail=0 Rinc=1T"
-OPA_PARAMS_NET = ("level2 Avol=1Meg GBW=8Meg Slew=20Meg Ilimit=25m "
-                  "Rail=0 Rinc=1T Vos=0 En=0 Enk=0 In=0 "
-                  "Ink=0 Rin=500Meg")
+import os
+import sys
+sys.path.insert(0, os.path.dirname(__file__))
+import circuit_params as P  # noqa: E402  single source of truth (see THE CASCADE)
 
-BD139_MODEL = "NPN(Is=1e-14 Bf=100 Vaf=50 Rb=1 Rc=0.1 Re=0.05 Cje=30p Cjc=15p)"
+OPA_PARAMS = P.OPA_PARAMS
+OPA_PARAMS_NET = P.OPA_PARAMS_NET
+
+BD139_MODEL = P.BD139_MODEL
 
 # BZX84C15L: 15V 250mW zener, back-to-back pair modelling the SMBJ15CA TVS.
-BZX84C15L_MODEL = "D(BV=15 N=1.6 Rs=2 IBV=5m Cjo=80p Iave=200m)"
+BZX84C15L_MODEL = P.BZX84C15L_MODEL
 
 # 1N4007 bridge-rectifier diode: 1000V 1A general-purpose rectifier.
-DN4007_MODEL = "D(Is=14.1n N=1.984 Rs=33.9m Ikf=94.8 Cjo=51.7p M=0.333 Vj=0.7 Bv=1000 Ibv=10u)"
+DN4007_MODEL = P.DN4007_MODEL
 
 # Behavioural linear-regulator subckts (no 78xx/79xx ships with this LTspice).
-LM78XX_SUBCKT = [
-    ".subckt LM78xx IN COM OUT",
-    ".param Vout=15",
-    "B1 OUT COM V=min(V(IN,COM)-2, {Vout})",
-    ".ends LM78xx",
-]
-LM79XX_SUBCKT = [
-    ".subckt LM79xx IN COM OUT",
-    ".param Vout=15",
-    "B1 OUT COM V=max(V(IN,COM)+2, -{Vout})",
-    ".ends LM79xx",
-]
+LM78XX_SUBCKT = P.LM78XX_SUBCKT
+LM79XX_SUBCKT = P.LM79XX_SUBCKT
 
 
 class Build:
@@ -234,15 +227,15 @@ def build(active_analysis="op"):
     # used) and omit the rectifier/regulator network. The op and tran variants
     # carry the FULL real PSU (those are where rail DC and ripple actually matter).
     if active_analysis == "ac":
-        b.vsrc("Vpos", "15", 64, 1000, "+15V", "0")
-        b.vsrc("Vneg", "15", 224, 1000, "0", "-15V")
+        b.vsrc("Vpos", P.VRAIL_IDEAL, 64, 1000, "+15V", "0")
+        b.vsrc("Vneg", P.VRAIL_IDEAL, 224, 1000, "0", "-15V")
         b.text(64, 960, "AC variant: ideal +/-15V bench rails (real PSU is degenerate at the DC op-point used by .ac). Signal-path small-signal is independent of rail origin.", 2)
     else:
         # T1 secondary: 15-0-15VAC, center tap = GND. Two anti-phase 60Hz SINE
         # sources, 21.2V peak = 15Vrms * sqrt(2). PSU SINE sources carry NO AC
         # spec (AC defaults to 0).
-        b.vsrc("Vsec_p", "SINE(0 21.2 60)", 64, 1000, "ac_pos", "0")
-        b.vsrc("Vsec_n", "SINE(0 21.2 60)", 224, 1000, "0", "ac_neg")
+        b.vsrc("Vsec_p", P.VSEC_SINE, 64, 1000, "ac_pos", "0")
+        b.vsrc("Vsec_n", P.VSEC_SINE, 224, 1000, "0", "ac_neg")
         b.text(64, 960, "T1 Triad F-219X 15-0-15VAC. Center tap = GND. 21.2Vpk = 15Vrms*sqrt(2).", 2)
 
         # BR1 = W04G full-wave bridge off the center-tapped winding, 4x 1N4007.
@@ -253,10 +246,10 @@ def build(active_analysis="op"):
         b.text(640, 840, "BR1 W04G = 4x 1N4007. pos_rect=+ve bus, neg_rect=-ve bus.", 2)
 
         # Bulk filter caps + bleed resistors, one set per rail.
-        b.cap("C11", "2200u", 900, 880, "pos_rect", "0")     # +ve bulk filter
-        b.res("R_bleed1", "10k", 1020, 880, "pos_rect", "0")  # +ve bleed
-        b.cap("C12", "2200u", 900, 1080, "neg_rect", "0")     # -ve bulk filter
-        b.res("R_bleed2", "10k", 1020, 1080, "neg_rect", "0")  # -ve bleed
+        b.cap("C11", P.C11, 900, 880, "pos_rect", "0")     # +ve bulk filter
+        b.res("R_bleed1", P.R_BLEED1, 1020, 880, "pos_rect", "0")  # +ve bleed
+        b.cap("C12", P.C12, 900, 1080, "neg_rect", "0")     # -ve bulk filter
+        b.res("R_bleed2", P.R_BLEED2, 1020, 1080, "neg_rect", "0")  # -ve bleed
 
         # Regulators: U4 LM7815 (+15), U5 LM7915 (-15). Inline behavioural subckts.
         # Output caps sit directly on the regulator output pin (reg_pos/reg_neg).
@@ -264,10 +257,10 @@ def build(active_analysis="op"):
         b.reg("U5", "LM79xx", 1160, 1100, "neg_rect", "0", "reg_neg")
 
         # Regulator output caps + HF bypass directly at each regulator output pin.
-        b.cap("C13", "100u", 1320, 880, "reg_pos", "0")
-        b.cap("C17", "100n", 1440, 880, "reg_pos", "0")
-        b.cap("C14", "100u", 1320, 1080, "reg_neg", "0")
-        b.cap("C18", "100n", 1440, 1080, "reg_neg", "0")
+        b.cap("C13", P.C13, 1320, 880, "reg_pos", "0")
+        b.cap("C17", P.C17, 1440, 880, "reg_pos", "0")
+        b.cap("C14", P.C14, 1320, 1080, "reg_neg", "0")
+        b.cap("C18", P.C18, 1440, 1080, "reg_neg", "0")
         b.text(1320, 840, "C13/C14 100u reg out caps, C17/C18 100n HF bypass.", 2)
 
         # F2/F3 MF-R050 polyfuses -> 0.5 ohm series R (RF2/RF3 in SPICE).
@@ -275,8 +268,8 @@ def build(active_analysis="op"):
         # and its output cap, so a downstream PCB short trips the fuse and
         # protects the regulator (per parts-spec F2/F3, BOM, build-plan, builder
         # guide). Modeled as 0.5 ohm series R; MF-R050 hold resistance ~0.7 ohm.
-        b.res("RF2", "0.5", 1500, 880, "reg_pos", "+15V")
-        b.res("RF3", "0.5", 1500, 1080, "reg_neg", "-15V")
+        b.res("RF2", P.RF2, 1500, 880, "reg_pos", "+15V")
+        b.res("RF3", P.RF3, 1500, 1080, "reg_neg", "-15V")
         b.text(1500, 840, "F2/F3 MF-R050 polyfuse = 0.5ohm on DC rail (RF2/RF3).", 2)
 
         # Inline regulator subckts (no 78xx/79xx ships with installed LTspice).
@@ -287,84 +280,84 @@ def build(active_analysis="op"):
     # === STAGE 4 SIGNAL PATH (carried unchanged) - fed from the PSU rails =
     # ====================================================================
     # Extra rail decoupling (C5-C8 100n, C15/C16 10u bulk).
-    b.cap("C15", "10u", 1580, 880, "+15V", "0")
-    b.cap("C16", "10u", 1580, 1080, "-15V", "0")
-    b.cap("C5", "100n", 1700, 880, "+15V", "0")
-    b.cap("C6", "100n", 1700, 1080, "-15V", "0")
-    b.cap("C7", "100n", 1820, 880, "+15V", "0")
-    b.cap("C8", "100n", 1820, 1080, "-15V", "0")
+    b.cap("C15", P.C15, 1580, 880, "+15V", "0")
+    b.cap("C16", P.C16, 1580, 1080, "-15V", "0")
+    b.cap("C5", P.C5, 1700, 880, "+15V", "0")
+    b.cap("C6", P.C6, 1700, 1080, "-15V", "0")
+    b.cap("C7", P.C7, 1820, 880, "+15V", "0")
+    b.cap("C8", P.C8, 1820, 1080, "-15V", "0")
 
     # Input source. For op (DC bias) the signal is KILLED (amplitude 0) so the
     # op-amp outputs / driver emitter read pure DC. For ac the AC=1 token drives
     # the small-signal sweep. For tran it's the 100mVpk 1kHz test stimulus.
     if active_analysis == "op":
         # No signal -> off_u1/2/3 and q1_ve read pure DC bias.
-        b.vsrc("V1", "SINE(0 0 1k)", 64, 160, "vin", "0", value2="AC 1")
+        b.vsrc("V1", P.V1_SINE_KILLED, 64, 160, "vin", "0", value2=P.V1_AC_TOKEN)
     else:
-        b.vsrc("V1", "SINE(0 100m 1k)", 64, 160, "vin", "0", value2="AC 1")
+        b.vsrc("V1", P.V1_SINE_NORMAL, 64, 160, "vin", "0", value2=P.V1_AC_TOKEN)
 
     # TVS1 at the jack (vin -> 0), two zeners back-to-back (cathodes at tvs_mid).
     b.diode("DTVS1a", "BZX84C15L", 64, 400, "vin", "tvs_mid")
     b.diode("DTVS1b", "BZX84C15L", 64, 528, "0", "tvs_mid")
 
     # Input buffer U1 front-end (C_in, R1, clamp pair).
-    b.cap("C_in", "1u", 160, 144, "vin", "u1_pos")
-    b.res("R1", "1Meg", 280, 144, "u1_pos", "0")
-    b.diode("Dclamp_p", "1N4148", 400, 96, "u1_pos", "+15V")
-    b.diode("Dclamp_n", "1N4148", 400, 224, "-15V", "u1_pos")
+    b.cap("C_in", P.C_IN, 160, 144, "vin", "u1_pos")
+    b.res("R1", P.R1, 280, 144, "u1_pos", "0")
+    b.diode("Dclamp_p", P.D_1N4148, 400, 96, "u1_pos", "+15V")
+    b.diode("Dclamp_n", P.D_1N4148, 400, 224, "-15V", "u1_pos")
     b.opa("U1", 560, 200, "u1_pos", "u1_out", "+15V", "-15V", "u1_out")
-    b.res("R2", "100", 640, 144, "u1_out", "u1_buf")
+    b.res("R2", P.R2, 640, 144, "u1_out", "u1_buf")
 
     # Dwell pot divider.
-    b.res("RV1a", "5k", 760, 60, "u1_buf", "rv1_wiper")
-    b.res("RV1b", "5k", 760, 180, "rv1_wiper", "0")
+    b.res("RV1a", P.RV1A, 760, 60, "u1_buf", "rv1_wiper")
+    b.res("RV1b", P.RV1B, 760, 180, "rv1_wiper", "0")
 
     # BD139 discrete driver.
-    b.cap("C_drive", "1u", 880, 144, "rv1_wiper", "q1_drv")
-    b.res("R3b", "6.8k", 1000, 40, "+15V", "q1_base")
-    b.res("R4", "1k", 1000, 200, "q1_base", "0")
-    b.res("R3", "1k", 880, 300, "q1_drv", "q1_base")
+    b.cap("C_drive", P.C_DRIVE, 880, 144, "rv1_wiper", "q1_drv")
+    b.res("R3b", P.R3B, 1000, 40, "+15V", "q1_base")
+    b.res("R4", P.R4, 1000, 200, "q1_base", "0")
+    b.res("R3", P.R3, 880, 300, "q1_drv", "q1_base")
     b.npn("Q1", "BD139", 1140, 360, "q1_c", "q1_base", "q1_e")
-    b.res("R5", "68", 1140, 520, "q1_e", "0")
-    b.cap("C2", "100u", 1280, 520, "q1_e", "0")
-    b.diode("D3", "1N4148", 1140, 220, "q1_c", "+15V")
+    b.res("R5", P.R5, 1140, 520, "q1_e", "0")
+    b.cap("C2", P.C2, 1280, 520, "q1_e", "0")
+    b.diode("D3", P.D_1N4148, 1140, 220, "q1_c", "+15V")
 
     # REB3S driver transformer.
-    b.ind("L1", "100m", 1140, 60, "+15V", "q1_c")
-    b.ind("L2", "5m", 1300, 60, "tank_in", "0")
-    b.kcouple("K1", "L1", "L2", "0.98", 1280, 200)
+    b.ind("L1", P.L1, 1140, 60, "+15V", "q1_c")
+    b.ind("L2", P.L2, 1300, 60, "tank_in", "0")
+    b.kcouple("K1", "L1", "L2", P.K1, 1280, 200)
 
     # Spring tank RLC.
-    b.res("R_tank_in", "8", 1300, 240, "tank_in", "0")
-    b.ind("L_tank", "15m", 1420, 60, "tank_in", "tank_mid")
-    b.res("R_tank_mech", "200", 1540, 240, "tank_mid", "tk_a")
-    b.ind("L_tank_mech", "500m", 1540, 360, "tk_a", "tk_b")
-    b.cap("C_tank_mech", "10n", 1540, 480, "tk_b", "0")
-    b.res("R_tank_out", "2550", 1660, 60, "tank_mid", "tank_out")
-    b.ind("L_tank_out", "2", 1660, 240, "tank_out", "0")
+    b.res("R_tank_in", P.R_TANK_IN, 1300, 240, "tank_in", "0")
+    b.ind("L_tank", P.L_TANK, 1420, 60, "tank_in", "tank_mid")
+    b.res("R_tank_mech", P.R_TANK_MECH, 1540, 240, "tank_mid", "tk_a")
+    b.ind("L_tank_mech", P.L_TANK_MECH, 1540, 360, "tk_a", "tk_b")
+    b.cap("C_tank_mech", P.C_TANK_MECH, 1540, 480, "tk_b", "0")
+    b.res("R_tank_out", P.R_TANK_OUT, 1660, 60, "tank_mid", "tank_out")
+    b.ind("L_tank_out", P.L_TANK_OUT, 1660, 240, "tank_out", "0")
 
     # Recovery preamp U2.
-    b.cap("C3", "470n", 1780, 144, "tank_out", "u2_in_pos")
-    b.res("Rbias", "100k", 1900, 240, "u2_in_pos", "0")
+    b.cap("C3", P.C3, 1780, 144, "tank_out", "u2_in_pos")
+    b.res("Rbias", P.RBIAS, 1900, 240, "u2_in_pos", "0")
     b.opa("U2", 2060, 200, "u2_in_pos", "u2_inv", "+15V", "-15V", "u2_out")
-    b.res("Ri", "470", 2000, 360, "u2_inv", "0")
-    b.res("Rf", "100k", 2120, 360, "u2_out", "u2_inv")
+    b.res("Ri", P.RI, 2000, 360, "u2_inv", "0")
+    b.res("Rf", P.RF, 2120, 360, "u2_out", "u2_inv")
 
     # Post-recovery HPF.
-    b.cap("C4", "100n", 2240, 144, "u2_out", "hpf_out")
-    b.res("R6", "5.6k", 2360, 240, "hpf_out", "0")
+    b.cap("C4", P.C4, 2240, 144, "u2_out", "hpf_out")
+    b.res("R6", P.R6, 2360, 240, "hpf_out", "0")
 
     # Tone RV3, Mix RV2, output buffer U3.
-    b.res("RV3a", "50k", 2180, 600, "hpf_out", "rv3_wiper")
-    b.res("RV3b", "50k", 2180, 720, "rv3_wiper", "0")
-    b.res("Rdry", "10k", 640, 360, "u1_buf", "mix_top")
-    b.res("Rwet", "0.001", 2300, 600, "rv3_wiper", "mix_top")
-    b.res("RV2a", "50k", 2300, 760, "mix_top", "mix_node")
-    b.res("RV2b", "50k", 2300, 880, "mix_node", "0")
-    b.cap("C_bright", "47p", 2420, 760, "mix_top", "mix_node")
+    b.res("RV3a", P.RV3A, 2180, 600, "hpf_out", "rv3_wiper")
+    b.res("RV3b", P.RV3B, 2180, 720, "rv3_wiper", "0")
+    b.res("Rdry", P.RDRY, 640, 360, "u1_buf", "mix_top")
+    b.res("Rwet", P.RWET, 2300, 600, "rv3_wiper", "mix_top")
+    b.res("RV2a", P.RV2A, 2300, 760, "mix_top", "mix_node")
+    b.res("RV2b", P.RV2B, 2300, 880, "mix_node", "0")
+    b.cap("C_bright", P.C_BRIGHT, 2420, 760, "mix_top", "mix_node")
     b.opa("U3", 2560, 900, "mix_node", "u3_out", "+15V", "-15V", "u3_out")
-    b.res("R7", "100", 2640, 844, "u3_out", "v_out")
-    b.res("Rload", "47k", 2760, 844, "v_out", "0")
+    b.res("R7", P.R7, 2640, 844, "u3_out", "v_out")
+    b.res("Rload", P.RLOAD, 2760, 844, "v_out", "0")
     b.text(2640, 820, "J2 -> MC100 input (47k load)", 2)
 
     # === Models ===

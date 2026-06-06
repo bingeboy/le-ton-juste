@@ -5,6 +5,8 @@
 > - **Parts** (Mouser PNs, quantities, packages): [`mouser-bom.csv`](../mouser-bom.csv).
 > - **Design rationale** (why a value was chosen): [`parts-spec.md`](../parts-spec.md).
 > - **Bench procedures** (what the builder does): [`builder-guide.md`](./builder-guide.md).
+>
+> The pass windows defined here are **also tabulated for convenience in [`circuit-params.md`](../circuit-params.md)** (the canonical parameter table). **This file remains the computational authority for the `.meas` directives and pass bands** — if circuit-params.md disagrees with a window here, this file wins.
 
 The `.meas` directives below are the **PASS conditions** for each build stage in [`build-plan.md`](./build-plan.md). They are the SPICE equivalent of a unit-test suite.
 

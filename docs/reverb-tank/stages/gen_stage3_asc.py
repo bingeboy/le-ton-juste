@@ -44,12 +44,15 @@ Installed-symbol pin offsets (rotation R0):
   UniversalOpamp2 : (-32,16) IN+ , (-32,-16) IN- , (0,-32) V+ , (0,32) V- , (32,0) OUT
 """
 
-OPA_PARAMS = "Avol=1Meg GBW=8Meg Slew=20Meg Ilimit=25m Rail=0 Rinc=1T"
-OPA_PARAMS_NET = ("level2 Avol=1Meg GBW=8Meg Slew=20Meg Ilimit=25m "
-                  "Rail=0 Rinc=1T Vos=0 En=0 Enk=0 In=0 "
-                  "Ink=0 Rin=500Meg")
+import os
+import sys
+sys.path.insert(0, os.path.dirname(__file__))
+import circuit_params as P  # noqa: E402  single source of truth (see THE CASCADE)
 
-BD139_MODEL = "NPN(Is=1e-14 Bf=100 Vaf=50 Rb=1 Rc=0.1 Re=0.05 Cje=30p Cjc=15p)"
+OPA_PARAMS = P.OPA_PARAMS
+OPA_PARAMS_NET = P.OPA_PARAMS_NET
+
+BD139_MODEL = P.BD139_MODEL
 
 
 class Build:
@@ -174,45 +177,45 @@ def build(active_analysis="ac"):
     b.text(16, 8, "Stage 2 + REB3S coupled inductors L1(primary)/L2(secondary), K1=0.98. C_drive_out removed: transformer gives galvanic isolation. Connectivity by net labels (FLAG at each pin).", 2)
 
     # === Power & input source (unchanged from Stage 2) ===
-    b.vsrc("Vpos", "15", 64, 1200, "+15V", "0")
-    b.vsrc("Vneg", "15", 224, 1200, "0", "-15V")
-    b.cap("C15", "10u", 384, 1200, "+15V", "0")
-    b.cap("C16", "10u", 512, 1200, "-15V", "0")
-    b.cap("C5", "100n", 640, 1200, "+15V", "0")
-    b.cap("C6", "100n", 768, 1200, "-15V", "0")
-    b.cap("C7", "100n", 896, 1200, "+15V", "0")
-    b.cap("C8", "100n", 1024, 1200, "-15V", "0")
+    b.vsrc("Vpos", P.VRAIL_IDEAL, 64, 1200, "+15V", "0")
+    b.vsrc("Vneg", P.VRAIL_IDEAL, 224, 1200, "0", "-15V")
+    b.cap("C15", P.C15, 384, 1200, "+15V", "0")
+    b.cap("C16", P.C16, 512, 1200, "-15V", "0")
+    b.cap("C5", P.C5, 640, 1200, "+15V", "0")
+    b.cap("C6", P.C6, 768, 1200, "-15V", "0")
+    b.cap("C7", P.C7, 896, 1200, "+15V", "0")
+    b.cap("C8", P.C8, 1024, 1200, "-15V", "0")
     b.text(64, 1160, "Power: idealised +/-15V. C5-C8 100n decoupling, C15/C16 10u bulk.", 2)
 
-    b.vsrc("V1", "SINE(0 100m 1k)", 64, 160, "vin", "0", value2="AC 1")
+    b.vsrc("V1", P.V1_SINE_NORMAL, 64, 160, "vin", "0", value2=P.V1_AC_TOKEN)
 
     # === Input buffer U1 (unchanged) ===
-    b.cap("C_in", "1u", 160, 144, "vin", "u1_pos")
-    b.res("R1", "1Meg", 280, 144, "u1_pos", "0")
-    b.diode("Dclamp_p", "1N4148", 400, 96, "u1_pos", "+15V")
-    b.diode("Dclamp_n", "1N4148", 400, 224, "-15V", "u1_pos")
+    b.cap("C_in", P.C_IN, 160, 144, "vin", "u1_pos")
+    b.res("R1", P.R1, 280, 144, "u1_pos", "0")
+    b.diode("Dclamp_p", P.D_1N4148, 400, 96, "u1_pos", "+15V")
+    b.diode("Dclamp_n", P.D_1N4148, 400, 224, "-15V", "u1_pos")
     b.opa("U1", 560, 200, "u1_pos", "u1_out", "+15V", "-15V", "u1_out")
-    b.res("R2", "100", 640, 144, "u1_out", "u1_buf")
+    b.res("R2", P.R2, 640, 144, "u1_out", "u1_buf")
 
     # === Dwell pot divider (unchanged) ===
-    b.res("RV1a", "5k", 760, 60, "u1_buf", "rv1_wiper")
-    b.res("RV1b", "5k", 760, 180, "rv1_wiper", "0")
+    b.res("RV1a", P.RV1A, 760, 60, "u1_buf", "rv1_wiper")
+    b.res("RV1b", P.RV1B, 760, 180, "rv1_wiper", "0")
 
     # === BD139 discrete driver (unchanged from Stage 2) ===
-    b.cap("C_drive", "1u", 880, 144, "rv1_wiper", "q1_drv")
-    b.res("R3b", "6.8k", 1000, 40, "+15V", "q1_base")
-    b.res("R4", "1k", 1000, 200, "q1_base", "0")
-    b.res("R3", "1k", 880, 300, "q1_drv", "q1_base")
+    b.cap("C_drive", P.C_DRIVE, 880, 144, "rv1_wiper", "q1_drv")
+    b.res("R3b", P.R3B, 1000, 40, "+15V", "q1_base")
+    b.res("R4", P.R4, 1000, 200, "q1_base", "0")
+    b.res("R3", P.R3, 880, 300, "q1_drv", "q1_base")
     b.npn("Q1", "BD139", 1140, 360, "q1_c", "q1_base", "q1_e")
-    b.res("R5", "68", 1140, 520, "q1_e", "0")
-    b.cap("C2", "100u", 1280, 520, "q1_e", "0")
-    b.diode("D3", "1N4148", 1140, 220, "q1_c", "+15V")
+    b.res("R5", P.R5, 1140, 520, "q1_e", "0")
+    b.cap("C2", P.C2, 1280, 520, "q1_e", "0")
+    b.diode("D3", P.D_1N4148, 1140, 220, "q1_c", "+15V")
 
     # === STAGE 3: REB3S driver transformer ===
     # L1 (100mH) = transformer PRIMARY. Stays in the collector path (+15V->q1_c):
     #   it carries Q1's collector DC (Rser=0 -> DC short to +15V, so Ic is set by
     #   R5/bias, identical to Stage 2) and its AC current is the primary drive.
-    b.ind("L1", "100m", 1140, 60, "+15V", "q1_c")
+    b.ind("L1", P.L1, 1140, 60, "+15V", "q1_c")
     # L2 (5mH) = transformer SECONDARY, into the 8R tank input. NO galvanic path
     #   from collector to tank now -- only magnetic coupling via K1. (C_drive_out
     #   from Stage 2 is removed: the transformer itself blocks DC.)
@@ -220,41 +223,41 @@ def build(active_analysis="ac"):
     #   high-Z collector source to the 8R tank input. The primary inductance
     #   resonating against the tank input network puts the peak in the 1-5kHz
     #   "drip" band.
-    b.ind("L2", "5m", 1300, 60, "tank_in", "0")
+    b.ind("L2", P.L2, 1300, 60, "tank_in", "0")
     # K1: tight magnetic coupling, REB3S spec (~0.98, not ideal 1.0).
-    b.kcouple("K1", "L1", "L2", "0.98", 1280, 200)
+    b.kcouple("K1", "L1", "L2", P.K1, 1280, 200)
 
     # === Spring tank RLC (unchanged from Stage 2; now driven by L2 secondary) ===
-    b.res("R_tank_in", "8", 1300, 240, "tank_in", "0")
-    b.ind("L_tank", "15m", 1420, 60, "tank_in", "tank_mid")
-    b.res("R_tank_mech", "200", 1540, 240, "tank_mid", "tk_a")
-    b.ind("L_tank_mech", "500m", 1540, 360, "tk_a", "tk_b")
-    b.cap("C_tank_mech", "10n", 1540, 480, "tk_b", "0")
-    b.res("R_tank_out", "2550", 1660, 60, "tank_mid", "tank_out")
-    b.ind("L_tank_out", "2", 1660, 240, "tank_out", "0")
+    b.res("R_tank_in", P.R_TANK_IN, 1300, 240, "tank_in", "0")
+    b.ind("L_tank", P.L_TANK, 1420, 60, "tank_in", "tank_mid")
+    b.res("R_tank_mech", P.R_TANK_MECH, 1540, 240, "tank_mid", "tk_a")
+    b.ind("L_tank_mech", P.L_TANK_MECH, 1540, 360, "tk_a", "tk_b")
+    b.cap("C_tank_mech", P.C_TANK_MECH, 1540, 480, "tk_b", "0")
+    b.res("R_tank_out", P.R_TANK_OUT, 1660, 60, "tank_mid", "tank_out")
+    b.ind("L_tank_out", P.L_TANK_OUT, 1660, 240, "tank_out", "0")
 
     # === Recovery preamp U2 (unchanged) ===
-    b.cap("C3", "470n", 1780, 144, "tank_out", "u2_in_pos")
-    b.res("Rbias", "100k", 1900, 240, "u2_in_pos", "0")
+    b.cap("C3", P.C3, 1780, 144, "tank_out", "u2_in_pos")
+    b.res("Rbias", P.RBIAS, 1900, 240, "u2_in_pos", "0")
     b.opa("U2", 2060, 200, "u2_in_pos", "u2_inv", "+15V", "-15V", "u2_out")
-    b.res("Ri", "470", 2000, 360, "u2_inv", "0")
-    b.res("Rf", "100k", 2120, 360, "u2_out", "u2_inv")
+    b.res("Ri", P.RI, 2000, 360, "u2_inv", "0")
+    b.res("Rf", P.RF, 2120, 360, "u2_out", "u2_inv")
 
     # === Post-recovery HPF (unchanged) ===
-    b.cap("C4", "100n", 2240, 144, "u2_out", "hpf_out")
-    b.res("R6", "5.6k", 2360, 240, "hpf_out", "0")
+    b.cap("C4", P.C4, 2240, 144, "u2_out", "hpf_out")
+    b.res("R6", P.R6, 2360, 240, "hpf_out", "0")
 
     # === Tone RV3, Mix RV2, output buffer U3 (unchanged) ===
-    b.res("RV3a", "50k", 2180, 600, "hpf_out", "rv3_wiper")
-    b.res("RV3b", "50k", 2180, 720, "rv3_wiper", "0")
-    b.res("Rdry", "10k", 640, 360, "u1_buf", "mix_top")
-    b.res("Rwet", "0.001", 2300, 600, "rv3_wiper", "mix_top")
-    b.res("RV2a", "50k", 2300, 760, "mix_top", "mix_node")
-    b.res("RV2b", "50k", 2300, 880, "mix_node", "0")
-    b.cap("C_bright", "47p", 2420, 760, "mix_top", "mix_node")
+    b.res("RV3a", P.RV3A, 2180, 600, "hpf_out", "rv3_wiper")
+    b.res("RV3b", P.RV3B, 2180, 720, "rv3_wiper", "0")
+    b.res("Rdry", P.RDRY, 640, 360, "u1_buf", "mix_top")
+    b.res("Rwet", P.RWET, 2300, 600, "rv3_wiper", "mix_top")
+    b.res("RV2a", P.RV2A, 2300, 760, "mix_top", "mix_node")
+    b.res("RV2b", P.RV2B, 2300, 880, "mix_node", "0")
+    b.cap("C_bright", P.C_BRIGHT, 2420, 760, "mix_top", "mix_node")
     b.opa("U3", 2560, 900, "mix_node", "u3_out", "+15V", "-15V", "u3_out")
-    b.res("R7", "100", 2640, 844, "u3_out", "v_out")
-    b.res("Rload", "47k", 2760, 844, "v_out", "0")
+    b.res("R7", P.R7, 2640, 844, "u3_out", "v_out")
+    b.res("Rload", P.RLOAD, 2760, 844, "v_out", "0")
     b.text(2640, 820, "J2 -> MC100 input (47k load)", 2)
 
     # === Models ===
