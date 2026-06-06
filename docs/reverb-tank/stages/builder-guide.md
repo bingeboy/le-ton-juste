@@ -92,7 +92,30 @@ Corresponds to SPICE **Stage 4** (`stage_04_input_protect.asc`): `.op` clamp rev
 
 ---
 
-## Stage 6 — Full signal chain verification
+## Stage 6 — Power supply rails
+
+Corresponds to SPICE **Stage 5** (`stage_05_psu.asc`): the `op` (settled-DC) run measures the regulated rails (`rail_pos` 14.85–15.15V, `rail_neg` −15.15 to −14.85V), and the `tran` run measures post-regulator ripple over a 100–120ms window (`ripple_pos` < 10mVpp, `ripple_neg` < 10mVpp). This is the real ±15V linear supply that replaces the bench rails used through Stages 1–5: T1 (15‑0‑15VAC) → F2/F3 polyfuses → BR1 bridge → C11/C12 2200µF bulk + 10k bleed → U4 LM7815 / U5 LM7915 → C13/C14 100µF + C17/C18 100nF.
+
+> **Mains warning.** This stage carries line voltage on the T1 primary. Verify all primary-side wiring, fusing (F1), and earth bonding before first power-on, and keep fingers clear of the primary and the bridge while live. All DMM probing below is on the *secondary/DC* side.
+
+> **In SPICE, the `op` rail check is a *settled-transient* average, not a true `.op`.** A rectifier-plus-filter supply has no meaningful DC operating point — the solver freezes the SINE sources at their t=0 value (0V), so the bridge sees no drive and the caps never charge. The generator therefore runs a 150ms transient and averages V(+15V)/V(−15V) over 100–120ms. That average is exactly the steady DC a bench DMM reads.
+
+| Test | Method | SPICE assertion | Expected | Fail action |
+|---|---|---|---|---|
+| Unregulated bus | DMM DC: pos_rect to GND, then neg_rect to GND (across C11 / C12) | `unreg_pos` / `unreg_neg` ≈ ±20.4V (avg) | ~+19 to +22V / −19 to −22V (peak ≈ 21.2V minus 2 diode drops, held up by the bulk cap) | Near 0V or only ~half: a bridge diode (DBR1a–d) is open/backwards, or a polyfuse (F2/F3) is open. Big AC component: C11/C12 (2200µF) open or wrong polarity |
+| +15V rail | DMM DC at U4 (LM7815) output / +15V rail | `rail_pos` 14.85–15.15V | +14.85 to +15.15V | Low (~+2V below bus): U4 dropout — bus too low, check unregulated bus first. Equal to bus: U4 shorted IN→OUT. 0V: U4 in backwards or no output cap |
+| −15V rail | DMM DC at U5 (LM7915) output / −15V rail | `rail_neg` −15.15 to −14.85V | −14.85 to −15.15V | Same checks as +15V but for U5 (LM7915) — note the 7915 pinout differs from the 7815, a common build error |
+| +15V ripple | AC-couple scope on +15V rail, 60Hz+ timebase | `ripple_pos` < 10mVpp | < 10mVpp (essentially flat; the reg rejects the bus ripple) | Visible 120Hz sawtooth >10mVpp: C13 (100µF) missing, or the regulator is dropping out on ripple troughs (bus headroom too low — check C11) |
+| −15V ripple | AC-couple scope on −15V rail | `ripple_neg` < 10mVpp | < 10mVpp | Same as +15V but C14 / U5 |
+| HF bypass present | Visual / continuity: C17, C18 (100nF) directly at each regulator output pin to GND | n/a (models PSRR floor) | Fitted within ~1" of the reg pins | Missing: regulator can oscillate or pass HF trash; add the 100nF |
+
+> **What the simulated 0mVpp ripple means.** The behavioural 78xx/79xx model holds its output dead-flat at 15.0V as long as the unregulated bus stays above the ~17V dropout point — which it does (bus ≈ 20.4V with ≈21mVpp of its own ripple). So the *post*-regulator ripple computes as ~0, demonstrating the rail rejects the upstream ripple. On the bench you will see a few mV of real ripple/noise (finite PSRR, layout, load steps); the <10mVpp budget is what matters. The unregulated-bus ripple at C11/C12 (`unreg_pos_pp` ≈ 21mVpp in the model, far larger in reality under load) is the honest indicator that the rectifier and bulk caps are doing their job — probe *there* to confirm the supply is alive before trusting the flat regulated rails.
+
+> **Bleed resistors.** R_bleed1/R_bleed2 (10kΩ across C11/C12) discharge the 2200µF bulk caps after power-down — at ~20V they hold ~40mA·s of charge. With power off, the rails should sag to near 0V within a couple of seconds; if a rail stays charged, its bleed resistor is open (shock/measurement hazard on a big cap).
+
+---
+
+## Stage 7 — Full signal chain verification
 
 Corresponds to SPICE **Stage 6** integration: re-run the Stage 1 numbers on the complete chain (`recov_gain` 200–228×, `hpf_m3db` 250–320Hz, `off_u3` ≤ 10mV, `osc_ratio` < 1.05).
 
