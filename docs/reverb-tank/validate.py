@@ -38,6 +38,12 @@ NET = os.path.join(STAGES, "stage_06_full.net")
 NET6_AC = os.path.join(STAGES, "stage_06_full_ac.net")
 NET6_TRAN = os.path.join(STAGES, "stage_06_full_tran.net")
 NET5_TRAN = os.path.join(STAGES, "stage_05_psu_tran.net")
+# Stage 7 pot-position sweep variants (GitHub issue #43).
+NET6_DWELL_MIN = os.path.join(STAGES, "stage_06_full_dwell_min.net")
+NET6_DWELL_MAX = os.path.join(STAGES, "stage_06_full_dwell_max.net")
+NET6_MIX_CCW = os.path.join(STAGES, "stage_06_full_mix_ccw.net")
+NET6_MIX_CW = os.path.join(STAGES, "stage_06_full_mix_cw.net")
+NET6_DWELL_MAX_MIX_CW = os.path.join(STAGES, "stage_06_full_dwell_max_mix_cw.net")
 PARAMS_MD = os.path.join(HERE, "circuit-params.md")
 ASSERT_MD = os.path.join(STAGES, "test-assertions.md")
 
@@ -592,6 +598,14 @@ def check_variant_netlists():
         (NET5_TRAN, {"ripple_pos", "ripple_neg"}),
         (NET6_TRAN, {"vout_pk", "osc_ratio"}),
         (NET6_AC, {"recov_gain", "hpf_m3db", "recov_gain_db"}),
+        # Stage 7 pot-position sweep (GitHub issue #43): each pot-extreme variant
+        # carries the .meas assertions that gate its specific failure mode and
+        # that exist in NO other netlist.
+        (NET6_DWELL_MIN, {"dwell_min_vout", "dwell_min_dry"}),
+        (NET6_DWELL_MAX, {"dwell_max_vout_pk", "dwell_max_q1_ve"}),
+        (NET6_MIX_CCW, {"mix_ccw_vout_pk", "mix_ccw_wet_bleed"}),
+        (NET6_MIX_CW, {"mix_cw_vout_pk", "mix_cw_dry_attn"}),
+        (NET6_DWELL_MAX_MIX_CW, {"worst_case_pk", "worst_case_settle"}),
     ):
         base = os.path.basename(path)
         checks += 1

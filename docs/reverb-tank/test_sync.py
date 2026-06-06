@@ -60,6 +60,12 @@ GENERATED_FILES = [
     os.path.join(STAGES, "stage_06_full.net"),
     os.path.join(STAGES, "stage_06_full_ac.net"),
     os.path.join(STAGES, "stage_06_full_tran.net"),
+    # Stage 7 pot-position sweep variants (GitHub issue #43).
+    os.path.join(STAGES, "stage_06_full_dwell_min.net"),
+    os.path.join(STAGES, "stage_06_full_dwell_max.net"),
+    os.path.join(STAGES, "stage_06_full_mix_ccw.net"),
+    os.path.join(STAGES, "stage_06_full_mix_cw.net"),
+    os.path.join(STAGES, "stage_06_full_dwell_max_mix_cw.net"),
     os.path.join(HERE, "circuit-params.md"),
 ]
 
@@ -504,7 +510,17 @@ GEN_TO_NETS = {
                           ("tran", "stage_05_psu_tran.net")],
     "gen_stage6_full.py": [("op", "stage_06_full.net"),
                            ("ac", "stage_06_full_ac.net"),
-                           ("tran", "stage_06_full_tran.net")],
+                           ("tran", "stage_06_full_tran.net"),
+                           # Stage 7 pot-position sweep (GitHub issue #43): each
+                           # pot-extreme variant's .meas assertions exist in NO
+                           # other file, so the meta-guard must regenerate + diff
+                           # EACH one or a broken sweep branch ships green.
+                           ("dwell_min", "stage_06_full_dwell_min.net"),
+                           ("dwell_max", "stage_06_full_dwell_max.net"),
+                           ("mix_ccw", "stage_06_full_mix_ccw.net"),
+                           ("mix_cw", "stage_06_full_mix_cw.net"),
+                           ("dwell_max_mix_cw",
+                            "stage_06_full_dwell_max_mix_cw.net")],
 }
 
 # Flattened (gen_file, analysis, net_name) cases for the meta-guard parametrize:
@@ -786,3 +802,109 @@ def test_d3_reversed_orientation_is_detectable():
     # reversed card has them swapped, so the guard must reject it.
     assert not (parts[1] == "q1_c" and parts[2] == "+15V"), \
         "a reversed D3 must NOT satisfy the orientation guard"
+
+
+# ===========================================================================
+# Group 7: Stage 7 pot-position sweep (GitHub issue #43)
+#
+# All baseline sims hardcode every pot at 50%. These tests guard the pot-extreme
+# variants: that each variant netlist exists, carries the .meas assertions that
+# gate its failure mode, and that the pot halves are actually driven to the rail
+# (not left at the 50/50 baseline). The meta-guard above (Group 6, GEN_NET_CASES)
+# already regenerates+diffs each variant; these add variant-specific coverage.
+# ===========================================================================
+
+# (variant -> committed .net basename) for every pot-sweep variant sync emits.
+POT_SWEEP_NETS = {
+    "dwell_min": "stage_06_full_dwell_min.net",
+    "dwell_max": "stage_06_full_dwell_max.net",
+    "mix_ccw": "stage_06_full_mix_ccw.net",
+    "mix_cw": "stage_06_full_mix_cw.net",
+    "dwell_max_mix_cw": "stage_06_full_dwell_max_mix_cw.net",
+}
+
+
+def _meas_names(netlist_text):
+    """Set of .meas result names (the token after the analysis type)."""
+    names = set()
+    for raw in netlist_text.splitlines():
+        line = raw.strip()
+        if not line.lower().startswith(".meas"):
+            continue
+        parts = line.split()
+        if len(parts) >= 3:
+            names.add(parts[2])
+    return names
+
+
+@pytest.mark.parametrize("variant, net_name", sorted(POT_SWEEP_NETS.items()))
+def test_pot_sweep_variant_exists(variant, net_name):
+    """Every pot-position sweep variant netlist exists and carries a tran
+    analysis with the 100mVpk 1kHz stimulus (the pot extremes are exercised
+    under signal, not as a bare DC op)."""
+    path = os.path.join(STAGES, net_name)
+    assert os.path.exists(path), \
+        "%s missing -- run sync.py to generate the pot-sweep variants" % net_name
+    text = open(path).read()
+    assert ".tran" in text, "%s must carry a .tran analysis" % net_name
+    # 100mVpk 1kHz stimulus, identical to the baseline tran variant.
+    assert net_line(text, "V1").endswith("SINE(0 100m 1k) AC 1"), \
+        "%s must drive V1 with the 100mVpk 1kHz stimulus" % net_name
+
+
+def test_mix_ccw_has_wet_bleed_meas():
+    """mix_ccw (Mix full-CCW = full dry) carries both its output-level meas and
+    the wet-bleed proxy that gates dry-only output (no wet leaking through)."""
+    text = open(os.path.join(STAGES, "stage_06_full_mix_ccw.net")).read()
+    names = _meas_names(text)
+    for needed in ("mix_ccw_vout_pk", "mix_ccw_wet_bleed"):
+        assert needed in names, \
+            "mix_ccw netlist missing .meas %s (got %s)" % (needed, sorted(names))
+
+
+def test_dwell_max_mix_cw_has_worst_case_meas():
+    """dwell_max_mix_cw (worst-case clip path) carries the worst-case peak and
+    the post-clip DC-settle meas (U2 must not rail and must settle back to ~0)."""
+    text = open(os.path.join(STAGES, "stage_06_full_dwell_max_mix_cw.net")).read()
+    names = _meas_names(text)
+    for needed in ("worst_case_pk", "worst_case_settle"):
+        assert needed in names, \
+            "dwell_max_mix_cw netlist missing .meas %s (got %s)" \
+            % (needed, sorted(names))
+
+
+def test_pot_split_drives_halves_to_rail():
+    """The pot-extreme variants must actually move a pot off the 50/50 baseline:
+    one half goes to the SPICE-singularity floor (0.001) and the other to the
+    pot total. Reads the committed netlists (proves the generator emitted the
+    swept values), not just the generator in isolation."""
+    P = load_circuit_params()
+    floor = P.POT_MIN_OHMS  # "0.001"
+
+    # dwell_min: Dwell CCW -> RV1a≈0, RV1b = full 10k.
+    dmin = open(os.path.join(STAGES, "stage_06_full_dwell_min.net")).read()
+    assert net_line(dmin, "RV1a").split()[3] == floor, \
+        "dwell_min must floor RV1a to %s (wiper at CCW)" % floor
+    assert net_line(dmin, "RV1b").split()[3] == P.RV1_TOTAL, \
+        "dwell_min must put the full %s on RV1b" % P.RV1_TOTAL
+
+    # dwell_max: Dwell CW -> RV1a = full 10k, RV1b≈0.
+    dmax = open(os.path.join(STAGES, "stage_06_full_dwell_max.net")).read()
+    assert net_line(dmax, "RV1a").split()[3] == P.RV1_TOTAL
+    assert net_line(dmax, "RV1b").split()[3] == floor
+
+    # mix_ccw: Mix CCW -> RV2a≈0 (wiper at the dry end), RV2b = full 100k.
+    mccw = open(os.path.join(STAGES, "stage_06_full_mix_ccw.net")).read()
+    assert net_line(mccw, "RV2a").split()[3] == floor
+    assert net_line(mccw, "RV2b").split()[3] == P.RV2_TOTAL
+
+    # mix_cw: Mix CW -> RV2a = full 100k, RV2b≈0 (wiper at the wet end).
+    mcw = open(os.path.join(STAGES, "stage_06_full_mix_cw.net")).read()
+    assert net_line(mcw, "RV2a").split()[3] == P.RV2_TOTAL
+    assert net_line(mcw, "RV2b").split()[3] == floor
+
+    # Non-swept pots stay at noon (the 50/50 baseline halves).
+    assert net_line(dmin, "RV2a").split()[3] == P.RV2A, \
+        "dwell_min must leave the Mix pot at noon"
+    assert net_line(mccw, "RV1a").split()[3] == P.RV1A, \
+        "mix_ccw must leave the Dwell pot at noon"

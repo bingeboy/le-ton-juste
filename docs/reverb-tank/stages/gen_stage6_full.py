@@ -205,9 +205,81 @@ class Build:
         open(net_path, "w").write("\n".join(net) + "\n")
 
 
+def _spice_to_ohms(tok):
+    """Minimal SPICE magnitude parser for the pot total strings ('10k','100k')."""
+    t = tok.strip().lower()
+    mult = 1.0
+    for suf, m in (("meg", 1e6), ("k", 1e3), ("m", 1e-3), ("u", 1e-6)):
+        if t.endswith(suf):
+            t = t[: -len(suf)]
+            mult = m
+            break
+    return float(t) * mult
+
+
+def _fmt_ohms(ohms):
+    """Format a resistance back to a compact SPICE string (e.g. 5000 -> '5k')."""
+    if ohms >= 1e6 and abs(ohms / 1e6 - round(ohms / 1e6)) < 1e-9:
+        return "%gMeg" % (ohms / 1e6)
+    if ohms >= 1e3 and abs(ohms / 1e3 - round(ohms / 1e3)) < 1e-9:
+        return "%gk" % (ohms / 1e3)
+    return "%g" % ohms
+
+
+def pot_split(total, position):
+    """Split a pot of total resistance `total` (SPICE string or ohms) at travel
+    `position` (0.0=CCW/min .. 1.0=CW/max) into (a_val, b_val) SPICE strings for
+    the two series halves (a = CCW-end..wiper, b = wiper..CW-end).
+
+    a = position * total, b = (1-position) * total. At an extreme one half would
+    be 0 Ω, which can float/short the wiper node in SPICE, so each half is floored
+    at circuit_params.POT_MIN_OHMS (0.001 Ω) instead of exactly 0.
+
+      position=0.0 -> a≈0.001, b=total   (wiper at CCW end)
+      position=0.5 -> a=b=total/2         (noon, matches the baseline netlist)
+      position=1.0 -> a=total, b≈0.001    (wiper at CW end)
+    """
+    tot = total if isinstance(total, (int, float)) else _spice_to_ohms(total)
+    floor = _spice_to_ohms(P.POT_MIN_OHMS)
+    a = max(position * tot, floor)
+    b = max((1.0 - position) * tot, floor)
+    # Keep the exact constant string for the floor so it reads as '0.001'.
+    a_str = P.POT_MIN_OHMS if a == floor else _fmt_ohms(a)
+    b_str = P.POT_MIN_OHMS if b == floor else _fmt_ohms(b)
+    return a_str, b_str
+
+
+# Pot-position variants: name -> (dwell_pos, mix_pos, tone_pos). The three base
+# analyses (op/ac/tran) keep the baseline 50/50 split via the circuit_params
+# RV*A/RV*B constants; the sweep variants override the relevant pot halves.
+POT_SWEEP_VARIANTS = {
+    "dwell_min":        (P.POT_MIN, P.POT_MID, P.POT_MID),
+    "dwell_max":        (P.POT_MAX, P.POT_MID, P.POT_MID),
+    "mix_ccw":          (P.POT_MID, P.POT_MIN, P.POT_MID),
+    "mix_cw":           (P.POT_MID, P.POT_MAX, P.POT_MID),
+    "dwell_max_mix_cw": (P.POT_MAX, P.POT_MAX, P.POT_MID),
+}
+
+
 def build(active_analysis="op"):
-    """active_analysis in {'op','ac','tran'}. Only ONE analysis active at a time."""
+    """active_analysis in {'op','ac','tran'} (baseline 50/50 pots) or one of the
+    POT_SWEEP_VARIANTS keys (a tran run with one or more pots driven to a travel
+    extreme; the others held at noon). Only ONE analysis active at a time."""
     b = Build()
+
+    # Resolve the pot half values for this variant. Baseline analyses use the
+    # circuit_params 50/50 constants verbatim (so op/ac/tran netlists are
+    # byte-identical to before); sweep variants compute the halves via pot_split.
+    if active_analysis in POT_SWEEP_VARIANTS:
+        dwell_pos, mix_pos, tone_pos = POT_SWEEP_VARIANTS[active_analysis]
+        rv1a, rv1b = pot_split(P.RV1_TOTAL, dwell_pos)
+        rv2a, rv2b = pot_split(P.RV2_TOTAL, mix_pos)
+        rv3a, rv3b = pot_split(P.RV3_TOTAL, tone_pos)
+    else:
+        rv1a, rv1b = P.RV1A, P.RV1B
+        rv2a, rv2b = P.RV2A, P.RV2B
+        rv3a, rv3b = P.RV3A, P.RV3B
+
     b.text(16, -40, "Ghost Spring Stage 6 - FULL INTEGRATION verification (Stage 5 complete circuit, Stage 1 MVP assertions re-run)", 4)
     b.text(16, 8, "Stage 6 adds NOTHING. It carries the complete Stage 5 circuit (real PSU + BD139 driver + REB3S transformer + spring tank + input protection + U1/U2/U3) byte-for-byte and re-runs the original Stage 1 signal-path assertion suite (off_u1/2/3, q1_ve, recov_gain, hpf_m3db, vout_pk, osc_ratio) against the WHOLE real circuit. Connectivity by net labels (FLAG at each pin).", 2)
 
@@ -309,8 +381,8 @@ def build(active_analysis="op"):
     b.res("R2", P.R2, 640, 144, "u1_out", "u1_buf")
 
     # Dwell pot divider.
-    b.res("RV1a", P.RV1A, 760, 60, "u1_buf", "rv1_wiper")
-    b.res("RV1b", P.RV1B, 760, 180, "rv1_wiper", "0")
+    b.res("RV1a", rv1a, 760, 60, "u1_buf", "rv1_wiper")
+    b.res("RV1b", rv1b, 760, 180, "rv1_wiper", "0")
 
     # BD139 discrete driver.
     b.cap("C_drive", P.C_DRIVE, 880, 144, "rv1_wiper", "q1_drv")
@@ -348,8 +420,8 @@ def build(active_analysis="op"):
     b.res("R6", P.R6, 2360, 240, "hpf_out", "0")
 
     # Tone RV3, Mix RV2, output buffer U3.
-    b.res("RV3a", P.RV3A, 2180, 600, "hpf_out", "rv3_wiper")
-    b.res("RV3b", P.RV3B, 2180, 720, "rv3_wiper", "0")
+    b.res("RV3a", rv3a, 2180, 600, "hpf_out", "rv3_wiper")
+    b.res("RV3b", rv3b, 2180, 720, "rv3_wiper", "0")
     # --- Mix RV2: 3-terminal PASSIVE BLEND (not a volume knob). ---------------
     # Physical wiring (parts-spec "Mix Stage Topology"):
     #   Dry  (u1_buf) -> Rdry -> RV2 pin 1 (CCW end)  == node mix_dry
@@ -360,8 +432,8 @@ def build(active_analysis="op"):
     # the wiper at mix_dry (100% dry); full-CW puts it at mix_wet (100% wet).
     # The wet source ties DIRECTLY to mix_wet (no Rwet) so neither end is shorted.
     b.res("Rdry", P.RDRY, 640, 360, "u1_buf", "mix_dry")
-    b.res("RV2a", P.RV2A, 2300, 760, "mix_dry", "mix_node")   # CCW half of pot
-    b.res("RV2b", P.RV2B, 2300, 880, "mix_node", "mix_wet")   # CW half of pot
+    b.res("RV2a", rv2a, 2300, 760, "mix_dry", "mix_node")   # CCW half of pot
+    b.res("RV2b", rv2b, 2300, 880, "mix_node", "mix_wet")   # CW half of pot
     b.cap("C_bright", P.C_BRIGHT, 2420, 760, "mix_dry", "mix_wet")  # bright cap across full pot
     # Wet (Tone wiper) connects directly to the CW end of the pot.
     b.res("Rwet_wire", "0", 2300, 600, "rv3_wiper", "mix_wet")  # direct wire, modelled 0 ohm
@@ -450,6 +522,54 @@ def build(active_analysis="op"):
         b.directive(".meas TRAN rms_early RMS V(v_out) FROM=40m TO=50m")
         b.directive(".meas TRAN rms_late  RMS V(v_out) FROM=90m TO=100m")
         b.directive(".meas TRAN osc_ratio PARAM rms_late/rms_early")
+    elif active_analysis in POT_SWEEP_VARIANTS:
+        # Pot-extreme sweep (GitHub issue #43). 200ms tran, 100mVpk 1kHz signal
+        # (V1 already set to V1_SINE_NORMAL above). 200ms gives the high-L tank +
+        # real-PSU start-up transient time to settle before the 190-200ms tail
+        # windows. Each variant gates the failure mode its pot extreme exposes.
+        #
+        # Level measures use MAX abs() over the settled tail: a clean sine's raw
+        # AVG over whole cycles is ~0, so AVG is reserved for DC-bias reads (the
+        # bypassed Q1 emitter, q1_e) and the post-clip DC-settle check.
+        b.directive(".tran 0 200m 0 5u")
+        if active_analysis == "dwell_min":
+            # Dwell at 0% -> RV1a≈0, the wiper sits at u1_buf (full drive into the
+            # BD139), but Dwell controls WET DRIVE; the DRY path (u1_buf->Rdry->
+            # mix_dry) is independent of Dwell and must still pass. At Mix noon the
+            # dry signal reaches v_out at ~0.1V pk.
+            b.directive(".meas TRAN dwell_min_vout MAX abs(V(v_out)) FROM=190m TO=200m")
+            b.directive(".meas TRAN dwell_min_dry  MAX abs(V(mix_dry)) FROM=190m TO=200m")
+        elif active_analysis == "dwell_max":
+            # Dwell at 100% -> RV1b≈0, the wiper is grounded, so the AC drive to
+            # the BD139 base is shunted to GND -> MINIMUM wet drive. Check U2's
+            # output does not hard-clip and Q1's bias holds.
+            b.directive(".meas TRAN dwell_max_vout_pk MAX abs(V(u2_out)) FROM=50m TO=200m")
+            b.directive(".meas TRAN dwell_max_q1_ve   AVG V(q1_e)        FROM=190m TO=200m")
+        elif active_analysis == "mix_ccw":
+            # Mix at 0% -> RV2a≈0, the wiper (mix_node) ties to mix_dry: 100% DRY.
+            # v_out should carry the dry signal; the wet contribution at the wiper
+            # must be negligible. mix_ccw_wet_bleed compares the wiper level to the
+            # dry-node level: at full-CCW mix_node ≈ mix_dry, so the ratio ~1.
+            b.directive(".meas TRAN mix_ccw_vout_pk  MAX abs(V(v_out))   FROM=190m TO=200m")
+            b.directive(".meas TRAN mix_ccw_mix_node MAX abs(V(mix_node)) FROM=190m TO=200m")
+            b.directive(".meas TRAN mix_ccw_dry_lvl  MAX abs(V(mix_dry))  FROM=190m TO=200m")
+            b.directive(".meas TRAN mix_ccw_wet_bleed PARAM {mix_ccw_mix_node/mix_ccw_dry_lvl}")
+        elif active_analysis == "mix_cw":
+            # Mix at 100% -> RV2b≈0, the wiper ties to mix_wet (Tone output): 100%
+            # WET. v_out carries the wet (reverb) signal. mix_cw_dry_attn compares
+            # the dry-node level to the wiper level: at full-CW the wiper is the
+            # wet node, so the dry node sees little of the wiper signal.
+            b.directive(".meas TRAN mix_cw_vout_pk   MAX abs(V(v_out))   FROM=50m TO=200m")
+            b.directive(".meas TRAN mix_cw_mix_node  MAX abs(V(mix_node)) FROM=190m TO=200m")
+            b.directive(".meas TRAN mix_cw_dry_lvl   MAX abs(V(mix_dry))  FROM=190m TO=200m")
+            b.directive(".meas TRAN mix_cw_dry_attn  PARAM {mix_cw_dry_lvl/mix_cw_mix_node}")
+        elif active_analysis == "dwell_max_mix_cw":
+            # Worst-case clip path: Dwell max + Mix full-CW. NB Dwell max grounds
+            # the wiper (min wet drive), so this is the documented worst-case combo
+            # rather than the absolute loudest; the gate is that U2's output never
+            # exceeds the supply and its DC settles back to ~0 (no latch-up).
+            b.directive(".meas TRAN worst_case_pk     MAX abs(V(u2_out)) FROM=50m TO=200m")
+            b.directive(".meas TRAN worst_case_settle AVG V(u2_out)      FROM=190m TO=200m")
 
     b.text(16, 1620,
            "Active analysis: ." + active_analysis +
