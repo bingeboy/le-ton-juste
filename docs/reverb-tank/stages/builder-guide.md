@@ -200,6 +200,24 @@ This is the **integration stage**: it adds *no new parts*. Corresponds to SPICE 
 
 > **Bring-up order for the fully assembled unit.** Do the Stage 6 PSU first-mains-power-on ceremony (bulb limiter, rails verified) *with the signal board disconnected*, then reconnect the board and power up. Set the pots per the **Pot positions for every test** table at the top of this guide. Confirm the power LED lights (it's wired from +15V through 10kΩ — ~1.2mA, deliberately dim; a dark LED with good rails just means a reversed LED or wrong resistor, not a supply fault). Then work down the table below. Keep a hand near the switch for the first powered minute and watch/smell for the fault signs listed in the Stage 6 power-on section.
 
+### Dwell pot (RV1) wiring — wire this exactly, per lug
+
+> **The Dwell pot is a 3-terminal divider that sets how hard the dry signal drives the tank.** The dry signal from the U1 buffer enters one end, the other end goes to ground, and the wiper taps off how much of that signal reaches the BD139 driver (Q1) through C_drive. Wire it per the table below; do not improvise.
+
+| RV1 lug | Connects to | Net name |
+|---|---|---|
+| **Lug 1 (CCW end)** | **Ground (0V)** | `0` |
+| **Lug 2 (wiper)** | **C_drive → Q1 base** (drive into the tank) | `rv1_wiper` |
+| **Lug 3 (CW end)** | **Dry signal** — from the **U1 buffer via R2** | `u1_buf` |
+
+- **GND → lug 1 (CCW):** lug 1 ties to ground. At full-CCW the wiper sits on this end → wiper ≈ 0V → **minimum** wet drive. (Netlist: `RV1a rv1_wiper 0` — the wiper-to-GND half.)
+- **Dry → lug 3 (CW):** U1 buffer → R2 → RV1 lug 3 (`u1_buf`). At full-CW the wiper sits on this end → wiper ≈ `u1_buf` → **maximum** wet drive. (Netlist: `RV1b u1_buf rv1_wiper` — the signal-to-wiper half.)
+- **Wiper (lug 2) → C_drive → Q1 base:** the tapped drive signal AC-couples into the BD139 driver. Nothing else connects to the wiper.
+
+> **Physical consequence:** turning the knob **clockwise (CW) increases** the wet drive into Q1 (and thus the size of the reverb tail); **counter-clockwise (CCW) reduces** it toward silence on the wet path.
+
+> **Orientation note:** if the knob turns the wrong way after wiring (CW reduces reverb instead of increasing it), **swap the wires on lugs 1 and 3** — i.e. swap the GND and `u1_buf` connections. This flips the pot's direction without any schematic change.
+
 ### Mix pot (RV2) wiring — wire this exactly, per lug
 
 > **The Mix pot is a 3-terminal passive blend, NOT a volume knob.** The dry and wet signals enter **opposite ends** of the pot and the wiper taps the blend. If you wire both signals to the same lug (or tie the wet source to the wiper), you recreate the original netlist bug in hardware — the blend collapses and the pot stops working as a Mix control. Wire it per the table below; do not improvise.

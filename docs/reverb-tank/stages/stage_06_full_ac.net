@@ -67,7 +67,7 @@ Rload v_out 0 47k
 .meas AC hpf_ref  FIND mag(V(hpf_out)/V(u2_out)) AT=5k
 .meas AC hpf_m3db WHEN mag(V(hpf_out)/V(u2_out))=hpf_ref*0.7079 RISE=1
 .meas AC recov_lvl FIND V(u2_out) AT=1k
-.meas AC recov_gain_db FIND mag(20*log10(V(u2_out)/V(u2_in_pos))) AT=1k
+.meas AC recov_gain_db FIND 20*log10(V(u2_out)/V(u2_in_pos)) AT=1k
 .lib UniversalOpAmp2.lib
 .backanno
 .end

@@ -568,7 +568,7 @@ def build(active_analysis="op"):
         # the 46.6 dB recovery gain -- a vin->v_out measurement would fail the
         # recovery-gain window. Reference level at 1kHz for context.
         b.directive(".meas AC recov_lvl FIND V(u2_out) AT=1k")
-        b.directive(".meas AC recov_gain_db FIND mag(20*log10(V(u2_out)/V(u2_in_pos))) AT=1k")
+        b.directive(".meas AC recov_gain_db FIND 20*log10(V(u2_out)/V(u2_in_pos)) AT=1k")
     elif active_analysis == "tran":
         # Output peak + no-oscillation. 100mVpk 1kHz signal.
         #
