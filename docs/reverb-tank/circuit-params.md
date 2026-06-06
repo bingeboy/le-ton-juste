@@ -1,13 +1,13 @@
 # Ghost Spring Reverb — Canonical Circuit Parameters
 
-> **GENERATED FILE — do not edit by hand.** This table is produced by [`stages/gen_circuit_params_md.py`](./stages/gen_circuit_params_md.py) from [`stages/circuit_params.py`](./stages/circuit_params.py), the single source of truth. To change a value, edit `circuit_params.py` and run `python docs/reverb-tank/sync.py`.
+> **GENERATED FILE — do not edit by hand.** This table is produced by [`stages/gen_circuit_params_md.py`](./stages/gen_circuit_params_md.py) from [`stages/circuit_params.py`](./stages/circuit_params.py), the single source of truth. Edit `circuit_params.py`, then run `python docs/reverb-tank/sync.py`. Do not edit `circuit-params.md` by hand — it is generated.
 
 > **Authority:** This file is the single source of truth for all named parameters.
 > The SPICE netlist (`stage_06_full.net`) is the computational authority and must match this file.
 > All other docs (builder-guide, parts-spec, build-plan, design) reference this file — they do NOT restate numbers.
-> To change a value: edit `circuit_params.py`, then regenerate the netlists and this file with `sync.py`.
+> Edit `circuit_params.py`, then run `sync.py`. Do not edit `circuit-params.md` by hand — it is generated.
 
-This table is THE authoritative human-readable source for every named value in the Ghost Spring circuit. The netlist [`stages/stage_06_full.net`](./stages/stage_06_full.net) is the computational mirror of this file and must agree with it byte-for-byte on values; the Python constants module [`stages/circuit_params.py`](./stages/circuit_params.py) is the machine-readable mirror that the generator scripts import. If any of the three disagree, that is a bug — fix it in `circuit_params.py` first, then regenerate.
+This table is THE authoritative human-readable source for every named value in the Ghost Spring circuit. The netlist [`stages/stage_06_full.net`](./stages/stage_06_full.net) is the computational mirror of this file and must agree with it byte-for-byte on values; the Python constants module [`stages/circuit_params.py`](./stages/circuit_params.py) is the machine-readable mirror that the generator scripts import. If any of the three disagree, that is a bug — edit `circuit_params.py`, then run `sync.py`. Do not edit `circuit-params.md` by hand — it is generated.
 
 Companion authorities (each owns a different *class* of value):
 
@@ -165,7 +165,7 @@ Source: `stage_06_full` `op` variant (settled DC at the 190–200ms tail; the PS
 | Q1 Ic | **≈16 mA** | 18 mA | Ic ≈ Ve/R5 = 1.092 / 68 |
 | Q1 Vbe | ≈0.8 V | 0.7 V | Higher than 0.7V at this current (real Vbe) |
 | Q1 Vce | ≈12.7–13.9 V | — | ≈Vc − Ve; dissipation ≈ Vce × Ic ≈ 0.22 W |
-| U1 output DC (`off_u1`) | **≈0 V (+0.8 fV)** | 0 V | Within ±10mV window |
+| U1 output DC (`off_u1`) | **≈0 V (≈0 V)** | 0 V | Within ±10mV window |
 | U2 output DC (`off_u2`) | **+0.47 mV** | 0 V | Settles from ~72mV at 20ms to <0.5mV by 200ms |
 | U3 / output DC (`off_u3`) | **−0.35 µV (≈0 V)** | 0 V | At `v_out` (output jack) |
 | +15V rail (`rail_pos`) | **≈+15.0 V** | +15 V | LM7815 on its 15.0V clamp (bus well above dropout) |

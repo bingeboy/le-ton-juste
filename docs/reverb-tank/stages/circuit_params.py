@@ -16,13 +16,15 @@ THE CASCADE
     sync.py      (regenerates every netlist + circuit-params.md, then
                   runs validate.py; one command to re-cascade)
 
-To change a value: edit it HERE, then run `python docs/reverb-tank/sync.py`.
-Never hand-edit a generated netlist or circuit-params.md.
+Edit circuit_params.py, then run sync.py. Do not edit circuit-params.md by
+hand -- it is generated.
 
-This module is the machine-readable mirror of ../circuit-params.md (the
-human-readable authority) and stage_06_full.net (the computational authority).
-All three must agree. To change a value: edit circuit-params.md first, then
-update this module and re-run the generators so the netlists stay in sync.
+This module is the single source of truth. circuit-params.md (human-readable
+table) and stage_06_full.net (the SPICE netlist) are both GENERATED from it and
+must agree with it. To change a value: edit it HERE, then run
+`python docs/reverb-tank/sync.py`, which regenerates every netlist and
+circuit-params.md and re-validates. Never hand-edit a generated netlist or
+circuit-params.md.
 
 Values are SPICE-formatted strings (e.g. "6.8k", "100n", "2200u") because the
 generator scripts emit them verbatim into netlist cards. Operating-point
@@ -140,8 +142,7 @@ LM79XX_SUBCKT = [
 # POWER SUPPLY (transformer / rails)
 # ============================================================================
 VSEC_PEAK   = "21.2"            # T1 secondary peak = 15Vrms * sqrt(2)
-VSEC_FREQ   = "60"             # mains frequency (Hz)
-VSEC_SINE   = "SINE(0 21.2 60)"  # one half of the 15-0-15 secondary
+VSEC_SINE   = "SINE(0 21.2 60)"  # one half of the 15-0-15 secondary (0V offset, 21.2Vpk, 60Hz mains)
 RAIL_POS    = 15.0            # nominal +15V regulated rail
 RAIL_NEG    = -15.0           # nominal -15V regulated rail
 UNREG_BUS   = 20.4           # nominal unregulated bus (avg, ~peak - 2 Vf)

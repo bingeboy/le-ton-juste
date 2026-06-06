@@ -1,0 +1,478 @@
+#!/usr/bin/env python3
+"""
+test_sync.py - End-to-end proof that the Ghost Spring parameter cascade works.
+
+    circuit_params.py  ->  gen_stage*.py  ->  stage_0*.net
+                       ->  gen_circuit_params_md.py -> circuit-params.md
+                       ->  validate.py (gate)  /  sync.py (re-cascade)
+
+These tests prove the cascade end-to-end: that circuit_params.py is the single
+source of truth, that mutating it actually propagates into the generated
+netlists, that validate.py catches drift, and that sync.py is idempotent.
+
+They are pure Python-tooling tests: no LTspice, no Wine, no SPICE simulation is
+required. Run from the repo root:
+
+    pytest docs/reverb-tank/test_sync.py -v
+
+Design notes
+------------
+* sync.py and validate.py have side effects (they write files / exit), so they
+  are invoked via subprocess, never imported.
+* The cascade test (Group 3) copies the whole stages/ dir into a tmp_path,
+  mutates the COPY of circuit_params.py, runs the generator there via
+  subprocess, and asserts against the COPY's netlist. The real tree is never
+  touched and there is no module-cache contamination.
+* validate.py drift tests (Group 4) corrupt a copy of stage_06_full.net in a
+  tmp tree and point validate.py at it, again leaving the real file untouched.
+"""
+
+import hashlib
+import importlib.util
+import os
+import re
+import shutil
+import subprocess
+import sys
+
+import pytest
+
+# ---------------------------------------------------------------------------
+# Paths (resolved from this file, so tests work from any cwd).
+# ---------------------------------------------------------------------------
+HERE = os.path.dirname(os.path.abspath(__file__))
+STAGES = os.path.join(HERE, "stages")
+PARAMS_PY = os.path.join(STAGES, "circuit_params.py")
+GEN_STAGE6 = os.path.join(STAGES, "gen_stage6_full.py")
+NET6 = os.path.join(STAGES, "stage_06_full.net")
+NET5 = os.path.join(STAGES, "stage_05_psu.net")
+SYNC = os.path.join(HERE, "sync.py")
+VALIDATE = os.path.join(HERE, "validate.py")
+PY = sys.executable
+
+# Generated artifacts that sync.py (re)writes, used by the idempotency test.
+GENERATED_FILES = [
+    os.path.join(STAGES, "stage_02_driver.net"),
+    os.path.join(STAGES, "stage_03_transformer.net"),
+    os.path.join(STAGES, "stage_04_input_protect.net"),
+    os.path.join(STAGES, "stage_05_psu.net"),
+    os.path.join(STAGES, "stage_06_full.net"),
+    os.path.join(HERE, "circuit-params.md"),
+]
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+def load_circuit_params(path=PARAMS_PY, modname="cp_under_test"):
+    """Import a circuit_params.py from an explicit path under a private module
+    name, so the live one is never shadowed and the cache is never reused."""
+    spec = importlib.util.spec_from_file_location(modname, path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def sha256(path):
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+def run_stage6_generator(stages_dir, out_net):
+    """Run gen_stage6_full.py's real build()+dump() against the circuit_params.py
+    that lives in `stages_dir`, writing the netlist to `out_net`.
+
+    The generator's __main__ hardcodes an absolute output path (the real tree),
+    so we cannot just `subprocess.run([PY, "gen_stage6_full.py"])` and expect
+    output in a copy. Instead we import the generator module FROM stages_dir
+    (which makes its `sys.path.insert(0, dirname(__file__))` pick up that dir's
+    circuit_params) and call build()/dump() with our own paths. Run in a
+    subprocess so module/​bytecode caches never leak between tests.
+    """
+    snippet = (
+        "import importlib.util, os, sys\n"
+        "stages = %r\n"
+        "out = %r\n"
+        "sys.path.insert(0, stages)\n"
+        "spec = importlib.util.spec_from_file_location("
+        "'gen6', os.path.join(stages, 'gen_stage6_full.py'))\n"
+        "gen = importlib.util.module_from_spec(spec)\n"
+        "spec.loader.exec_module(gen)\n"
+        "b = gen.build('op')\n"
+        "b.dump(out + '.asc', out)\n"
+    ) % (str(stages_dir), str(out_net))
+    subprocess.run([PY, "-c", snippet], check=True,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+
+
+def run_generator(stages_dir, gen_filename, out_net, analysis="op"):
+    """Generic version of run_stage6_generator: import any gen_stage*.py module
+    FROM stages_dir (so its `import circuit_params` resolves to that dir's copy)
+    and call build(analysis)/dump() with our own output paths. Subprocess so
+    module/bytecode caches never leak between tests."""
+    snippet = (
+        "import importlib.util, os, sys\n"
+        "stages = %r\n"
+        "gen_file = %r\n"
+        "out = %r\n"
+        "analysis = %r\n"
+        "sys.path.insert(0, stages)\n"
+        "spec = importlib.util.spec_from_file_location("
+        "'gen_mod', os.path.join(stages, gen_file))\n"
+        "gen = importlib.util.module_from_spec(spec)\n"
+        "spec.loader.exec_module(gen)\n"
+        "b = gen.build(analysis)\n"
+        "b.dump(out + '.asc', out)\n"
+    ) % (str(stages_dir), gen_filename, str(out_net), analysis)
+    subprocess.run([PY, "-c", snippet], check=True,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+
+
+def net_line(netlist_text, instance):
+    """Return the netlist card whose first token == instance, or None.
+    Skips comments (*) and directives (.)."""
+    for raw in netlist_text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("*") or line.startswith("."):
+            continue
+        if line.split()[0] == instance:
+            return line
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+@pytest.fixture
+def P():
+    """The live circuit_params module, freshly loaded from disk."""
+    return load_circuit_params()
+
+
+@pytest.fixture
+def stages_copy(tmp_path):
+    """An isolated copy of the entire stages/ directory in tmp_path.
+
+    Generators do `sys.path.insert(0, os.path.dirname(__file__))` then
+    `import circuit_params`, so a generator placed in this copy imports the
+    COPY's circuit_params.py. Mutating that copy lets us prove propagation
+    without touching the real tree.
+    """
+    dst = tmp_path / "stages"
+    shutil.copytree(STAGES, dst, ignore=shutil.ignore_patterns("__pycache__"))
+    return dst
+
+
+# ===========================================================================
+# Group 1: circuit_params is importable and complete
+# ===========================================================================
+def test_circuit_params_imports_cleanly():
+    """import circuit_params succeeds with no errors."""
+    P = load_circuit_params()
+    assert P is not None
+    assert hasattr(P, "R5")
+
+
+@pytest.mark.parametrize(
+    "name", ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "RF2", "RF3"]
+)
+def test_all_resistors_defined(P, name):
+    """Required resistor constants are present, string-typed, and non-empty."""
+    assert hasattr(P, name), "circuit_params is missing %s" % name
+    val = getattr(P, name)
+    assert isinstance(val, str), "%s should be a SPICE string, got %r" % (name, val)
+    assert val.strip(), "%s is empty" % name
+
+
+@pytest.mark.parametrize(
+    "name", ["C_IN", "C_DRIVE", "C2", "C3", "C4", "C11", "C12", "C13", "C14"]
+)
+def test_all_caps_defined(P, name):
+    """Key capacitor constants are present, string-typed, and non-empty.
+
+    Note: BOM ref C1 == netlist C_DRIVE (see circuit_params header)."""
+    assert hasattr(P, name), "circuit_params is missing %s" % name
+    val = getattr(P, name)
+    assert isinstance(val, str), "%s should be a SPICE string, got %r" % (name, val)
+    assert val.strip(), "%s is empty" % name
+
+
+def test_operating_point_targets_are_floats(P):
+    """Operating-point targets / tolerances are numeric (so checks can compare)."""
+    # Single-value targets.
+    for name in ["Q1_VE_SIM", "Q1_IC_SIM", "RAIL_POS", "RAIL_NEG", "RIPPLE_MAX_PP"]:
+        val = getattr(P, name)
+        assert isinstance(val, (int, float)), "%s should be numeric, got %r" % (name, val)
+
+    # Tolerance windows are numeric 2-tuples with lo < hi.
+    for name in ["Q1_VE_WINDOW", "Q1_IC_WINDOW", "OFFSET_WINDOW",
+                 "RAIL_POS_WINDOW", "RECOV_GAIN_WINDOW", "HPF_CORNER_WINDOW"]:
+        win = getattr(P, name)
+        assert isinstance(win, tuple) and len(win) == 2, "%s should be a 2-tuple" % name
+        lo, hi = win
+        assert isinstance(lo, (int, float)) and isinstance(hi, (int, float)), \
+            "%s bounds should be numeric" % name
+        assert lo < hi, "%s window is not lo<hi: %r" % (name, win)
+
+
+# ===========================================================================
+# Group 2: generators produce valid netlists
+# ===========================================================================
+def test_gen_stage6_produces_netlist(stages_copy):
+    """Running gen_stage6_full.py writes a non-empty stage_06_full.net."""
+    out = stages_copy / "stage_06_full.net"
+    out.unlink(missing_ok=True)  # prove the generator (re)creates it
+    run_stage6_generator(stages_copy, out)
+    assert out.exists(), "generator did not produce stage_06_full.net"
+    text = out.read_text()
+    assert text.strip(), "generated netlist is empty"
+    # A sanity floor: it should at least carry the analysis/end cards.
+    assert ".end" in text
+    assert text.startswith("*")  # header comment
+
+
+def test_netlist_contains_r5(P):
+    """The committed stage_06_full.net carries R5 with circuit_params.R5's value."""
+    text = open(NET6).read()
+    line = net_line(text, "R5")
+    assert line is not None, "no R5 card in stage_06_full.net"
+    # Card form: "R5 <n1> <n2> <value>"
+    assert line.split()[3] == P.R5, \
+        "R5 netlist value %r != circuit_params.R5 %r" % (line.split()[3], P.R5)
+
+
+def test_netlist_polyfuse_on_dc_rails(P):
+    """RF2/RF3 (F2/F3 polyfuses) sit on the regulated DC rails, NOT the AC
+    secondary. This is the regression guard for the polyfuse-placement bug:
+    a fuse on ac_pos/ac_neg would protect nothing useful and is wrong."""
+    text = open(NET6).read()
+
+    rf2 = net_line(text, "RF2")
+    rf3 = net_line(text, "RF3")
+    assert rf2 is not None and rf3 is not None, "RF2/RF3 missing from netlist"
+
+    # Nodes are tokens 1 and 2; value is token 3.
+    rf2_nodes = set(rf2.split()[1:3])
+    rf3_nodes = set(rf3.split()[1:3])
+
+    # Must touch the DC rail output side (reg_pos/reg_neg -> +15V/-15V bus).
+    assert rf2_nodes == {"reg_pos", "+15V"}, \
+        "RF2 should bridge reg_pos<->+15V (DC rail), got %s" % rf2_nodes
+    assert rf3_nodes == {"reg_neg", "-15V"}, \
+        "RF3 should bridge reg_neg<->-15V (DC rail), got %s" % rf3_nodes
+
+    # And must NOT be on the AC secondary side.
+    for ac_node in ("ac_pos", "ac_neg"):
+        assert ac_node not in rf2_nodes, "RF2 wrongly on AC node %s" % ac_node
+        assert ac_node not in rf3_nodes, "RF3 wrongly on AC node %s" % ac_node
+
+    # Value matches the source of truth.
+    assert rf2.split()[3] == P.RF2
+    assert rf3.split()[3] == P.RF3
+
+
+def test_stage5_netlist_polyfuse_on_dc_rails(P):
+    """Same regression guard as Stage 6, but for the standalone PSU stage
+    (stage_05_psu.net): RF2/RF3 must sit on the regulated DC rails
+    (reg_pos->+15V, reg_neg->-15V), NOT on the AC secondary (ac_pos/ac_neg).
+    Stage 5 originally placed them on the AC side, which is electrically wrong;
+    this locks in the fix so Stage 5 and Stage 6 stay topologically identical."""
+    text = open(NET5).read()
+
+    rf2 = net_line(text, "RF2")
+    rf3 = net_line(text, "RF3")
+    assert rf2 is not None and rf3 is not None, "RF2/RF3 missing from stage_05_psu.net"
+
+    rf2_nodes = set(rf2.split()[1:3])
+    rf3_nodes = set(rf3.split()[1:3])
+
+    assert rf2_nodes == {"reg_pos", "+15V"}, \
+        "RF2 should bridge reg_pos<->+15V (DC rail), got %s" % rf2_nodes
+    assert rf3_nodes == {"reg_neg", "-15V"}, \
+        "RF3 should bridge reg_neg<->-15V (DC rail), got %s" % rf3_nodes
+
+    for ac_node in ("ac_pos", "ac_neg"):
+        assert ac_node not in rf2_nodes, "RF2 wrongly on AC node %s" % ac_node
+        assert ac_node not in rf3_nodes, "RF3 wrongly on AC node %s" % ac_node
+
+    assert rf2.split()[3] == P.RF2
+    assert rf3.split()[3] == P.RF3
+
+
+# ===========================================================================
+# Group 3: the cascade -- mutate circuit_params -> regenerate -> propagate
+# ===========================================================================
+def test_cascade_r5_change_propagates(stages_copy, P):
+    """THE core cascade test. Change R5 in a COPY of circuit_params.py to a
+    sentinel value, run the stage-6 generator against that copy, and assert the
+    sentinel appears as R5's value in the regenerated netlist. Proves editing
+    the single source of truth actually re-flows into the netlist."""
+    sentinel = "999"
+    assert P.R5 != sentinel, "sentinel collides with real R5 value; pick another"
+
+    params_copy = stages_copy / "circuit_params.py"
+    src = params_copy.read_text()
+
+    # Replace ONLY the R5 assignment line, robustly (keeps inline comment).
+    new_src, n = re.subn(
+        r'(?m)^(R5\s*=\s*)"[^"]*"',
+        r'\g<1>"%s"' % sentinel,
+        src,
+    )
+    assert n == 1, "expected exactly one R5 assignment to rewrite, found %d" % n
+    params_copy.write_text(new_src)
+
+    # Confirm the mutated copy actually reports the sentinel.
+    mutated = load_circuit_params(str(params_copy), modname="cp_mutated")
+    assert mutated.R5 == sentinel
+
+    # Regenerate the netlist from the mutated copy.
+    out = stages_copy / "stage_06_full.net"
+    out.unlink(missing_ok=True)
+    run_stage6_generator(stages_copy, out)
+
+    # The R5 card must now carry the sentinel value.
+    line = net_line(out.read_text(), "R5")
+    assert line is not None, "R5 missing after regeneration"
+    assert line.split()[3] == sentinel, \
+        "cascade broken: R5 card = %r, expected value %r" % (line, sentinel)
+
+    # And the original (untouched) tree must be unaffected.
+    assert net_line(open(NET6).read(), "R5").split()[3] == P.R5
+
+
+@pytest.mark.parametrize(
+    "const_name, sentinel, gen_file, out_name, instance, analysis",
+    [
+        # resistor through the stage-6 generator
+        ("R5", "999", "gen_stage6_full.py", "stage_06_full.net", "R5", "op"),
+        # capacitor through the stage-6 generator
+        ("C_IN", "777n", "gen_stage6_full.py", "stage_06_full.net", "C_in", "op"),
+        ("C2", "888u", "gen_stage6_full.py", "stage_06_full.net", "C2", "op"),
+        # PSU fuse constant through the stage-5 (PSU) generator
+        ("RF2", "0.123", "gen_stage5_psu.py", "stage_05_psu.net", "RF2", "op"),
+    ],
+)
+def test_cascade_constant_change_propagates(
+    stages_copy, P, const_name, sentinel, gen_file, out_name, instance, analysis
+):
+    """Generalised cascade test (W1): mutate a single constant in a COPY of
+    circuit_params.py, run the RELEVANT generator against that copy, and assert
+    the sentinel value appears on the right netlist card. Covers a resistor
+    (R5), capacitors (C_IN, C2), and a PSU fuse constant (RF2) through both the
+    stage-6 and stage-5 generators -- proving the source of truth re-flows
+    across multiple constant classes and generators, not just R5."""
+    assert getattr(P, const_name) != sentinel, \
+        "sentinel collides with real %s value; pick another" % const_name
+
+    params_copy = stages_copy / "circuit_params.py"
+    src = params_copy.read_text()
+    new_src, n = re.subn(
+        r'(?m)^(%s\s*=\s*)"[^"]*"' % re.escape(const_name),
+        r'\g<1>"%s"' % sentinel,
+        src,
+    )
+    assert n == 1, \
+        "expected exactly one %s assignment to rewrite, found %d" % (const_name, n)
+    params_copy.write_text(new_src)
+
+    mutated = load_circuit_params(str(params_copy), modname="cp_mut_" + const_name)
+    assert getattr(mutated, const_name) == sentinel
+
+    out = stages_copy / out_name
+    out.unlink(missing_ok=True)
+    run_generator(stages_copy, gen_file, out, analysis=analysis)
+
+    line = net_line(out.read_text(), instance)
+    assert line is not None, "%s missing after regeneration" % instance
+    assert line.split()[3] == sentinel, \
+        "cascade broken: %s card = %r, expected value %r" % (instance, line, sentinel)
+
+
+def test_cascade_does_not_touch_real_tree(stages_copy, P):
+    """Sibling guard: regenerating inside the copy leaves the real
+    circuit_params.py and stage_06_full.net byte-identical."""
+    before_params = sha256(PARAMS_PY)
+    before_net = sha256(NET6)
+    out = stages_copy / "stage_06_full.net"
+    run_stage6_generator(stages_copy, out)
+    assert sha256(PARAMS_PY) == before_params
+    assert sha256(NET6) == before_net
+
+
+# ===========================================================================
+# Group 4: validate.py catches drift
+# ===========================================================================
+def test_validate_passes_clean():
+    """validate.py exits 0 against the committed, in-sync artifacts."""
+    result = subprocess.run([PY, VALIDATE], capture_output=True, text=True)
+    assert result.returncode == 0, \
+        "validate.py failed on a clean tree:\n%s\n%s" % (result.stdout, result.stderr)
+    assert "VALIDATION OK" in result.stdout
+
+
+def test_validate_catches_netlist_drift(tmp_path):
+    """Corrupt R5 in a COPY of the netlist, point validate.py at that copy, and
+    assert it fails. This is the regression guard for hand-edited / drifted
+    netlists. The real netlist is never modified.
+
+    validate.py resolves NET = STAGES/stage_06_full.net from its own __file__,
+    so we run a copy of the whole reverb-tank tree in tmp_path and corrupt the
+    copy's netlist.
+    """
+    tree = tmp_path / "reverb-tank"
+    shutil.copytree(HERE, tree, ignore=shutil.ignore_patterns("__pycache__"))
+    bad_net = tree / "stages" / "stage_06_full.net"
+
+    text = bad_net.read_text()
+    P = load_circuit_params()
+    good = net_line(text, "R5")
+    assert good is not None
+    wrong_val = "12345"  # definitely not R5's real value
+    assert P.R5 != wrong_val
+    corrupted_line = " ".join(good.split()[:3] + [wrong_val])
+    text = text.replace(good, corrupted_line)
+    bad_net.write_text(text)
+
+    result = subprocess.run([PY, str(tree / "validate.py")],
+                            capture_output=True, text=True)
+    assert result.returncode != 0, \
+        "validate.py did NOT catch the R5 netlist drift:\n%s" % result.stdout
+    assert "R5" in result.stdout, \
+        "validate.py failed but did not name R5:\n%s" % result.stdout
+
+
+# ===========================================================================
+# Group 5: sync.py is idempotent
+# ===========================================================================
+def test_sync_idempotent():
+    """Run sync.py twice; the generated files must be byte-identical between
+    runs (and sync must succeed both times). Proves the cascade settles to a
+    fixed point and re-running is safe.
+
+    sync.py rewrites files in the real tree, so we snapshot every generated
+    file, run sync twice, compare hashes, and restore the originals to leave
+    the working tree exactly as we found it.
+    """
+    backups = {f: open(f, "rb").read() for f in GENERATED_FILES if os.path.exists(f)}
+    try:
+        first = subprocess.run([PY, SYNC], capture_output=True, text=True)
+        assert first.returncode == 0, \
+            "first sync.py run failed:\n%s\n%s" % (first.stdout, first.stderr)
+        hashes_1 = {f: sha256(f) for f in GENERATED_FILES if os.path.exists(f)}
+
+        second = subprocess.run([PY, SYNC], capture_output=True, text=True)
+        assert second.returncode == 0, \
+            "second sync.py run failed:\n%s\n%s" % (second.stdout, second.stderr)
+        hashes_2 = {f: sha256(f) for f in GENERATED_FILES if os.path.exists(f)}
+
+        assert hashes_1 == hashes_2, "sync.py is NOT idempotent: %s" % (
+            [os.path.basename(f) for f in hashes_1 if hashes_1[f] != hashes_2.get(f)]
+        )
+        # Idempotent run #2 should report no changes.
+        assert "0 file(s) changed" in second.stdout, \
+            "second sync reported changes:\n%s" % second.stdout
+    finally:
+        for f, data in backups.items():
+            with open(f, "wb") as fh:
+                fh.write(data)
