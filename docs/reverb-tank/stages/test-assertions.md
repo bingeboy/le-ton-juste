@@ -78,6 +78,15 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 .meas TRAN q1_ic      FIND I(R5) AT=200m
 .meas TRAN q1_ic_err  PARAM {abs(q1_ic_calc - q1_ic) / q1_ic}
 
+; Stage 2 — OP: Q1 must stay FORWARD-ACTIVE (not saturated). Read the collector
+;   DC and derive Vce = V(q1_c)-V(q1_e) and Vcb = V(q1_c)-V(q1_base). If Q1
+;   saturates (Vce -> Vce(sat) ~0.2V, Vcb < 0) the transformer drive flat-tops
+;   and the reverb send distorts -- a failure q1_ve/q1_ic alone never catch.
+.meas TRAN q1_vc  FIND V(q1_c)
+.meas TRAN q1_vb  FIND V(q1_base)
+.meas TRAN q1_vce PARAM {q1_vc - q1_ve}
+.meas TRAN q1_vcb PARAM {q1_vc - q1_vb}
+
 ; Stage 2 — TRAN: D3 flyback diode idle during normal drive
 .meas TRAN d3_pk MAX abs(I(D3))
 
@@ -93,6 +102,9 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | `q1_ic_calc` | `q1_ve/R5` (Ve across R5) | compared to `q1_ic` below | Ve and the R5 current disagree — wrong R5 or mis-probed emitter |
 | `q1_ic` | `I(R5)` (current through R5 = Ic) | 10 – 26 mA | the real comparison target for `q1_ic_calc` |
 | `q1_ic_err` | `\|q1_ic_calc − q1_ic\| / q1_ic` | < 10% | Ve-implied Ic and measured R5 current disagree by > 10% |
+| `q1_vc` | `V(q1_c)` (collector DC) | 3 – 15.2 V (sim ≈14.6 V) | Collector pinned low — Q1 saturated or transformer/D3 short |
+| `q1_vce` | `V(q1_c) − V(q1_e)` | > 1 V (≫ Vce(sat) 0.2 V) | Q1 saturated — collector swing flat-tops, send distorts |
+| `q1_vcb` | `V(q1_c) − V(q1_base)` | ≥ 0 V (CBJ reverse-biased) | Collector below base — Q1 in saturation |
 | `d3_pk` | `MAX abs(I(D3))` | < 1 mA | D3 conducting in normal use — clamp engaging wrongly |
 | `drv_pk` | `MAX abs(I(L1))` | within linear swing, no flat-top | Driver clipping the transient |
 
@@ -149,6 +161,13 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 .meas OP rail_pos FIND V(+15V)
 .meas OP rail_neg FIND V(-15V)
 
+; Stage 5 — OP: unregulated-bus headroom. The 78xx/79xx need their input
+;   >= Vout + ~2V dropout to stay IN regulation; the bulk caps hold the bus
+;   near the rectified peak (~19V). If |bus| sags below ~17V the regulator
+;   drops out and the rail follows the ripple. (Measured but previously ungated.)
+.meas TRAN unreg_pos AVG V(pos_rect) FROM=100m TO=120m
+.meas TRAN unreg_neg AVG V(neg_rect) FROM=100m TO=120m
+
 ; Stage 5 — TRAN: supply ripple under load (settle first, then measure)
 .meas TRAN ripple_pos PP V(+15V) FROM=100m TO=120m
 .meas TRAN ripple_neg PP V(-15V) FROM=100m TO=120m
@@ -158,6 +177,8 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 |---|---|---|---|
 | `rail_pos` | `V(+15V)` | 14.85 – 15.15 V | +rail out of regulation — LM7815/filter issue |
 | `rail_neg` | `V(-15V)` | −15.15 – −14.85 V | −rail out of regulation — LM7915/filter issue |
+| `unreg_pos` | `V(pos_rect)` | > 17 V (sim ≈19 V) | +reg dropout — bus below Vout+dropout, rail unregulates |
+| `unreg_neg` | `\|V(neg_rect)\|` | > 17 V (sim ≈19 V) | −reg dropout — bus too low, −rail unregulates |
 | `ripple_pos` | `PP V(+15V)` | < 10 mVpp | Insufficient filtering — ripple into recovery stage |
 | `ripple_neg` | `PP V(-15V)` | < 10 mVpp | Same on negative rail |
 
@@ -174,6 +195,15 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 .meas OP off_u2 FIND V(u2_out)
 .meas OP off_u3 FIND V(v_out)
 .meas OP q1_ve  FIND V(q1_e)
+
+; Stage 6 — OP: U2 non-inverting input DC bias. Rbias (100k) holds u2_in_pos at
+;   0V and C3 (470n) blocks tank/rail DC. If Rbias opened or a rail leaked in,
+;   this node floats to a DC offset that the 214x stage multiplies into U2 clip.
+.meas OP u2_inpos_bias FIND V(u2_in_pos)
+
+; Stage 6 — AC: U1 input buffer is a unity-gain follower. V(u1_buf) must track
+;   V(vin) at ~1.0x; a dead/mis-wired U1 would not pass signal at unity.
+.meas AC u1_buf_gain FIND mag(V(u1_buf)/V(vin)) AT=1k
 
 ; Stage 6 — AC: recovery-stage gain (across U2) in dB, within +/-2dB of target.
 ;   recov_gain_db measures the SAME thing as recov_gain above —
@@ -192,6 +222,8 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | Stage 1 set | (as above) | all still pass | A later stage regressed the baseline |
 | `off_u1/2/3` | op-amp outputs | \|val\| ≤ 10 mV | Real PSU/driver introduced DC offset |
 | `q1_ve` | `V(q1_e)` | 1.0 – 1.4 V | Bias shifted under regulated rails |
+| `u2_inpos_bias` | `V(u2_in_pos)` | \|val\| ≤ 10 mV | Rbias open / rail leak — U2 + input floats, 214× clips |
+| `u1_buf_gain` | `\|V(u1_buf)/V(vin)\|` @1k | 0.9 – 1.05 | U1 buffer dead/mis-wired — front-end not passing signal |
 | `recov_gain_db` | `20log10(V(u2_out)/V(u2_in_pos))` @1k | 44.6 – 48.6 dB (target 46.59 dB ±2 dB) | Recovery-stage gain drifted out of spec |
 
 ---

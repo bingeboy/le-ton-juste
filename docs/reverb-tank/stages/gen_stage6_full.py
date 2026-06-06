@@ -466,7 +466,20 @@ def build(active_analysis="op"):
         b.directive(".meas TRAN off_u1 AVG V(u1_out) FROM=190m TO=200m")
         b.directive(".meas TRAN off_u2 AVG V(u2_out) FROM=190m TO=200m")
         b.directive(".meas TRAN off_u3 AVG V(v_out)  FROM=190m TO=200m")
+        # U2 non-inverting input DC bias: Rbias holds u2_in_pos at 0V and C3
+        # blocks tank/rail DC. If Rbias opened or a rail leaked in, this node
+        # floats to a DC offset the 214x stage multiplies into U2 clipping.
+        b.directive(".meas TRAN u2_inpos_bias AVG V(u2_in_pos) FROM=190m TO=200m")
         b.directive(".meas TRAN q1_ve  AVG V(q1_e)   FROM=190m TO=200m")
+        # Q1 collector DC and the active-region guards. An NPN driver MUST stay in
+        # forward-active (CBJ reverse-biased): V(q1_c) above the base, Vce well
+        # above Vce(sat). If Q1 saturates the transformer drive flat-tops and the
+        # reverb send distorts badly -- a failure q1_ve/q1_ic alone never catch
+        # (they'd both still read in-window with a saturated, clipping collector).
+        b.directive(".meas TRAN q1_vc AVG V(q1_c) FROM=190m TO=200m")
+        b.directive(".meas TRAN q1_vb AVG V(q1_base) FROM=190m TO=200m")
+        b.directive(".meas TRAN q1_vce PARAM {q1_vc - q1_ve}")
+        b.directive(".meas TRAN q1_vcb PARAM {q1_vc - q1_vb}")
         # Cross-check: Ic implied by the emitter voltage across R5 (Ic ~= Ve/R5,
         # Ie ~= Ic for Bf=100). Compare to the current actually flowing through R5
         # (I(R5) = Ie = Ic in the bias network) so q1_ic_calc has a real target.
@@ -486,6 +499,10 @@ def build(active_analysis="op"):
         # Recovery gain + wet HPF corner. PSU SINE sources have no AC spec (AC=0),
         # so only V1 (AC 1) drives the sweep. .ac dec 100 20 20k.
         b.directive(".ac dec 100 20 20k")
+        # U1 input buffer is a unity-gain follower: V(u1_buf) must track V(vin).
+        # A dead/mis-wired U1 (gain stage, or out of loop) would not pass signal at
+        # unity -- nothing else in the suite checks the front-end buffer's gain.
+        b.directive(".meas AC u1_buf_gain FIND mag(V(u1_buf)/V(vin)) AT=1k")
         b.directive(".meas AC recov_gain FIND mag(V(u2_out)/V(u2_in_pos)) AT=1k")
         # Wet HPF -3dB corner. In the FULL circuit the absolute hpf_out level is
         # shaped by the tank transfer (a resonant "drip" peak near 2kHz) on top of

@@ -829,6 +829,80 @@ def test_d3_reversed_orientation_is_detectable():
         "a reversed D3 must NOT satisfy the orientation guard"
 
 
+def test_validate_catches_reversed_d3(tmp_path):
+    """Red-before-green for the validate.py D3 orientation guard: reverse D3 in a
+    COPY of the netlist and confirm validate.py's check_d3_flyback() fails. A
+    reversed D3 shorts Q1's collector to the rail and gives no flyback protection,
+    so it MUST be caught statically -- not only by the test-suite presence check."""
+    tree = tmp_path / "reverb-tank"
+    shutil.copytree(HERE, tree, ignore=shutil.ignore_patterns("__pycache__"))
+    bad_net = tree / "stages" / "stage_06_full.net"
+
+    text = bad_net.read_text()
+    assert "D3 q1_c +15V 1N4148" in text
+    text = text.replace("D3 q1_c +15V 1N4148", "D3 +15V q1_c 1N4148", 1)
+    bad_net.write_text(text)
+
+    result = subprocess.run([PY, str(tree / "validate.py")],
+                            capture_output=True, text=True)
+    assert result.returncode != 0, \
+        "validate.py did NOT catch the reversed D3:\n%s" % result.stdout
+    assert "D3 flyback" in result.stdout, \
+        "validate.py failed but not on the D3 orientation:\n%s" % result.stdout
+
+
+def test_validate_catches_wrong_decoupling_value(tmp_path):
+    """Red-before-green for the decoupling-VALUE guard: change a decoupling cap to
+    a wrong value (100p) in a COPY of the netlist and confirm validate.py flags it.
+    A present-but-wrong-valued bypass passes a presence check but bypasses nothing
+    at audio HF -- the value must be gated too."""
+    tree = tmp_path / "reverb-tank"
+    shutil.copytree(HERE, tree, ignore=shutil.ignore_patterns("__pycache__"))
+    bad_net = tree / "stages" / "stage_06_full.net"
+
+    text = bad_net.read_text()
+    assert "C7 +15V 0 100n" in text
+    text = text.replace("C7 +15V 0 100n", "C7 +15V 0 100p", 1)
+    bad_net.write_text(text)
+
+    result = subprocess.run([PY, str(tree / "validate.py")],
+                            capture_output=True, text=True)
+    assert result.returncode != 0, \
+        "validate.py did NOT catch the wrong decoupling value:\n%s" % result.stdout
+    assert "decoupling" in result.stdout, \
+        "validate.py failed but not on the decoupling value:\n%s" % result.stdout
+
+
+def test_op_netlist_has_bias_guard_meas():
+    """The committed op netlist carries the Q1 active-region + U2-input-bias
+    measurements whose pass windows live in circuit_params. Without the .meas the
+    window in test-assertions.md gates a number that is never computed."""
+    names = _meas_names(open(NET6).read())
+    for needed in ("q1_vc", "q1_vce", "q1_vcb", "u2_inpos_bias"):
+        assert needed in names, \
+            "stage_06_full.net (op) missing .meas %s (got %s)" \
+            % (needed, sorted(names))
+
+
+def test_ac_netlist_has_u1_buffer_gain_meas():
+    """The committed ac netlist carries the U1 unity-buffer gain measurement."""
+    names = _meas_names(open(os.path.join(STAGES, "stage_06_full_ac.net")).read())
+    assert "u1_buf_gain" in names, \
+        "stage_06_full_ac.net missing .meas u1_buf_gain (got %s)" % sorted(names)
+
+
+def test_q1_active_region_constants_are_consistent(P):
+    """The Q1 active-region windows are numeric and self-consistent: the sim
+    collector voltage sits inside Q1_VC_WINDOW, and the Vce/Vcb floors keep Q1
+    out of saturation (Vce floor > Vce(sat) ~0.2V, Vcb floor >= 0)."""
+    lo, hi = P.Q1_VC_WINDOW
+    assert lo < hi, "Q1_VC_WINDOW not lo<hi: %r" % (P.Q1_VC_WINDOW,)
+    assert lo <= P.Q1_VC_SIM <= hi, \
+        "Q1_VC_SIM %g outside Q1_VC_WINDOW %r" % (P.Q1_VC_SIM, P.Q1_VC_WINDOW)
+    assert P.Q1_VCE_MIN > 0.2, "Vce floor must clear Vce(sat) ~0.2V"
+    assert P.Q1_VCB_MIN >= 0.0, "Vcb floor must keep the CBJ reverse-biased"
+
+
 # ===========================================================================
 # Group 7: Stage 7 pot-position sweep (GitHub issue #43)
 #

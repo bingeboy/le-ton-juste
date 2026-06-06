@@ -82,11 +82,16 @@ C4       = "100n"  # wet HPF cap (with R6)
 C_BRIGHT = "47p"   # bright cap across Mix pot
 C_DRIVE_OUT = "1u"  # Stage-2-only collector->tank DC block (removed once REB3S transformer is added in Stage 3; not a final BOM part)
 
-# Op-amp supply decoupling
-C5 = "100n"   # U1/U2 +15V
-C6 = "100n"   # U1/U2 -15V
-C7 = "100n"   # U3 +15V
-C8 = "100n"   # U3 -15V
+# Op-amp supply decoupling. All four are the same HF bypass value; DECOUPLE_VAL
+# names that shared value so validate.py can check the cap VALUES (not just that
+# the caps are present on the right rails). A decoupling cap that is present but
+# wrong-valued (e.g. 100p instead of 100n) bypasses nothing at audio HF and
+# invites instability that a presence-only check never sees.
+DECOUPLE_VAL = "100n"
+C5 = DECOUPLE_VAL   # U1/U2 +15V
+C6 = DECOUPLE_VAL   # U1/U2 -15V
+C7 = DECOUPLE_VAL   # U3 +15V
+C8 = DECOUPLE_VAL   # U3 -15V
 
 # Power-supply caps
 C11 = "2200u"  # +ve unregulated bulk filter (50V part)
@@ -171,6 +176,17 @@ Q1_IC_SIM        = 16e-3          # verified sim Ic, amps
 Q1_IC_FIRSTORDER = 18e-3          # first-order estimate
 Q1_IC_WINDOW     = (10e-3, 26e-3)  # pass band, amps
 Q1_IC_ERR_MAX    = 0.10           # max |q1_ic_calc - q1_ic|/q1_ic (10% cross-check tol)
+# Q1 must stay in the FORWARD-ACTIVE region (not saturated): for an NPN the
+# collector must sit ABOVE the base by at least a margin. Vce = V(q1_c) - V(q1_e)
+# must stay well above Vce(sat) (~0.2V), and Vcb = V(q1_c) - V(q1_base) must be
+# >= 0 (collector at/above base). If Q1 saturates the transformer drive distorts
+# badly (flat-topped collector swing). q1_vc is read at the same 190-200ms tail.
+Q1_VC_SIM        = 14.6            # verified sim V(q1_c) (collector near +15V rail)
+Q1_VC_WINDOW     = (3.0, 15.2)    # pass band, volts: comfortably above Vce(sat)+Ve
+                                  #   (~1.3V) yet not above the +15V rail (+headroom)
+Q1_VCE_MIN       = 1.0            # min Vce = V(q1_c)-V(q1_e); >> Vce(sat) 0.2V = active
+Q1_VCB_MIN       = 0.0            # min Vcb = V(q1_c)-V(q1_base); >=0 keeps CBJ reverse-
+                                  #   biased (the saturation guard)
 
 # Op-amp output DC offsets (all share the same window)
 OFFSET_WINDOW    = (-10e-3, 10e-3)  # +/-10 mV
@@ -178,14 +194,36 @@ OFF_U1_SIM       = 0.0            # ~0 V (+0.8 fV)
 OFF_U2_SIM       = 0.47e-3        # +0.47 mV (settles from ~72mV @20ms)
 OFF_U3_SIM       = -0.35e-6       # -0.35 uV
 
+# U2 non-inverting input DC bias. The recovery + input (u2_in_pos) is held to 0V
+# by Rbias (100k to GND); C3 (470n) blocks any tank/rail DC from leaking in. If
+# Rbias opened or a rail leaked through, this node would float to a DC offset that
+# the 214x stage multiplies into U2 clipping. Same +/-10 mV window as the op-amp
+# outputs (measured AVG over the 190-200ms tail in the op netlist).
+U2_INPOS_BIAS_WINDOW = (-10e-3, 10e-3)  # +/-10 mV DC at u2_in_pos
+U2_INPOS_BIAS_SIM    = 0.0              # ~0 V (Rbias holds it; C3 blocks DC)
+
 # Rails
 RAIL_POS_WINDOW  = (14.85, 15.15)   # volts
 RAIL_NEG_WINDOW  = (-15.15, -14.85)  # volts
 RIPPLE_MAX_PP    = 10e-3           # < 10 mVpp on each rail
 
+# Unregulated-bus headroom. The 78xx/79xx need their input >= Vout + ~2V dropout
+# to stay IN regulation. The bulk caps hold pos_rect / neg_rect near the rectified
+# peak (~19V); if the bus sagged below ~17V the regulator would drop out and the
+# rail would follow the ripple. The PSU netlists measure unreg_pos/unreg_neg but
+# nothing gated them -> a silent dropout. |V(bus)| must clear this floor.
+UNREG_HEADROOM_MIN = 17.0          # V; |unreg bus| floor = Vout(15) + dropout(2)
+
 # ============================================================================
 # KEY AC PARAMETERS (verified by stage_06_full sim)
 # ============================================================================
+# U1 input buffer is a unity-gain follower: V(u1_buf) must track V(vin) (~1.0x).
+# Measured in the ac netlist as mag(V(u1_buf)/V(vin)) AT=1k. R2 (100Ω) into the
+# Dwell pot / Rdry load drops a hair, so the window allows a small loss. A dead or
+# wrongly-wired U1 (e.g. gain stage, or out-of-loop) would land far outside this.
+U1_BUF_GAIN_SIM    = 1.0           # V/V @1kHz (unity follower through R2)
+U1_BUF_GAIN_WINDOW = (0.90, 1.05)  # V/V pass band for the U1 buffer
+
 RECOV_GAIN_SIM     = 213.6         # V/V @1kHz (= 1 + RF/RI nominal 214)
 RECOV_GAIN_DB_SIM  = 46.59         # dB
 RECOV_GAIN_WINDOW  = (200.0, 228.0)  # V/V pass band

@@ -509,13 +509,46 @@ def check_decoupling_caps():
     ):
         checks += 1
         card = cards.get(name)
-        if card is None or len(card) < 3:
+        if card is None or len(card) < 4:
             fail("decoupling: %s card missing/malformed (supply bypass absent)"
                  % name)
             continue
         nodes = set(card[1:3])
         if nodes != expect:
             fail("decoupling: %s must bridge %s, got %s" % (name, expect, nodes))
+        # VALUE check: a present-but-wrong-valued bypass (e.g. 100p) decouples
+        # nothing at audio HF. Confirm the cap value equals DECOUPLE_VAL (100n).
+        checks += 1
+        want = _spice_to_float(P.DECOUPLE_VAL)
+        got = _spice_to_float(card[3])
+        if got is None or want is None or abs(got - want) > abs(want) * 1e-9:
+            fail("decoupling: %s value '%s' != DECOUPLE_VAL '%s' (a wrong-valued "
+                 "bypass passes a presence check but bypasses nothing at HF)"
+                 % (name, card[3], P.DECOUPLE_VAL))
+
+
+# ---------------------------------------------------------------------------
+# 1f-bis. D3 FLYBACK CLAMP orientation (P1.6): D3 clamps Q1's collector to the
+#     +15V rail. SPICE D-card form is 'D3 <anode> <cathode> <model>', so D3 MUST
+#     read 'D3 q1_c +15V ...': anode at the collector, cathode at +15V. A reversed
+#     D3 (anode/cathode swapped) is forward-biased by the rail and shorts the
+#     collector, AND offers no flyback protection -- the transformer kick then
+#     destroys Q1. Presence alone (test_sync) is not enough; the orientation is
+#     the load-bearing property, so gate it statically here too.
+# ---------------------------------------------------------------------------
+def check_d3_flyback():
+    global checks
+    cards = _load_cards(NET)
+    checks += 1
+    d3 = cards.get("D3")
+    if d3 is None or len(d3) < 4:
+        fail("D3 flyback: card missing/malformed in stage_06_full.net")
+        return
+    anode, cathode = d3[1], d3[2]
+    if anode != "q1_c" or cathode != "+15V":
+        fail("D3 flyback: must be 'D3 q1_c +15V <model>' (anode=collector, "
+             "cathode=+15V rail); got anode=%s cathode=%s -- a reversed D3 shorts "
+             "the collector and gives no flyback protection" % (anode, cathode))
 
 
 # ---------------------------------------------------------------------------
@@ -597,7 +630,7 @@ def check_variant_netlists():
     for path, expected in (
         (NET5_TRAN, {"ripple_pos", "ripple_neg"}),
         (NET6_TRAN, {"vout_pk", "osc_ratio"}),
-        (NET6_AC, {"recov_gain", "hpf_m3db", "recov_gain_db"}),
+        (NET6_AC, {"recov_gain", "hpf_m3db", "recov_gain_db", "u1_buf_gain"}),
         # Stage 7 pot-position sweep (GitHub issue #43): each pot-extreme variant
         # carries the .meas assertions that gate its specific failure mode and
         # that exist in NO other netlist.
@@ -637,6 +670,50 @@ def check_q1_ic_crosscheck():
         if needed not in names:
             fail("%s: missing .meas %s (Ic cross-check has no comparison target)"
                  % (os.path.basename(NET), needed))
+
+
+# ---------------------------------------------------------------------------
+# 1i-bis. OP-NETLIST BIAS GUARDS (M3 + new): the op netlist must carry the
+#     active-region + node-bias measurements whose pass windows live in
+#     circuit_params. Without the .meas present the window in test-assertions.md
+#     gates a number that is never computed (a silent test).
+#       q1_vc / q1_vce / q1_vcb : Q1 forward-active (not saturated)
+#       u2_inpos_bias           : U2 + input held at ~0V (no rail/DC leak)
+# ---------------------------------------------------------------------------
+def check_op_bias_guards():
+    global checks
+    names = _netlist_meas_names(NET)
+    checks += 1
+    if names is None:
+        fail("op bias guards: %s missing" % os.path.basename(NET))
+        return
+    for needed in ("q1_vc", "q1_vce", "q1_vcb", "u2_inpos_bias"):
+        checks += 1
+        if needed not in names:
+            fail("%s: missing .meas %s (bias-guard window is silent without it)"
+                 % (os.path.basename(NET), needed))
+
+
+# ---------------------------------------------------------------------------
+# 1k. PSU UNREG-BUS HEADROOM (new): the regulator needs its input >= Vout+~2V to
+#     stay in regulation. The PSU netlists measure unreg_pos/unreg_neg but nothing
+#     gated them. Confirm both PSU netlists still carry those .meas so the
+#     UNREG_HEADROOM_MIN window in test-assertions.md is not a silent number.
+# ---------------------------------------------------------------------------
+def check_psu_unreg_meas():
+    global checks
+    # op variant of stage 5 (stage_05_psu.net) carries unreg_pos / unreg_neg.
+    NET5_OP = os.path.join(STAGES, "stage_05_psu.net")
+    names = _netlist_meas_names(NET5_OP)
+    checks += 1
+    if names is None:
+        fail("psu unreg: %s missing" % os.path.basename(NET5_OP))
+        return
+    for needed in ("unreg_pos", "unreg_neg"):
+        checks += 1
+        if needed not in names:
+            fail("%s: missing .meas %s (unreg-bus headroom window is silent "
+                 "without it)" % (os.path.basename(NET5_OP), needed))
 
 
 # ---------------------------------------------------------------------------
@@ -813,6 +890,19 @@ def check_assertions_md():
     expect("q1_ve window", "%s – %s V" % (_g1(P.Q1_VE_WINDOW[0]), _g(P.Q1_VE_WINDOW[1])))
     # q1_ic: 10 - 26 mA
     expect("q1_ic window", "%g – %g mA" % (P.Q1_IC_WINDOW[0] * 1e3, P.Q1_IC_WINDOW[1] * 1e3))
+    # q1_ic_err: < 10% (M3 - the cross-check bound that was a silent measurement)
+    expect("q1_ic_err max", "< %g%%" % (P.Q1_IC_ERR_MAX * 100))
+    # Q1 forward-active (not saturated): Vce > min, Vcb >= 0, Vc window
+    expect("q1_vce min", "> %g V" % P.Q1_VCE_MIN)
+    expect("q1_vcb min", "≥ %g V" % P.Q1_VCB_MIN)
+    expect("q1_vc window", "%g – %g V" % (P.Q1_VC_WINDOW[0], P.Q1_VC_WINDOW[1]))
+    # u2_in_pos DC bias: |val| <= 10 mV
+    expect("u2_inpos_bias window", "%g mV" % (P.U2_INPOS_BIAS_WINDOW[1] * 1e3))
+    # U1 buffer unity gain: 0.9 - 1.05
+    expect("u1_buf_gain window",
+           "%g – %g" % (P.U1_BUF_GAIN_WINDOW[0], P.U1_BUF_GAIN_WINDOW[1]))
+    # Unregulated-bus headroom: |bus| > 17 V
+    expect("unreg headroom min", "> %g V" % P.UNREG_HEADROOM_MIN)
     # recov_gain: 200 - 228
     expect("recov_gain window", "%g – %g" % (P.RECOV_GAIN_WINDOW[0], P.RECOV_GAIN_WINDOW[1]))
     # hpf: 250 - 320 Hz
@@ -858,9 +948,12 @@ def main():
     check_hpf_wet_only()
     check_opamp_feedback()
     check_decoupling_caps()
+    check_d3_flyback()
     check_derived_transfer()
     check_variant_netlists()
     check_q1_ic_crosscheck()
+    check_op_bias_guards()
+    check_psu_unreg_meas()
     check_chain_gain_target()
     check_params_md()
     check_assertions_md()
