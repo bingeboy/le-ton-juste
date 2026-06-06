@@ -380,9 +380,11 @@ def build(active_analysis="op"):
     b.opa("U1", 560, 200, "u1_pos", "u1_out", "+15V", "-15V", "u1_out")
     b.res("R2", P.R2, 640, 144, "u1_out", "u1_buf")
 
-    # Dwell pot divider.
-    b.res("RV1a", rv1a, 760, 60, "u1_buf", "rv1_wiper")
-    b.res("RV1b", rv1b, 760, 180, "rv1_wiper", "0")
+    # Dwell pot divider. RV1a is the wiper-to-GND half (a = position×total),
+    # RV1b is the signal-to-wiper half (b = (1-position)×total). At CW (max
+    # Dwell) a≈total, b≈0 -> wiper ≈ u1_buf = MAXIMUM wet drive.
+    b.res("RV1a", rv1a, 760, 60, "rv1_wiper", "0")
+    b.res("RV1b", rv1b, 760, 180, "u1_buf", "rv1_wiper")
 
     # BD139 discrete driver.
     b.cap("C_drive", P.C_DRIVE, 880, 144, "rv1_wiper", "q1_drv")
@@ -533,18 +535,18 @@ def build(active_analysis="op"):
         # bypassed Q1 emitter, q1_e) and the post-clip DC-settle check.
         b.directive(".tran 0 200m 0 5u")
         if active_analysis == "dwell_min":
-            # Dwell at 0% -> RV1a≈0, the wiper sits at u1_buf (full drive into the
-            # BD139), but Dwell controls WET DRIVE; the DRY path (u1_buf->Rdry->
+            # Dwell at 0% (CCW) -> RV1a≈0 (wiper shunted to GND) = MINIMUM wet
+            # drive. The dry path is independent. The DRY path (u1_buf->Rdry->
             # mix_dry) is independent of Dwell and must still pass. At Mix noon the
             # dry signal reaches v_out at ~0.1V pk.
             b.directive(".meas TRAN dwell_min_vout MAX abs(V(v_out)) FROM=190m TO=200m")
             b.directive(".meas TRAN dwell_min_dry  MAX abs(V(mix_dry)) FROM=190m TO=200m")
         elif active_analysis == "dwell_max":
-            # Dwell at 100% -> RV1b≈0, the wiper is grounded, so the AC drive to
-            # the BD139 base is shunted to GND -> MINIMUM wet drive. Check U2's
-            # output does not hard-clip and Q1's bias holds.
+            # Dwell at 100% (CW) -> RV1b≈0 (wiper pulled to u1_buf) = MAXIMUM wet
+            # drive. Check U2 output does not hard-clip. dwell_max_wiper_pk gates
+            # the AC level at the wiper, which IS what the Dwell position controls.
             b.directive(".meas TRAN dwell_max_vout_pk MAX abs(V(u2_out)) FROM=50m TO=200m")
-            b.directive(".meas TRAN dwell_max_q1_ve   AVG V(q1_e)        FROM=190m TO=200m")
+            b.directive(".meas TRAN dwell_max_wiper_pk MAX abs(V(rv1_wiper)) FROM=190m TO=200m")
         elif active_analysis == "mix_ccw":
             # Mix at 0% -> RV2a≈0, the wiper (mix_node) ties to mix_dry: 100% DRY.
             # v_out should carry the dry signal; the wet contribution at the wiper

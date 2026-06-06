@@ -224,6 +224,31 @@ def test_operating_point_targets_are_floats(P):
         assert lo < hi, "%s window is not lo<hi: %r" % (name, win)
 
 
+def test_stage7_sweep_constants_are_numeric(P):
+    """Stage 7 pot-sweep pass windows (H1/H3) are numeric so validate.py can
+    enforce them. DWELL_MAX_Q1_VE_WINDOW was replaced by DWELL_MAX_WIPER_PK_WINDOW
+    (H2: q1_e is Dwell-independent); the mix-sweep bounds got real numbers (H3)."""
+    # The replaced constant must be gone.
+    assert not hasattr(P, "DWELL_MAX_Q1_VE_WINDOW"), \
+        "DWELL_MAX_Q1_VE_WINDOW should be replaced by DWELL_MAX_WIPER_PK_WINDOW"
+
+    # 2-tuple windows: numeric, lo < hi.
+    for name in ["DWELL_MIN_DRY_WINDOW", "DWELL_MAX_WIPER_PK_WINDOW",
+                 "MIX_CCW_VOUT_WINDOW", "MIX_CCW_WET_BLEED_WINDOW"]:
+        win = getattr(P, name)
+        assert isinstance(win, tuple) and len(win) == 2, "%s should be a 2-tuple" % name
+        lo, hi = win
+        assert isinstance(lo, (int, float)) and isinstance(hi, (int, float)), \
+            "%s bounds should be numeric" % name
+        assert lo < hi, "%s window is not lo<hi: %r" % (name, win)
+
+    # Single-bound scalars: numeric.
+    for name in ["DWELL_MAX_U2_PK_MAX", "MIX_CW_VOUT_PK_MIN",
+                 "MIX_CW_DRY_ATTN_MAX", "WORST_CASE_SETTLE_MAX"]:
+        val = getattr(P, name)
+        assert isinstance(val, (int, float)), "%s should be numeric, got %r" % (name, val)
+
+
 # ===========================================================================
 # Group 2: generators produce valid netlists
 # ===========================================================================
@@ -860,6 +885,21 @@ def test_mix_ccw_has_wet_bleed_meas():
     for needed in ("mix_ccw_vout_pk", "mix_ccw_wet_bleed"):
         assert needed in names, \
             "mix_ccw netlist missing .meas %s (got %s)" % (needed, sorted(names))
+
+
+def test_dwell_max_has_wiper_pk_meas():
+    """dwell_max (Dwell full-CW = max wet drive) carries the U2-clip guard and
+    the wiper-level meas (dwell_max_wiper_pk). The wiper level is what the Dwell
+    position actually controls; the old dwell_max_q1_ve probed a Dwell-independent
+    DC bias (C_drive blocks DC) and so could never catch a Dwell failure."""
+    text = open(os.path.join(STAGES, "stage_06_full_dwell_max.net")).read()
+    names = _meas_names(text)
+    for needed in ("dwell_max_vout_pk", "dwell_max_wiper_pk"):
+        assert needed in names, \
+            "dwell_max netlist missing .meas %s (got %s)" % (needed, sorted(names))
+    # The replaced assertion must be gone (it tested a Dwell-independent quantity).
+    assert "dwell_max_q1_ve" not in names, \
+        "dwell_max still carries the Dwell-independent dwell_max_q1_ve meas"
 
 
 def test_dwell_max_mix_cw_has_worst_case_meas():

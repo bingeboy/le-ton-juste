@@ -248,15 +248,15 @@ tail (`190 m–200 m`); `AVG` is reserved for the **DC-bias** reads (the bypasse
 Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 
 ```spice
-; dwell_min — Dwell 0% (RV1a≈0, RV1b=10k): WET drive minimal, but the DRY path
-;   (u1_buf->Rdry->mix_dry) is independent of Dwell and must still pass.
+; dwell_min — Dwell 0% (CCW): RV1a≈0 shunts the wiper to GND = MINIMUM wet drive.
+;   The DRY path (u1_buf->Rdry->mix_dry) is independent of Dwell and must still pass.
 .meas TRAN dwell_min_vout MAX abs(V(v_out))  FROM=190m TO=200m
 .meas TRAN dwell_min_dry  MAX abs(V(mix_dry)) FROM=190m TO=200m
 
-; dwell_max — Dwell 100% (RV1a=10k, RV1b≈0): U2 output must not hard-clip and
-;   Q1 bias must hold.
+; dwell_max — Dwell 100% (CW): RV1b≈0 pulls the wiper to u1_buf = MAXIMUM wet
+;   drive. U2 output must not hard-clip and the wiper must carry the drive signal.
 .meas TRAN dwell_max_vout_pk MAX abs(V(u2_out)) FROM=50m TO=200m
-.meas TRAN dwell_max_q1_ve   AVG V(q1_e)        FROM=190m TO=200m
+.meas TRAN dwell_max_wiper_pk MAX abs(V(rv1_wiper)) FROM=190m TO=200m
 
 ; mix_ccw — Mix 0% (RV2a≈0, RV2b=100k = full dry): wiper ties to mix_dry; the
 ;   wet contribution at the wiper must be negligible (wet_bleed ≈ 1, i.e. the
@@ -284,11 +284,11 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 | `dwell_min` | 0 % / 50 % / 50 % | `dwell_min_dry` | 0.05 – 0.15 V (≈0.1 V pk) | Dry path dead at min Dwell — Dwell wrongly gates dry |
 | `dwell_min` | 0 % / 50 % / 50 % | `dwell_min_vout` | output present (dry passes) | Whole output dead at min Dwell |
 | `dwell_max` | 100 % / 50 % / 50 % | `dwell_max_vout_pk` | < 13.5 V (no hard clip at U2) | U2 railing at max Dwell drive |
-| `dwell_max` | 100 % / 50 % / 50 % | `dwell_max_q1_ve` | 0.9 – 1.4 V (Q1 bias holds) | Q1 bias collapses under max Dwell |
+| `dwell_max` | 100 % / 50 % / 50 % | `dwell_max_wiper_pk` | 0.03 – 0.15 V (wiper carries the drive) | Wet drive dead at max Dwell — Dwell pot inverted or wiper open |
 | `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_vout_pk` | 0.05 – 0.15 V (dry present) | Dry signal absent at full-CCW |
-| `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_wet_bleed` | wiper tracks dry node (≈1) | Wet bleeds through at full-CCW |
-| `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_vout_pk` | wet signal present | Output dead at full-CW |
-| `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_dry_attn` | dry node attenuated vs wiper | Dry bleeds through at full-CW |
+| `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_wet_bleed` | 0.9 – 1.05 (wiper tracks dry node ≈ 1) | Wet bleeds through at full-CCW |
+| `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_vout_pk` | > 0.01 V (wet signal present) | Output dead at full-CW |
+| `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_dry_attn` | < 0.5 (dry node attenuated vs wiper) | Dry bleeds through at full-CW |
 | `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_pk` | ≤ 13.5 V (U2 within supply) | U2 rails on the worst-case path |
 | `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_settle` | \|DC\| < 0.5 V (settles after clip) | U2 latched off-zero after a clip |
 

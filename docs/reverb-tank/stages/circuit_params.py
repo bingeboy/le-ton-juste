@@ -249,7 +249,14 @@ POT_MIN_OHMS = "0.001"
 # before mix_node, so the dry contribution observed at v_out lands near ~0.1V pk.
 # Window is generous (0.05–0.15) to pass a correct circuit and catch a dead path.
 DWELL_MIN_DRY_WINDOW   = (0.05, 0.15)   # ~0.1V pk dry still passes at min Dwell
-DWELL_MAX_Q1_VE_WINDOW = (0.9, 1.4)     # Q1 bias holds even at max Dwell (>= Q1_VE_WINDOW lo)
+DWELL_MAX_WIPER_PK_WINDOW = (0.03, 0.15)  # at max drive the wiper sees most of u1_buf
+                                        # (~100mVpk) through near-zero series R; C_drive
+                                        # loading brings it to ~40-100mVpk depending on
+                                        # drive; window catches a dead path (< 0.03) or
+                                        # weird amplification (> 0.15)
 DWELL_MAX_U2_PK_MAX    = 13.5           # U2 output must not rail beyond the +/-15V supply
 MIX_CCW_VOUT_WINDOW    = (0.05, 0.15)   # dry signal present at full-CCW (wet muted)
+MIX_CCW_WET_BLEED_WINDOW = (0.90, 1.05)  # mix_node/dry_lvl ratio; at full-CCW wiper ≈ mix_dry so ratio ≈ 1
+MIX_CW_VOUT_PK_MIN  = 0.01              # V pk; wet path must deliver some signal at full-CW
+MIX_CW_DRY_ATTN_MAX = 0.50             # dry_lvl/mix_node ratio; dry should be < 50% of wiper at full-CW
 WORST_CASE_SETTLE_MAX  = 0.5            # DC at U2 out settles back to ~0 after any clip
