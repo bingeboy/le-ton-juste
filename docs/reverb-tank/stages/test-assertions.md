@@ -1,5 +1,11 @@
 # Ghost Spring Reverb — SPICE Test Assertions
 
+> **Authority scope (single source of truth).** This file is **THE authority for all numerical pass criteria** (the measurement windows every bench and SPICE test must land in). If a pass band quoted anywhere else disagrees with the value here, **this file wins.** For other classes of value, go to the authoritative source:
+> - **Component values** (R/C/L, ratios): [`stage_06_full.net`](./stage_06_full.net) — the netlist is ground truth.
+> - **Parts** (Mouser PNs, quantities, packages): [`mouser-bom.csv`](../mouser-bom.csv).
+> - **Design rationale** (why a value was chosen): [`parts-spec.md`](../parts-spec.md).
+> - **Bench procedures** (what the builder does): [`builder-guide.md`](./builder-guide.md).
+
 The `.meas` directives below are the **PASS conditions** for each build stage in [`build-plan.md`](./build-plan.md). They are the SPICE equivalent of a unit-test suite.
 
 ## What SPICE TDD means in practice
@@ -18,10 +24,13 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 .meas OP off_u2 FIND V(u2_out)
 .meas OP off_u3 FIND V(v_out)
 
-; Stage 1 — AC: recovery stage gain = 1 + Rf/Ri = 214x (+/-3%)
+; Stage 1 — AC: recovery stage gain = 1 + Rf/Ri = 1 + 100k/470 = 213.8x nominal
+;   (component values per stage_06_full.net; pass band below covers +/-3% + tolerance)
 .meas AC recov_gain FIND V(u2_out)/V(u2_in_pos) AT=1k
 
-; Stage 1 — AC: wet HPF -3dB corner (R6 5.6k + C4 100n ~= 284Hz)
+; Stage 1 — AC: wet HPF -3dB corner. DESIGN corner = 1/(2*pi*R6*C4)
+;   = 1/(2*pi*5.6k*100n) = 284Hz. MEASURED in stage_06_full sim = 312Hz
+;   (the two differ because of loading; both fall inside the 250-320Hz pass band).
 .meas AC hpf_ref  FIND V(hpf_out) AT=5k
 .meas AC hpf_m3db WHEN V(hpf_out)=hpf_ref*0.7079 RISE=1
 
@@ -98,7 +107,10 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 .meas OP clamp_n_i FIND I(Dclamp_n)
 
 ; Stage 4 — TRAN: with 20Vpp overload, U1+ node is clamped
-;   (drive V1 = SINE(0 10 1k) for this run)
+;   (drive V1 = SINE(0 10 1k) for this run = 20Vpp).
+;   The input MUST exceed the ~15.7V clamp threshold for this assertion to mean
+;   anything — a sub-threshold drive passes trivially without testing the clamp.
+;   On the bench, see builder-guide Stage 5 PRE-CHECK (generator must hit >=19Vpp).
 .meas TRAN u1pos_hi MAX V(u1_pos)
 .meas TRAN u1pos_lo MIN V(u1_pos)
 ```

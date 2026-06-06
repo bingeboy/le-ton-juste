@@ -1,5 +1,7 @@
 # Ghost Spring Reverb — Builder Verification Guide
 
+> **Authority scope (single source of truth).** This file is **THE authority for bench procedures** — what you do on the bench, in what order, with the unit in front of you. It is **not** authoritative for the numbers you check against. The pass/fail windows quoted in the tables below are **copied from [`test-assertions.md`](./test-assertions.md) — that file wins if any window here disagrees with it.** For the other classes of value: component values → [`stage_06_full.net`](./stage_06_full.net); parts/PNs/quantities → [`mouser-bom.csv`](../mouser-bom.csv); design rationale → [`parts-spec.md`](../parts-spec.md).
+
 This guide is for the person assembling the physical unit on a bench. Each stage of assembly has a small set of measurements to make **before** moving to the next. These measurements correspond directly to the SPICE simulations in [`test-assertions.md`](./test-assertions.md) that verified the design: if the simulation passed and your bench measurement lands in the same window, that stage is correct and you can move on. If a bench number is out of range, the "Fail action" column tells you the most likely cause — fix it before adding more parts, exactly the way you'd keep a test suite green before writing the next feature.
 
 The assembly order below (visual → power → driver → transformer → input protection → full chain) is the order it's easiest to build and test on a bench. It is **not** the same numbering as the SPICE build stages, which replace one idealized block at a time. The cross-reference is noted under each section so you can find the matching simulation. Component values and the reason behind each are in [`parts-spec.md`](../parts-spec.md) — read the rationale before substituting anything.
@@ -59,6 +61,8 @@ Connect the ±15V bench supply. No input signal. Corresponds to the SPICE **Stag
 | U2 output pin | < ±10mV | DMM DC | Check Ri (470Ω) / Rf (100kΩ); check C3 not leaking DC |
 | U3 output pin | < ±10mV | DMM DC | Check mix-stage wiring (Rdry, RV2, C_bright) |
 
+> **Let it settle before you read DC offset.** The recovery path sees residual tank/coupling DC through C3/Rbias into a 214× stage, and the tank's high-inductance output (modelled as 2H) bleeds its power-on transient slowly — in simulation `off_u2` reads ~72mV at 20ms but settles to <0.5mV by ~200ms. On the bench, **wait at least 2–3 seconds after the rails come up, then read.** A DMM auto-averages, so this is usually moot, but if you probe U2's output *immediately* on a scope you may see a decaying offset that is settling, not a fault. Read U2/U3 last, after a few seconds of settle. A reading that is high at switch-on but walks down to <10mV within a couple of seconds is normal, not a fail.
+
 > If any op-amp output sits at or near a rail (±~13V) instead of near 0V, that stage's input has no DC reference or the op-amp is in backwards. On a FET-input part with no DC return the output slams to a rail — for U1 that almost always means R1 is missing or wired in series.
 
 ---
@@ -97,8 +101,14 @@ Corresponds to SPICE **Stage 3** `.ac` (`tank_pk_f` 1–5kHz, `tank_drive_db` > 
 
 | Test | Method | Expected | Fail action |
 |---|---|---|---|
-| Resonant peak frequency | Sweep generator 500Hz–10kHz, probe tank input (L2 secondary, at the 8Ω RCA) | Peak amplitude between 1–5kHz (target ~2–3kHz) | No peak: check L1/L2 coupling and K1 (transformer orientation); confirm primary→collector, secondary→tank |
+| Resonant peak frequency | Sweep generator 500Hz–10kHz, probe tank input (L2 secondary, at the 8Ω RCA). **Do the PRE-CHECK below first.** | A **distinct peak** (≥3dB above the level at 500Hz and at 10kHz) between 1–5kHz (target ~2–3kHz) | No peak / flat response: check L1/L2 coupling and K1 (transformer orientation); confirm primary→collector, secondary→tank |
 | Tank input impedance | DMM resistance, tank **disconnected** | 8Ω ±20% at the tank input RCA (8Ω side) | Wrong value: tank is in backwards — verify input (8Ω) vs output (2550Ω) side |
+
+> **⚠ PRE-CHECK — distinguish "no resonance" from "I couldn't see it."** A weak, misplaced, or absent peak can look the same as a flat trace if you don't have a reference. Before declaring pass/fail:
+> 1. **Record two reference amplitudes first:** measure the probe-point level at **500Hz** and at **10kHz** (the band edges, where the resonance is *not*). Write them down.
+> 2. Now sweep slowly through 1–5kHz watching for the maximum. The peak is real only if its amplitude is **≥3dB above *both* reference points** and lands in the 1–5kHz window.
+> 3. **If the trace is flat (no point in 1–5kHz beats the band edges by ≥3dB), that is a FAIL, not a pass** — you have no "drip." Do not record this as passing just because "there's signal." A misplaced peak (e.g. below 1kHz or above 5kHz) is also a fail — note the actual peak frequency before troubleshooting.
+> 4. Confirm the generator is actually driving the input: if you see *no* signal at all at the probe point across the whole sweep, the problem is upstream (drive/orientation), not the resonance — check `tank_drive_db` (signal present at tank input) per test-assertions before chasing the peak.
 
 > **Transformer orientation is directional.** The REB3S primary goes to Q1's collector (L1); the 8Ω secondary goes to the tank input (L2). Wire it backwards and you get no reverb at all — the secondary can't drive the high-Z collector node. If you measure ~2550Ω where you expect 8Ω, you have the tank (or the transformer) reversed.
 
@@ -112,7 +122,18 @@ Corresponds to SPICE **Stage 4** (`stage_04_input_protect.asc`): `.op` clamp rev
 |---|---|---|---|
 | Input clamp diodes idle | DMM diode-check across Dclamp+ (and Dclamp−) with power on | Reverse-biased — diode-check reads open/OL in the blocking direction; leakage < 1µA | Reads a forward drop (~0.6V) or conducts at idle: clamp diode is in backwards |
 | TVS1 at idle | DMM DC across input jack tip–sleeve, nothing plugged in | 0V (TVS not conducting) | Any standing voltage: wiring fault at the jack or a shorted TVS |
-| Overload clamp | Apply 20Vpp 1kHz to the input (**careful — this is a deliberate overload**), probe U1(+) | Waveform clamped, U1(+) never exceeds ±16V (design clamps at ~±15.7V) | Exceeds ±16V: check TVS1 (both zeners / correct bidirectional part) and the 1N4148 clamp-pair orientation |
+| Overload clamp | Apply 20Vpp 1kHz to the input (**careful — this is a deliberate overload**), probe U1(+). **Do the PRE-CHECK below first.** | Waveform clamped, U1(+) never exceeds ±16V (design clamps at ~±15.7V) | Exceeds ±16V: check TVS1 (both zeners / correct bidirectional part) and the 1N4148 clamp-pair orientation |
+
+> **⚠ PRE-CHECK — this test silently passes if your generator can't reach 20Vpp.** The clamp only fires above ~15.7V at U1(+). If your generator tops out at 10Vpp (many do), nothing ever clamps, U1(+) stays under 16V, and the test "passes" for the wrong reason — false confidence. The pre-check below is designed to **fail** if your setup can't actually exercise the clamp. Do it *before* connecting anything to the circuit:
+>
+> 1. Set the generator to **20Vpp, 1kHz sine**.
+> 2. Measure the generator output with your DMM or scope — **NOT the circuit input, the generator output terminal directly** (open-circuit or into your scope's high-Z input).
+> 3. Confirm it reads **≥19Vpp** (accounting for DMM AC accuracy; on a DMM in Vrms that is ≥6.7Vrms for a sine).
+> 4. **If it reads less than 19Vpp, your generator cannot run this test as written — STOP. Do not run the overload test, it will pass meaninglessly.** Either:
+>    - (a) use a different generator that can hit 20Vpp, **or**
+>    - (b) scale the test: set the generator to its *maximum* Vpp, confirm that maximum still **exceeds 15.7Vpp** (otherwise the clamp can never engage and the test is impossible on this generator), then re-run. The acceptance criterion is unchanged: U1(+) must still be clamped to **≤16V** as long as the input exceeds the ~15.7V clamp threshold.
+>
+> Only once the pre-check passes (generator verified to deliver enough amplitude to actually trip the clamp) do you connect to the circuit and run the overload test above.
 
 > **Two protectors, two nodes.** TVS1 sits at the *jack* (before C_in) and catches the nanosecond ESD strike — the kind you get hot-plugging a cable while other gear is running. The 1N4148 clamp pair sits at the *U1(+) pin* (after C_in) and hard-limits slow DC overloads that make it through C_in. They are not redundant; they protect different points in the path. In the SPICE model TVS1 is two BZX84C15L zeners back-to-back, which is exactly how a bidirectional SMBJ15CA behaves: clamp = one zener breakdown (15V) plus one forward drop (~0.7V) ≈ ±15.7V. (See parts-spec: TVS1, D_clamp+, D_clamp−, C_in.)
 
@@ -177,7 +198,21 @@ This is the **integration stage**: it adds *no new parts*. Corresponds to SPICE 
 
 > **Bring-up order for the fully assembled unit.** Do the Stage 6 PSU first-mains-power-on ceremony (bulb limiter, rails verified) *with the signal board disconnected*, then reconnect the board and power up. Set the pots per the **Pot positions for every test** table at the top of this guide. Confirm the power LED lights (it's wired from +15V through 10kΩ — ~1.2mA, deliberately dim; a dark LED with good rails just means a reversed LED or wrong resistor, not a supply fault). Then work down the table below. Keep a hand near the switch for the first powered minute and watch/smell for the fault signs listed in the Stage 6 power-on section.
 
-**Verified simulation results** (all pass; three analysis variants, one active at a time — regenerate with `gen_stage6_full.py {op|ac|tran}`):
+### Stage 7a — Sanity gates (do these BEFORE the measurement battery)
+
+These cheap, fast checks catch gross wiring faults *before* you spend time chasing a measurement that is out of range for an obvious reason. **Do them in order. If any fails, stop and fix the signal path before touching the measurement table below — a precise gain number means nothing if the dry path is dead or the mix node is bridged.**
+
+1. **C_in integrity check (do this before plugging anything in).** Unit powered, **no signal source connected to J1.** Measure **DC at the U1(+) pin** (the R1 junction, after C_in). It should read **0V ±10mV** (R1 pulls the node to GND through 1MΩ). A significant standing DC offset here means **C_in is leaking or shorted** — DC from a previous source, or a failed cap, is reaching the input node. A leaky C_in lets upstream DC into U1 and defeats the whole point of the coupling cap. Fix before proceeding.
+
+2. **First-signal sanity gate.** Plug a guitar in (or any audio source) at J1. Set **Mix to 50%, Dwell to 50%.** You should hear **both:** the dry signal passing clearly **and** a spring-reverb tail behind it. **If you hear nothing — or only dry with no tail, or only tail with no dry — DO NOT PROCEED to the measurements.** Troubleshoot the signal path first (this is the test that catches gross wiring faults early — a dead op-amp, an unwired pot, a missing tank connection). A clean dry+wet here means the whole chain is alive end-to-end.
+
+3. **Mix full-CCW dry test.** Rotate **Mix (RV2) fully counter-clockwise.** The reverb tail should **disappear completely** — you should hear **only dry guitar.** Any reverb bleed at full-CCW means **Rwet is mis-wired** (the wet path isn't being attenuated by the pot) **or the mix node has a solder bridge** shorting wet into the wiper. Fix before trusting the Mix control or any wet-path measurement.
+
+4. **Ground-lift switch test.** With the unit powered and a guitar signal passing: **flip the ground-lift switch** on the rear panel. **Confirm the signal still passes** — the switch must only affect the audio-ground-to-chassis bond (swapping the direct tie for the 10Ω + 100nF network), **not the signal path.** **If the signal drops or cuts out when you switch, the switch is wired in the signal path rather than the ground path** — rewire it before final assembly. (It is normal for *hum* to change when you flip it; it is **not** normal for the *signal* to drop.)
+
+> **Generator capability warning (carry-over from Stage 5).** If you reach for a signal generator for any Stage 7 measurement, remember the overload-clamp test (Stage 5) has a mandatory generator-amplitude PRE-CHECK. More generally: before trusting any "pass," confirm your generator can actually deliver the amplitude the test calls for — a generator that silently saturates or clips at its rail makes a test pass for the wrong reason.
+
+**Verified simulation results** (all pass; three analysis variants, one active at a time — regenerate with `gen_stage6_full.py {op|ac|tran}`). The **Measured** column is the recorded SPICE result; the **Pass band** column is reproduced from [`test-assertions.md`](./test-assertions.md) (authoritative):
 
 | Assertion | Variant | Measured | Pass band | Result |
 |---|---|---|---|---|
@@ -197,9 +232,9 @@ This is the **integration stage**: it adds *no new parts*. Corresponds to SPICE 
 
 | Test | Method | Expected | Fail action |
 |---|---|---|---|
-| Recovery gain | Apply −40dBu to input, probe U2 output | ~46.6dB gain (≈213.6×; ~100mV in → ~10V out at U2) | Low: check Ri (470Ω) / Rf (100kΩ) ratio and Rbias (100kΩ, not 470Ω). Very high or oscillating: check feedback wiring and R2/R7 output isolation resistors |
+| Recovery gain | **Measure gain across U2 itself, not the whole chain.** Inject directly at U2's (+) input node (the tank/C3 side of Rbias) — *not* the front-panel input jack, which is attenuated by the Dwell/driver/transformer/tank ahead of it. Apply a small **10mVpp, 1kHz** sine there, probe **U2 output**. Gain = Vout(pp) / Vin(pp). | **≈213.6× (46.6dB)** — accept the test-assertions band **200–228×**. With 10mVpp in you should read **~2.1Vpp** at U2 out. (Keep input small: at 213× even 60mVpp in clips U2 into the rails and the ratio reads *low* — a false fail.) | Low ratio (≈33×): Rbias is 470Ω instead of 100kΩ (loads the tank). Low (≈half): check Ri (470Ω) / Rf (100kΩ) ratio. Very high or oscillating: check feedback wiring and R2/R7 output isolation resistors |
 | HPF corner | Sweep generator, probe wet at U2 output then after C4/R6 (ratio = the HPF transfer) | −3dB at ~312Hz (design 284Hz; accept 250–320Hz) | Wrong corner: check C4 (100nF) and R6 (5.6kΩ exactly — 4.7k → 338Hz, 6.8k → 234Hz) |
-| Output DC offset | DMM DC at J2 output jack | < ±10mV (sim ≈ 0V) | Check U3 output and C3 (no DC leaking from the tank into U2) |
+| Output DC offset | DMM DC at J2 output jack — **wait 2–3s after power-up for the tank transient to settle before reading** (sim settles by ~200ms; see Stage 2 settle note) | < ±10mV (sim ≈ 0V) | Check U3 output and C3 (no DC leaking from the tank into U2). A reading that *decays* to spec within a couple seconds is settling, not a fault |
 | Q1 emitter bias | DMM DC at Q1 emitter / R5 top | ≈1.09V (1.0–1.4V) — unchanged under the real regulated rails | Bias shifted: check R3b/R4 divider and R5 (68Ω); confirm the +15V rail first (Stage 6 above) |
 | Reverb sound check | Guitar / audio source in, monitor the output | Clear spring-reverb tail, dry signal audible and clean | No wet signal: check tank RCA connections and tank/transformer orientation; check polarity (see phase note below) |
 
@@ -209,7 +244,11 @@ If the reverb sounds hollow, thin, or "phasey" with the Mix pot at 50/50, the ta
 
 ### Noise floor check
 
-With the input shorted (no cable plugged in), the output should be quiet down into your monitoring chain's own noise floor.
+**Concrete pass/fail.** Short the input (no cable plugged in — the Switchcraft 112A self-shorts when unplugged, but confirm with a shorting plug if unsure). Set Mix and Tone to taste, Dwell mid. AC-couple a scope (or use an AC-mV meter / audio analyzer) **at the output jack J2**:
+
+- **PASS:** broadband output noise **< 1mVrms (≈3mVpp on the scope)** with **no discrete 60/120Hz line spike standing above the broadband floor.** That is roughly −58dBu — well below the line-level signal and inaudible in the rig.
+- **FAIL:** any visible periodic 60Hz/120Hz component above the broadband grass, or total noise > ~1mVrms.
+- **Establish your floor first (so this can fail honestly):** before trusting the number, probe with the scope/meter input *terminated at the bench but not connected to J2* and note its own reading. If your instrument's own floor is already near 1mVrms you cannot resolve a pass — use a more sensitive input or a quieter range, otherwise a noisy unit can hide under a noisy meter.
 
 - **Audible 60Hz hum** usually means a ground loop. Flip the ground-lift switch on the rear panel (it inserts a 10Ω + 100nF network in place of the direct audio-ground-to-chassis tie, breaking the loop without lifting safety earth). If hum changes with the tank position, also check transformer-to-tank orientation (toroid axis perpendicular to the spring axis) and that the tank output shield is grounded at the U2 end only.
 - **Hiss above your monitoring floor** usually means the C5–C8 decoupling caps (100nF film) are not close enough to the op-amp supply pins — they must be within ~1" of the IC — or a ground path back to the star ground is missing. At U2's 214× recovery gain the circuit is unforgiving about supply decoupling and grounding.

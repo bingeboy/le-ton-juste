@@ -1,5 +1,13 @@
 # Ghost Spring Reverb — Exact Parts Specification
 
+> **Authority scope (single source of truth).** This file is **THE authority for design rationale** — *why* each value or part was chosen. It is **not** the authority for the numbers themselves. When you need an authoritative number, go to its owner:
+> - **Component values** (R/C/L, ratios): [`stage_06_full.net`](./stages/stage_06_full.net) — the netlist is ground truth.
+> - **Pass criteria** (measurement windows): [`test-assertions.md`](./stages/test-assertions.md).
+> - **Parts** (Mouser PNs, quantities, packages): [`mouser-bom.csv`](./mouser-bom.csv).
+> - **Bench procedures**: [`builder-guide.md`](./stages/builder-guide.md).
+>
+> Values quoted in the rationale below (e.g. gain ≈214×, HPF ≈284Hz) are *design nominals* to explain intent. The authoritative pass bands are in `test-assertions.md`; if any number here disagrees with the netlist (values) or test-assertions (pass bands), **those files win.**
+
 This document lists every component with exact values, a suggested part number, and the engineering reason it was chosen. The builder should not substitute without understanding the rationale first.
 
 ---

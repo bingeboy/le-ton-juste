@@ -1,5 +1,7 @@
 # Ghost Spring Reverb — Incremental Build Plan
 
+> **Authority scope (single source of truth).** This file is the **design-rationale / build-order narrative**: what gets added at each stage and why. The **pass-criteria tables below are a convenience summary copied from [`test-assertions.md`](./test-assertions.md) — that file is authoritative. If a number here disagrees with test-assertions.md, test-assertions.md wins.** Component values come from [`stage_06_full.net`](./stage_06_full.net); parts/PNs from [`mouser-bom.csv`](../mouser-bom.csv); deeper rationale from [`parts-spec.md`](../parts-spec.md).
+
 Build the circuit the way you'd write software with TDD: start from a verified MVP, add **one component group at a time**, and re-simulate after every addition. Each stage has its own `.asc` file so a regression is always bisectable to the last group you touched.
 
 The companion file [`test-assertions.md`](./test-assertions.md) holds the exact `.meas` directives for every stage. Write those assertions **before** adding the component group, confirm they fail, add the parts, confirm they pass.
@@ -42,7 +44,7 @@ Stages 2–5 each replace one idealized block of the MVP with its real hardware 
 | **Output schematic** | [`mvp_reverb.asc`](./mvp_reverb.asc) |
 | **Tests** | `.op`, `.ac dec 100 20 20k`, `.tran 0 100m 0 1u` |
 
-**Pass criteria**
+**Pass criteria** *(summary from [`test-assertions.md`](./test-assertions.md) — that file is authoritative if these disagree)*
 
 | Check | Pass condition |
 |---|---|
@@ -66,7 +68,7 @@ Stages 2–5 each replace one idealized block of the MVP with its real hardware 
 | **Output schematic** | `stage_02_driver.asc` |
 | **Tests** | `.op` (bias point), `.tran 0 100m 0 1u` (drive current) |
 
-**Pass criteria**
+**Pass criteria** *(summary from [`test-assertions.md`](./test-assertions.md) — that file is authoritative if these disagree)*
 
 | Check | Pass condition |
 |---|---|
@@ -89,7 +91,7 @@ Stages 2–5 each replace one idealized block of the MVP with its real hardware 
 | **Output schematic** | `stage_03_transformer.asc` |
 | **Tests** | `.ac dec 100 20 20k` (resonance + drive level) |
 
-**Pass criteria**
+**Pass criteria** *(summary from [`test-assertions.md`](./test-assertions.md) — that file is authoritative if these disagree)*
 
 | Check | Pass condition |
 |---|---|
@@ -110,7 +112,7 @@ Stages 2–5 each replace one idealized block of the MVP with its real hardware 
 | **Output schematic** | `stage_04_input_protect.asc` |
 | **Tests** | `.op` (idle reverse-bias), `.tran` with 20 Vpp overload source |
 
-**Pass criteria**
+**Pass criteria** *(summary from [`test-assertions.md`](./test-assertions.md) — that file is authoritative if these disagree)*
 
 | Check | Pass condition |
 |---|---|
@@ -130,7 +132,7 @@ Stages 2–5 each replace one idealized block of the MVP with its real hardware 
 | **Starting schematic** | `stage_04_input_protect.asc` |
 | **Tests** | `.op` (rail voltages), `.tran` (ripple under load) |
 
-**Pass criteria**
+**Pass criteria** *(summary from [`test-assertions.md`](./test-assertions.md) — that file is authoritative if these disagree)*
 
 | Check | Pass condition |
 |---|---|
@@ -152,7 +154,7 @@ Stages 2–5 each replace one idealized block of the MVP with its real hardware 
 | **Output schematic** | `stage_06_full.asc` |
 | **Tests** | `.op`, `.ac dec 100 20 20k`, `.tran 0 100m 0 1u` |
 
-**Pass criteria**
+**Pass criteria** *(summary from [`test-assertions.md`](./test-assertions.md) — that file is authoritative if these disagree)*
 
 | Check | Pass condition |
 |---|---|
