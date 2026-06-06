@@ -115,15 +115,34 @@ Corresponds to SPICE **Stage 5** (`stage_05_psu.asc`): the `op` (settled-DC) run
 
 ---
 
-## Stage 7 — Full signal chain verification
+## Stage 7 — Full-chain integration verification
 
-Corresponds to SPICE **Stage 6** integration: re-run the Stage 1 numbers on the complete chain (`recov_gain` 200–228×, `hpf_m3db` 250–320Hz, `off_u3` ≤ 10mV, `osc_ratio` < 1.05).
+This is the **integration stage**: it adds *no new parts*. Corresponds to SPICE **Stage 6** (`stage_06_full.asc` / `gen_stage6_full.py`), which carries the complete real circuit — the ±15V linear PSU, BD139 driver, REB3S transformer, spring tank, input protection, and all three op-amp stages — byte-for-byte, and **re-runs the original Stage 1 MVP signal-path assertions against the whole thing**. The point is a clean regression gate: if any baseline number drifted as the real supply/driver/protection were added, it surfaces here. Everything below is the verified bench equivalent of the simulated assertion suite.
+
+**Verified simulation results** (all pass; three analysis variants, one active at a time — regenerate with `gen_stage6_full.py {op|ac|tran}`):
+
+| Assertion | Variant | Measured | Pass band | Result |
+|---|---|---|---|---|
+| `off_u1` | op | −0.0µV (≈0V) | ±10mV | ✅ |
+| `off_u2` | op | +0.47mV | ±10mV | ✅ |
+| `off_u3` | op | −0.35µV (≈0V) | ±10mV | ✅ |
+| `q1_ve` | op | 1.092V | 1.0–1.4V | ✅ |
+| `recov_gain` | ac | 46.59dB = 213.7× @1kHz | 200–228× | ✅ |
+| `hpf_m3db` | ac | 312Hz | 250–320Hz | ✅ |
+| `vout_pk` | tran | 1.16V | < 14V | ✅ |
+| `osc_ratio` | tran | 0.9998 | < 1.05 | ✅ |
+
+> **Why three variants, and why the windows are where they are.** The real PSU is *degenerate* at any DC operating point (the 60Hz transformer sources freeze at 0V, so the rectifier sees no drive and the rails read 0V). So:
+> - **op** (DC bias) runs a 200ms transient with the *signal source killed* and reads the settled DC at the 190–200ms tail. The 200ms run matters — the recovery stage reads residual tank DC through C3/Rbias into a 214× gain, and the high-L tank (L_tank_out 2H) takes >100ms to bleed its start-up transient (`off_u2` reads ~72mV at 20ms but settles to <0.5mV by 200ms).
+> - **ac** (gain + HPF corner) powers the op-amps from *ideal ±15V bench rails* and omits the rectifier network — small-signal behaviour of the signal path is independent of how the rails are made, and a `.ac` would otherwise linearize about the dead 0V DC point and leave the op-amps unpowered. The HPF corner is measured as the **R6/C4 transfer V(hpf_out)/V(u2_out)** to isolate it from the tank's resonant "drip" shaping (measuring `hpf_out` alone would catch the ~2kHz tank peak, not the 284Hz design corner).
+> - **tran** (peak + stability) runs 100ms with the 100mVpk 1kHz stimulus; the no-oscillation ratio compares 90–100ms vs **40–50ms** (both past the ~40ms start-up settle, so the ratio measures *growth*, not the charge-up transient).
 
 | Test | Method | Expected | Fail action |
 |---|---|---|---|
-| Recovery gain | Apply −40dBu to input, probe U2 output | ~46dB gain (≈214×; ~100mV in → ~10V out at U2) | Low: check Ri (470Ω) / Rf (100kΩ) ratio and Rbias (100kΩ, not 470Ω). Very high or oscillating: check feedback wiring and R2/R7 output isolation resistors |
-| HPF corner | Sweep generator, probe the wet signal at U2 output / HPF node | −3dB at ~284Hz (accept 250–320Hz) | Wrong corner: check C4 (100nF) and R6 (5.6kΩ exactly — 4.7k → 338Hz, 6.8k → 234Hz) |
-| Output DC offset | DMM DC at J2 output jack | < ±10mV | Check U3 output and C3 (no DC leaking from the tank into U2) |
+| Recovery gain | Apply −40dBu to input, probe U2 output | ~46.6dB gain (≈214×; ~100mV in → ~10V out at U2) | Low: check Ri (470Ω) / Rf (100kΩ) ratio and Rbias (100kΩ, not 470Ω). Very high or oscillating: check feedback wiring and R2/R7 output isolation resistors |
+| HPF corner | Sweep generator, probe wet at U2 output then after C4/R6 (ratio = the HPF transfer) | −3dB at ~312Hz (design 284Hz; accept 250–320Hz) | Wrong corner: check C4 (100nF) and R6 (5.6kΩ exactly — 4.7k → 338Hz, 6.8k → 234Hz) |
+| Output DC offset | DMM DC at J2 output jack | < ±10mV (sim ≈ 0V) | Check U3 output and C3 (no DC leaking from the tank into U2) |
+| Q1 emitter bias | DMM DC at Q1 emitter / R5 top | ≈1.09V (1.0–1.4V) — unchanged under the real regulated rails | Bias shifted: check R3b/R4 divider and R5 (68Ω); confirm the +15V rail first (Stage 6 above) |
 | Reverb sound check | Guitar / audio source in, monitor the output | Clear spring-reverb tail, dry signal audible and clean | No wet signal: check tank RCA connections and tank/transformer orientation; check polarity (see phase note below) |
 
 ### Phase note for builder
