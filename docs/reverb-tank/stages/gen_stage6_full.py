@@ -1,0 +1,442 @@
+#!/usr/bin/env python3
+"""
+gen_stage6_full.py - Generate stage_06_full.asc (+ matching .net sidecar).
+
+Stage 6 of the Ghost Spring reverb build: FULL-INTEGRATION verification. Stage 6
+adds NO new components. It carries the complete Stage 5 circuit (real PSU + BD139
+driver + REB3S transformer + spring tank + input protection + the three op-amp
+stages) BYTE-FOR-BYTE and re-runs the original Stage 1 MVP signal-path assertion
+suite against the whole real circuit. The point is a clean regression gate: if any
+Stage 1 number drifted as the real supply/driver/protection were added, it surfaces
+here and bisects to the stage that introduced it.
+
+Carried unchanged from Stage 5 (see gen_stage5_psu.py for the full rationale):
+  - T1 15-0-15VAC secondary (two anti-phase 60Hz SINE(0 21.2 60), center tap=GND)
+  - F2/F3 polyfuses (0.5 ohm), BR1 bridge (4x 1N4007, DBR1a..d)
+  - C11/C12 2200u bulk + 10k bleed, U4 LM7815 / U5 LM7915 (inline behavioural
+    subckts), C13/C14 100u + C17/C18 100n reg out caps
+  - C5-C8 / C15/C16 rail decoupling
+  - Input protection: TVS1 (back-to-back BZX84C15L), C_in/R1, clamp pair
+  - U1 buffer, RV1 dwell, BD139 driver (Q1 + bias), REB3S transformer (L1/L2/K1)
+  - Spring tank RLC, U2 recovery (214x), post-recovery HPF (R6/C4)
+  - Tone RV3, Mix RV2, U3 output buffer, 47k load
+
+Stage 1 assertion suite (test-assertions.md), now re-run on the FULL circuit:
+
+  | Assertion  | Expression                          | Pass condition |
+  |------------|-------------------------------------|----------------|
+  | off_u1     | V(u1_out)                           | +/-10mV        |
+  | off_u2     | V(u2_out)                           | +/-10mV        |
+  | off_u3     | V(v_out)                            | +/-10mV        |
+  | q1_ve      | V(q1_e)                             | 1.0..1.4V      |
+  | recov_gain | V(u2_out)/V(u2_in_pos) @1kHz        | 200..228x      |
+  | hpf_m3db   | -3dB corner of wet (hpf_out)        | 250..320Hz     |
+  | vout_pk    | MAX abs(V(v_out))                   | < 14V          |
+  | osc_ratio  | RMS(last 10ms)/RMS(first 10ms) vout | < 1.05         |
+
+Analysis variants (ONE active at a time):
+  op    : DC operating point. A true .op is DEGENERATE for the PSU - the SINE
+          sources freeze at t=0 (0V), the bridge sees no drive and the caps never
+          charge. So we run a SHORT transient (.tran 0 20m 0 1u) WITH THE SIGNAL
+          SOURCE KILLED (V1 amplitude 0) and read the settled DC at the tail
+          (AVG FROM=15m TO=20m). With no signal injected the op-amp outputs and the
+          driver emitter sit at their pure DC bias points:
+            off_u1 = AVG V(u1_out)  in +/-10mV
+            off_u2 = AVG V(u2_out)  in +/-10mV
+            off_u3 = AVG V(v_out)   in +/-10mV
+            q1_ve  = AVG V(q1_e)    in 1.0..1.4V
+  ac    : recovery gain + wet HPF corner. The PSU SINE sources carry NO AC spec
+          (AC defaults to 0), so they are invisible to a .ac sweep - only the
+          signal source V1 (AC 1) drives the small-signal analysis. .ac dec 100
+          20 20k:
+            recov_gain = V(u2_out)/V(u2_in_pos) AT=1k  in 200..228
+            hpf_m3db   = freq where V(hpf_out) = 0.7079*ref(@5k)  in 250..320Hz
+  tran  : output peak + no-oscillation. 100ms run, 100mVpk 1kHz signal:
+            vout_pk   = MAX abs(V(v_out))                     < 14V
+            osc_ratio = RMS(90m..100m)/RMS(0..10m) of V(v_out)  < 1.05
+
+Connectivity strategy identical to gen_stage5_psu.py: every pin gets a FLAG at its
+exact coordinate so nets join by name; the script emits BOTH the .asc schematic and
+a matching .net sidecar from the same component list so they cannot drift.
+
+Generator fixes applied (per Stage 6 spec):
+  1. Diode instances use the D prefix (DBR1a..d, DTVS1a/b, Dclamp_*, D3).
+  2. OPA_PARAMS_NET is a single 'level2 ...' string.
+  3. .OPTIONS ALLOW_AMBIGUOUS_MODELS is the third line of every .net.
+"""
+
+OPA_PARAMS = "Avol=1Meg GBW=8Meg Slew=20Meg Ilimit=25m Rail=0 Rinc=1T"
+OPA_PARAMS_NET = ("level2 Avol=1Meg GBW=8Meg Slew=20Meg Ilimit=25m "
+                  "Rail=0 Rinc=1T Vos=0 En=0 Enk=0 In=0 "
+                  "Ink=0 Rin=500Meg")
+
+BD139_MODEL = "NPN(Is=1e-14 Bf=100 Vaf=50 Rb=1 Rc=0.1 Re=0.05 Cje=30p Cjc=15p)"
+
+# BZX84C15L: 15V 250mW zener, back-to-back pair modelling the SMBJ15CA TVS.
+BZX84C15L_MODEL = "D(BV=15 N=1.6 Rs=2 IBV=5m Cjo=80p Iave=200m)"
+
+# 1N4007 bridge-rectifier diode: 1000V 1A general-purpose rectifier.
+DN4007_MODEL = "D(Is=14.1n N=1.984 Rs=33.9m Ikf=94.8 Cjo=51.7p M=0.333 Vj=0.7 Bv=1000 Ibv=10u)"
+
+# Behavioural linear-regulator subckts (no 78xx/79xx ships with this LTspice).
+LM78XX_SUBCKT = [
+    ".subckt LM78xx IN COM OUT",
+    ".param Vout=15",
+    "B1 OUT COM V=min(V(IN,COM)-2, {Vout})",
+    ".ends LM78xx",
+]
+LM79XX_SUBCKT = [
+    ".subckt LM79xx IN COM OUT",
+    ".param Vout=15",
+    "B1 OUT COM V=max(V(IN,COM)+2, -{Vout})",
+    ".ends LM79xx",
+]
+
+
+class Build:
+    def __init__(self):
+        self.asc = ["Version 4", "SHEET 1 2400 1600"]
+        self.net = []          # SPICE element/card lines
+        self.subckts = []      # inline .subckt blocks (list of line-lists)
+        self.directives = []   # analysis + .meas + .model cards (placed near end)
+
+    # ---- schematic helpers ----
+    def _atext(self, x, y, s, size=2):
+        self.asc.append(f"TEXT {x} {y} Left {size} {s}")
+
+    def _aflag(self, x, y, name):
+        self.asc.append(f"FLAG {x} {y} {name}")
+
+    def _asym(self, kind, x, y, rot, name, attrs):
+        self.asc.append(f"SYMBOL {kind} {x} {y} {rot}")
+        self.asc.append(f"SYMATTR InstName {name}")
+        for k, v in attrs:
+            self.asc.append(f"SYMATTR {k} {v}")
+
+    def text(self, x, y, s, size=2):
+        self._atext(x, y, s, size)
+
+    # ---- components: emit both schematic symbol and netlist card ----
+    def res(self, name, value, x, y, na, nb):
+        self._asym("res", x, y, "R0", name, [("Value", value)])
+        self._aflag(x + 16, y + 16, na)
+        self._aflag(x + 16, y + 96, nb)
+        self.net.append(f"{name} {na} {nb} {value}")
+
+    def cap(self, name, value, x, y, na, nb):
+        self._asym("cap", x, y, "R0", name, [("Value", value)])
+        self._aflag(x + 16, y + 0, na)
+        self._aflag(x + 16, y + 64, nb)
+        self.net.append(f"{name} {na} {nb} {value}")
+
+    def ind(self, name, value, x, y, na, nb):
+        self._asym("ind", x, y, "R0", name,
+                   [("Value", value), ("SpiceLine", "Rser=0")])
+        self._aflag(x + 16, y + 16, na)
+        self._aflag(x + 16, y + 96, nb)
+        self.net.append(f"{name} {na} {nb} {value} Rser=0")
+
+    def diode(self, name, model, x, y, na, nk):
+        self._asym("diode", x, y, "R0", name, [("Value", model)])
+        self._aflag(x + 16, y + 0, na)
+        self._aflag(x + 16, y + 64, nk)
+        self.net.append(f"{name} {na} {nk} {model}")
+
+    def vsrc(self, name, value, x, y, np_, nn, value2=None):
+        attrs = [("Value", value)]
+        if value2:
+            attrs.append(("Value2", value2))
+        self._asym("voltage", x, y, "R0", name, attrs)
+        self._aflag(x + 0, y + 16, np_)
+        self._aflag(x + 0, y + 96, nn)
+        extra = f" {value2}" if value2 else ""
+        self.net.append(f"{name} {np_} {nn} {value}{extra}")
+
+    def npn(self, name, model, x, y, nc, nb, ne):
+        self._asym("npn", x, y, "R0", name, [("Value", model)])
+        self._aflag(x + 0, y + 48, nb)
+        self._aflag(x + 64, y + 0, nc)
+        self._aflag(x + 64, y + 96, ne)
+        self.net.append(f"{name} {nc} {nb} {ne} {model}")
+
+    def opa(self, name, x, y, ninp, ninn, nvp, nvn, nout):
+        self._asym("UniversalOpamp2", x, y, "R0", name,
+                   [("Value", "level2"), ("Value2", OPA_PARAMS)])
+        self._aflag(x - 32, y + 16, ninp)
+        self._aflag(x - 32, y - 16, ninn)
+        self._aflag(x + 0, y - 32, nvp)
+        self._aflag(x + 0, y + 32, nvn)
+        self._aflag(x + 32, y + 0, nout)
+        self.net.append(
+            f"X§{name} {ninp} {ninn} {nvp} {nvn} {nout} {OPA_PARAMS_NET}")
+
+    def kcouple(self, name, la, lb, k, x, y):
+        card = f"{name} {la} {lb} {k}"
+        self._atext(x, y, "!" + card)
+        self.net.append(card)
+
+    def reg(self, name, subckt, x, y, nin, ncom, nout):
+        self._atext(x, y, f"{name}: {subckt}  IN={nin} COM={ncom} OUT={nout}", 2)
+        self.net.append(f"X{name} {nin} {ncom} {nout} {subckt}")
+
+    def subckt(self, lines):
+        self.subckts.append(lines)
+
+    def directive(self, card):
+        self.directives.append(card)
+
+    def dump(self, asc_path, net_path):
+        # --- finish .asc: place directives as TEXT lines (bang = active) ---
+        y = 1360
+        for card in self.directives:
+            self._atext(16, y, "!" + card)
+            y += 32
+        open(asc_path, "w").write("\n".join(self.asc) + "\n")
+
+        # --- finish .net sidecar ---
+        net = [f"* {asc_path}",
+               "* Generated by gen_stage6_full.py for installed LTspice 26 symbols.",
+               ".OPTIONS ALLOW_AMBIGUOUS_MODELS"]
+        net += self.net
+        net.append(".model D D")
+        net.append(r".lib C:\users\crossover\AppData\Local\LTspice\lib\cmp\standard.dio")
+        # inline regulator subckts
+        for blk in self.subckts:
+            net += blk
+        net.append("* BD139 driver model + zener/rectifier models + analysis directives")
+        for card in self.directives:
+            net.append(card)
+        net.append(".lib UniversalOpAmp2.lib")
+        net.append(".backanno")
+        net.append(".end")
+        open(net_path, "w").write("\n".join(net) + "\n")
+
+
+def build(active_analysis="op"):
+    """active_analysis in {'op','ac','tran'}. Only ONE analysis active at a time."""
+    b = Build()
+    b.text(16, -40, "Ghost Spring Stage 6 - FULL INTEGRATION verification (Stage 5 complete circuit, Stage 1 MVP assertions re-run)", 4)
+    b.text(16, 8, "Stage 6 adds NOTHING. It carries the complete Stage 5 circuit (real PSU + BD139 driver + REB3S transformer + spring tank + input protection + U1/U2/U3) byte-for-byte and re-runs the original Stage 1 signal-path assertion suite (off_u1/2/3, q1_ve, recov_gain, hpf_m3db, vout_pk, osc_ratio) against the WHOLE real circuit. Connectivity by net labels (FLAG at each pin).", 2)
+
+    # ====================================================================
+    # === STAGE 5: +/-15V LINEAR POWER SUPPLY (carried unchanged) =========
+    # ====================================================================
+    # IMPORTANT - rails for the .ac variant.
+    # The real PSU is DEGENERATE at any DC operating point: the T1 SINE sources
+    # freeze at their t=0 value (0V), so the bridge sees no drive, the bulk caps
+    # never charge, and the regulated rails sit at 0V. A .ac analysis linearises
+    # the circuit about exactly that dead DC point, which leaves every op-amp
+    # UNPOWERED (the UniversalOpAmp2 level2 references its V+/V- pins; with both
+    # rails at 0V its gain collapses to ~unity). The recovery-gain and HPF-corner
+    # assertions are small-signal properties of the SIGNAL PATH and are completely
+    # independent of HOW the +/-15V is produced, so for the .ac variant ONLY we
+    # power the rails from ideal +/-15V DC sources (the same bench rails Stages 1-4
+    # used) and omit the rectifier/regulator network. The op and tran variants
+    # carry the FULL real PSU (those are where rail DC and ripple actually matter).
+    if active_analysis == "ac":
+        b.vsrc("Vpos", "15", 64, 1000, "+15V", "0")
+        b.vsrc("Vneg", "15", 224, 1000, "0", "-15V")
+        b.text(64, 960, "AC variant: ideal +/-15V bench rails (real PSU is degenerate at the DC op-point used by .ac). Signal-path small-signal is independent of rail origin.", 2)
+    else:
+        # T1 secondary: 15-0-15VAC, center tap = GND. Two anti-phase 60Hz SINE
+        # sources, 21.2V peak = 15Vrms * sqrt(2). PSU SINE sources carry NO AC
+        # spec (AC defaults to 0).
+        b.vsrc("Vsec_p", "SINE(0 21.2 60)", 64, 1000, "ac_pos", "0")
+        b.vsrc("Vsec_n", "SINE(0 21.2 60)", 224, 1000, "0", "ac_neg")
+        b.text(64, 960, "T1 Triad F-219X 15-0-15VAC. Center tap = GND. 21.2Vpk = 15Vrms*sqrt(2).", 2)
+
+        # F2/F3 MF-R050 polyfuses -> 0.5 ohm series R (RF2/RF3 in SPICE).
+        b.res("RF2", "0.5", 384, 1000, "ac_pos", "f2_out")
+        b.res("RF3", "0.5", 512, 1000, "ac_neg", "f3_out")
+        b.text(384, 960, "F2/F3 MF-R050 polyfuse = 0.5ohm (RF2/RF3 in SPICE).", 2)
+
+        # BR1 = W04G full-wave bridge off the center-tapped winding, 4x 1N4007.
+        b.diode("DBR1a", "DN4007", 640, 880, "f2_out", "pos_rect")
+        b.diode("DBR1b", "DN4007", 760, 880, "f3_out", "pos_rect")
+        b.diode("DBR1c", "DN4007", 640, 1080, "neg_rect", "f2_out")
+        b.diode("DBR1d", "DN4007", 760, 1080, "neg_rect", "f3_out")
+        b.text(640, 840, "BR1 W04G = 4x 1N4007. pos_rect=+ve bus, neg_rect=-ve bus.", 2)
+
+        # Bulk filter caps + bleed resistors, one set per rail.
+        b.cap("C11", "2200u", 900, 880, "pos_rect", "0")     # +ve bulk filter
+        b.res("R_bleed1", "10k", 1020, 880, "pos_rect", "0")  # +ve bleed
+        b.cap("C12", "2200u", 900, 1080, "neg_rect", "0")     # -ve bulk filter
+        b.res("R_bleed2", "10k", 1020, 1080, "neg_rect", "0")  # -ve bleed
+
+        # Regulators: U4 LM7815 (+15), U5 LM7915 (-15). Inline behavioural subckts.
+        b.reg("U4", "LM78xx", 1160, 860, "pos_rect", "0", "+15V")
+        b.reg("U5", "LM79xx", 1160, 1100, "neg_rect", "0", "-15V")
+
+        # Regulator output caps + HF bypass on each regulated rail.
+        b.cap("C13", "100u", 1320, 880, "+15V", "0")
+        b.cap("C17", "100n", 1440, 880, "+15V", "0")
+        b.cap("C14", "100u", 1320, 1080, "-15V", "0")
+        b.cap("C18", "100n", 1440, 1080, "-15V", "0")
+        b.text(1320, 840, "C13/C14 100u reg out caps, C17/C18 100n HF bypass.", 2)
+
+        # Inline regulator subckts (no 78xx/79xx ships with installed LTspice).
+        b.subckt(LM78XX_SUBCKT)
+        b.subckt(LM79XX_SUBCKT)
+
+    # ====================================================================
+    # === STAGE 4 SIGNAL PATH (carried unchanged) - fed from the PSU rails =
+    # ====================================================================
+    # Extra rail decoupling (C5-C8 100n, C15/C16 10u bulk).
+    b.cap("C15", "10u", 1580, 880, "+15V", "0")
+    b.cap("C16", "10u", 1580, 1080, "-15V", "0")
+    b.cap("C5", "100n", 1700, 880, "+15V", "0")
+    b.cap("C6", "100n", 1700, 1080, "-15V", "0")
+    b.cap("C7", "100n", 1820, 880, "+15V", "0")
+    b.cap("C8", "100n", 1820, 1080, "-15V", "0")
+
+    # Input source. For op (DC bias) the signal is KILLED (amplitude 0) so the
+    # op-amp outputs / driver emitter read pure DC. For ac the AC=1 token drives
+    # the small-signal sweep. For tran it's the 100mVpk 1kHz test stimulus.
+    if active_analysis == "op":
+        # No signal -> off_u1/2/3 and q1_ve read pure DC bias.
+        b.vsrc("V1", "SINE(0 0 1k)", 64, 160, "vin", "0", value2="AC 1")
+    else:
+        b.vsrc("V1", "SINE(0 100m 1k)", 64, 160, "vin", "0", value2="AC 1")
+
+    # TVS1 at the jack (vin -> 0), two zeners back-to-back (cathodes at tvs_mid).
+    b.diode("DTVS1a", "BZX84C15L", 64, 400, "vin", "tvs_mid")
+    b.diode("DTVS1b", "BZX84C15L", 64, 528, "0", "tvs_mid")
+
+    # Input buffer U1 front-end (C_in, R1, clamp pair).
+    b.cap("C_in", "1u", 160, 144, "vin", "u1_pos")
+    b.res("R1", "1Meg", 280, 144, "u1_pos", "0")
+    b.diode("Dclamp_p", "1N4148", 400, 96, "u1_pos", "+15V")
+    b.diode("Dclamp_n", "1N4148", 400, 224, "-15V", "u1_pos")
+    b.opa("U1", 560, 200, "u1_pos", "u1_out", "+15V", "-15V", "u1_out")
+    b.res("R2", "100", 640, 144, "u1_out", "u1_buf")
+
+    # Dwell pot divider.
+    b.res("RV1a", "5k", 760, 60, "u1_buf", "rv1_wiper")
+    b.res("RV1b", "5k", 760, 180, "rv1_wiper", "0")
+
+    # BD139 discrete driver.
+    b.cap("C_drive", "1u", 880, 144, "rv1_wiper", "q1_drv")
+    b.res("R3b", "6.8k", 1000, 40, "+15V", "q1_base")
+    b.res("R4", "1k", 1000, 200, "q1_base", "0")
+    b.res("R3", "1k", 880, 300, "q1_drv", "q1_base")
+    b.npn("Q1", "BD139", 1140, 360, "q1_c", "q1_base", "q1_e")
+    b.res("R5", "68", 1140, 520, "q1_e", "0")
+    b.cap("C2", "100u", 1280, 520, "q1_e", "0")
+    b.diode("D3", "1N4148", 1140, 220, "q1_c", "+15V")
+
+    # REB3S driver transformer.
+    b.ind("L1", "100m", 1140, 60, "+15V", "q1_c")
+    b.ind("L2", "5m", 1300, 60, "tank_in", "0")
+    b.kcouple("K1", "L1", "L2", "0.98", 1280, 200)
+
+    # Spring tank RLC.
+    b.res("R_tank_in", "8", 1300, 240, "tank_in", "0")
+    b.ind("L_tank", "15m", 1420, 60, "tank_in", "tank_mid")
+    b.res("R_tank_mech", "200", 1540, 240, "tank_mid", "tk_a")
+    b.ind("L_tank_mech", "500m", 1540, 360, "tk_a", "tk_b")
+    b.cap("C_tank_mech", "10n", 1540, 480, "tk_b", "0")
+    b.res("R_tank_out", "2550", 1660, 60, "tank_mid", "tank_out")
+    b.ind("L_tank_out", "2", 1660, 240, "tank_out", "0")
+
+    # Recovery preamp U2.
+    b.cap("C3", "470n", 1780, 144, "tank_out", "u2_in_pos")
+    b.res("Rbias", "100k", 1900, 240, "u2_in_pos", "0")
+    b.opa("U2", 2060, 200, "u2_in_pos", "u2_inv", "+15V", "-15V", "u2_out")
+    b.res("Ri", "470", 2000, 360, "u2_inv", "0")
+    b.res("Rf", "100k", 2120, 360, "u2_out", "u2_inv")
+
+    # Post-recovery HPF.
+    b.cap("C4", "100n", 2240, 144, "u2_out", "hpf_out")
+    b.res("R6", "5.6k", 2360, 240, "hpf_out", "0")
+
+    # Tone RV3, Mix RV2, output buffer U3.
+    b.res("RV3a", "50k", 2180, 600, "hpf_out", "rv3_wiper")
+    b.res("RV3b", "50k", 2180, 720, "rv3_wiper", "0")
+    b.res("Rdry", "10k", 640, 360, "u1_buf", "mix_top")
+    b.res("Rwet", "0.001", 2300, 600, "rv3_wiper", "mix_top")
+    b.res("RV2a", "50k", 2300, 760, "mix_top", "mix_node")
+    b.res("RV2b", "50k", 2300, 880, "mix_node", "0")
+    b.cap("C_bright", "47p", 2420, 760, "mix_top", "mix_node")
+    b.opa("U3", 2560, 900, "mix_node", "u3_out", "+15V", "-15V", "u3_out")
+    b.res("R7", "100", 2640, 844, "u3_out", "v_out")
+    b.res("Rload", "47k", 2760, 844, "v_out", "0")
+    b.text(2640, 820, "J2 -> MC100 input (47k load)", 2)
+
+    # === Models ===
+    b.directive(f".model BD139 {BD139_MODEL}")
+    b.directive(f".model BZX84C15L {BZX84C15L_MODEL}")
+    b.directive(f".model DN4007 {DN4007_MODEL}")
+
+    # === Analysis (only ONE active at a time) - Stage 1 MVP assertion suite ===
+    if active_analysis == "op":
+        # DC operating point. .op is DEGENERATE for the PSU (SINE freeze at t=0),
+        # so run a transient with the SIGNAL KILLED and read settled DC at the
+        # tail. With no signal injected the op-amp outputs / driver emitter sit at
+        # their pure bias points.
+        #
+        # The run is 200ms (not 20ms): the recovery stage U2 reads any residual
+        # tank/coupling DC through C3(470n)+Rbias(100k) into a 214x-gain stage, so
+        # the start-up transient of the high-L tank (L_tank_out=2H, L_tank_mech=
+        # 500m) takes >100ms to bleed out. At 20ms off_u2 still shows ~72mV of
+        # decaying transient; by 190-200ms it has settled to <1mV (pure DC bias).
+        # Measure all bias points in the 190..200ms tail window.
+        b.directive(".tran 0 200m 0 2u")
+        b.directive(".meas TRAN off_u1 AVG V(u1_out) FROM=190m TO=200m")
+        b.directive(".meas TRAN off_u2 AVG V(u2_out) FROM=190m TO=200m")
+        b.directive(".meas TRAN off_u3 AVG V(v_out)  FROM=190m TO=200m")
+        b.directive(".meas TRAN q1_ve  AVG V(q1_e)   FROM=190m TO=200m")
+        # Settled rail sanity (the bias points depend on them).
+        b.directive(".meas TRAN rail_pos AVG V(+15V) FROM=190m TO=200m")
+        b.directive(".meas TRAN rail_neg AVG V(-15V) FROM=190m TO=200m")
+    elif active_analysis == "ac":
+        # Recovery gain + wet HPF corner. PSU SINE sources have no AC spec (AC=0),
+        # so only V1 (AC 1) drives the sweep. .ac dec 100 20 20k.
+        b.directive(".ac dec 100 20 20k")
+        b.directive(".meas AC recov_gain FIND V(u2_out)/V(u2_in_pos) AT=1k")
+        # Wet HPF -3dB corner. In the FULL circuit the absolute hpf_out level is
+        # shaped by the tank transfer (a resonant "drip" peak near 2kHz) on top of
+        # the R6/C4 high-pass, so a 0.7079*ref crossing on V(hpf_out) alone does
+        # NOT isolate the HPF corner (it finds the resonance flank). Measure the
+        # R6/C4 high-pass TRANSFER directly - V(hpf_out)/V(u2_out) - which removes
+        # the tank+U2 shaping and leaves the clean first-order HPF whose corner is
+        # 1/(2*pi*R6*C4) = 1/(2*pi*5.6k*100n) = 284Hz. Reference at 5kHz (flat
+        # passband of the HPF transfer), find the rising 0.7079*ref crossing.
+        b.directive(".meas AC hpf_ref  FIND mag(V(hpf_out)/V(u2_out)) AT=5k")
+        b.directive(".meas AC hpf_m3db WHEN mag(V(hpf_out)/V(u2_out))=hpf_ref*0.7079 RISE=1")
+        # Context: end-to-end chain level/gain at 1kHz.
+        b.directive(".meas AC chain_lvl FIND V(v_out) AT=1k")
+        b.directive(".meas AC chain_gain_db FIND 20*log10(V(v_out)/V(vin)) AT=1k")
+    elif active_analysis == "tran":
+        # Output peak + no-oscillation. 100mVpk 1kHz signal.
+        #
+        # osc_ratio compares a late-window RMS to an early-window RMS: >1 means the
+        # signal is GROWING (oscillation/instability), <=1.05 means stable. In the
+        # FULL circuit the start-up transient lasts ~40ms (the real PSU bulk caps
+        # charge, and the high-L spring tank - L_tank_out=2H, L_tank_mech=500m -
+        # rings up to steady state). A 0..10ms "early" window therefore sits in the
+        # transient and reads LOW, inflating the ratio to ~1.17 even though the
+        # signal is dead stable afterwards. So BOTH windows are placed past the
+        # settle: early=40..50ms, late=90..100ms. (Probed to 400ms: v_out RMS is
+        # flat-to-slightly-decreasing 0.4381 -> 0.4377, i.e. no growth.)
+        b.directive(".tran 0 100m 0 5u")
+        b.directive(".meas TRAN vout_pk  MAX abs(V(v_out))")
+        b.directive(".meas TRAN rms_early RMS V(v_out) FROM=40m TO=50m")
+        b.directive(".meas TRAN rms_late  RMS V(v_out) FROM=90m TO=100m")
+        b.directive(".meas TRAN osc_ratio PARAM rms_late/rms_early")
+
+    b.text(16, 1620,
+           "Active analysis: ." + active_analysis +
+           ". Regenerate with gen_stage6_full.py {op|ac|tran} -- ONE analysis at a time.", 2)
+
+    return b
+
+
+if __name__ == "__main__":
+    import sys
+    analysis = sys.argv[1] if len(sys.argv) > 1 else "op"
+    base = "/Users/bubblegum/projects/le-ton-juste/docs/reverb-tank/stages"
+    b = build(analysis)
+    asc = f"{base}/stage_06_full.asc"
+    net = f"{base}/stage_06_full.net"
+    b.dump(asc, net)
+    print(f"wrote {asc} and {net} (analysis={analysis})")
