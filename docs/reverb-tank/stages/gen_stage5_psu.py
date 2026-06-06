@@ -20,16 +20,12 @@ Delta from Stage 4 (stage_04_input_protect.asc):
             Vsec_n  0 ac_neg  SINE(0 21.2 60)   (anti-phase -> ac_neg swings
                                                   opposite ac_pos)
 
-        F2/F3 MF-R050 polyfuses -> modelled as 0.5 ohm series R (a polyfuse is
-        just wire until it trips; we test NORMAL operation):
-            F2  ac_pos f2_out  0.5
-            F3  ac_neg f3_out  0.5
-
-        BR1 = W04G full-wave bridge, 4 x 1N4007 (D-prefix instance names):
-            DBR1a  f2_out  pos_rect   (top-half +, ac_pos -> +bus)
-            DBR1b  f3_out  pos_rect   (top-half +, ac_neg -> +bus)
-            DBR1c  neg_rect f2_out    (bottom-half -, -bus -> ac_pos)
-            DBR1d  neg_rect f3_out    (bottom-half -, -bus -> ac_neg)
+        BR1 = W04G full-wave bridge, 4 x 1N4007 (D-prefix instance names),
+        fed DIRECTLY from the AC secondary (no fuse on the AC side):
+            DBR1a  ac_pos  pos_rect   (top-half +, ac_pos -> +bus)
+            DBR1b  ac_neg  pos_rect   (top-half +, ac_neg -> +bus)
+            DBR1c  neg_rect ac_pos    (bottom-half -, -bus -> ac_pos)
+            DBR1d  neg_rect ac_neg    (bottom-half -, -bus -> ac_neg)
           With the center tap = GND, this is the standard full-wave bridge off a
           center-tapped winding: pos_rect is the unregulated +ve bus, neg_rect
           the unregulated -ve bus, each ~ +/-(21.2 - 2*Vf) before the cap, held
@@ -42,15 +38,24 @@ Delta from Stage 4 (stage_04_input_protect.asc):
             R_bleed2 neg_rect 0  10k    ; bleed
 
         Regulators (no LM7815/LM7915 model ships with this LTspice install -
-        verified - so we define simple behavioural subckts inline, see below):
-            XU4  pos_rect 0 +15V  LM78xx   ; +15 out
-            XU5  neg_rect 0 -15V  LM79xx   ; -15 out
+        verified - so we define simple behavioural subckts inline, see below).
+        Outputs go to intermediate nodes reg_pos / reg_neg:
+            XU4  pos_rect 0 reg_pos  LM78xx   ; +15 out
+            XU5  neg_rect 0 reg_neg  LM79xx   ; -15 out
 
-        Regulator output caps + HF bypass:
-            C13  +15V 0  100u
-            C17  +15V 0  100n
-            C14  -15V 0  100u
-            C18  -15V 0  100n
+        Regulator output caps + HF bypass on the regulator output pin:
+            C13  reg_pos 0  100u
+            C17  reg_pos 0  100n
+            C14  reg_neg 0  100u
+            C18  reg_neg 0  100n
+
+        F2/F3 MF-R050 polyfuses -> modelled as 0.5 ohm series R (a polyfuse is
+        just wire until it trips; we test NORMAL operation). They sit on the DC
+        RAIL OUTPUT, AFTER the regulator + output cap (reg pin -> +15V/-15V bus),
+        so a downstream PCB short trips the fuse and protects the regulator:
+            RF2  reg_pos +15V  0.5
+            RF3  reg_neg -15V  0.5
+          The +15V and -15V nodes are what the rest of the circuit uses.
 
 Everything downstream of the rails (U1/U2/U3, Q1 driver, transformer, tank,
 input protection TVS1 + clamp pair) is BYTE-FOR-BYTE the Stage 4 topology and
@@ -245,7 +250,7 @@ def build(active_analysis="op"):
     """active_analysis in {'op','tran'}. Only ONE analysis active at a time."""
     b = Build()
     b.text(16, -40, "Ghost Spring Stage 5 - +/-15V Linear Power Supply (T1, BR1, C11/C12, U4 LM7815, U5 LM7915)", 4)
-    b.text(16, 8, "Stage 4 signal path UNCHANGED, now fed from the real PSU. T1 15-0-15VAC (two SINE(0 21.2 60), center tap=GND) -> F2/F3 polyfuses (0.5ohm) -> BR1 (4x 1N4007) -> C11/C12 2200u bulk + 10k bleed -> U4 LM7815 / U5 LM7915 -> C13/C14 100u + C17/C18 100n -> +/-15V rails. Connectivity by net labels (FLAG at each pin).", 2)
+    b.text(16, 8, "Stage 4 signal path UNCHANGED, now fed from the real PSU. T1 15-0-15VAC (two SINE(0 21.2 60), center tap=GND) -> BR1 (4x 1N4007) -> C11/C12 2200u bulk + 10k bleed -> U4 LM7815 / U5 LM7915 -> C13/C14 100u + C17/C18 100n -> F2/F3 polyfuses (0.5ohm) on DC rails -> +/-15V rails. Connectivity by net labels (FLAG at each pin).", 2)
 
     # ====================================================================
     # === STAGE 5: +/-15V LINEAR POWER SUPPLY (replaces ideal Vpos/Vneg) ==
@@ -257,19 +262,13 @@ def build(active_analysis="op"):
     b.vsrc("Vsec_n", P.VSEC_SINE, 224, 1000, "0", "ac_neg")
     b.text(64, 960, "T1 Triad F-219X 15-0-15VAC. Center tap = GND. 21.2Vpk = 15Vrms*sqrt(2).", 2)
 
-    # F2/F3 MF-R050 polyfuses -> 0.5 ohm series R (wire until tripped). SPICE
-    # reserves the F prefix for current-controlled sources, so the resistor
-    # instances are RF2/RF3 (the F2/F3 designators live on the schematic label).
-    b.res("RF2", P.RF2, 384, 1000, "ac_pos", "f2_out")
-    b.res("RF3", P.RF3, 512, 1000, "ac_neg", "f3_out")
-    b.text(384, 960, "F2/F3 MF-R050 polyfuse = 0.5ohm (RF2/RF3 in SPICE).", 2)
-
     # BR1 = W04G full-wave bridge off the center-tapped winding, 4x 1N4007.
     # D-prefix instance names (DBR1a..d). pos_rect = +ve bus, neg_rect = -ve bus.
-    b.diode("DBR1a", "DN4007", 640, 880, "f2_out", "pos_rect")
-    b.diode("DBR1b", "DN4007", 760, 880, "f3_out", "pos_rect")
-    b.diode("DBR1c", "DN4007", 640, 1080, "neg_rect", "f2_out")
-    b.diode("DBR1d", "DN4007", 760, 1080, "neg_rect", "f3_out")
+    # The AC secondary feeds the bridge DIRECTLY (no fuse on the AC side).
+    b.diode("DBR1a", "DN4007", 640, 880, "ac_pos", "pos_rect")
+    b.diode("DBR1b", "DN4007", 760, 880, "ac_neg", "pos_rect")
+    b.diode("DBR1c", "DN4007", 640, 1080, "neg_rect", "ac_pos")
+    b.diode("DBR1d", "DN4007", 760, 1080, "neg_rect", "ac_neg")
     b.text(640, 840, "BR1 W04G = 4x 1N4007. pos_rect=+ve bus, neg_rect=-ve bus.", 2)
 
     # Bulk filter caps + bleed resistors, one set per rail.
@@ -279,15 +278,27 @@ def build(active_analysis="op"):
     b.res("R_bleed2", P.R_BLEED2, 1020, 1080, "neg_rect", "0")  # -ve bleed
 
     # Regulators: U4 LM7815 (+15), U5 LM7915 (-15). Inline behavioural subckts.
-    b.reg("U4", "LM78xx", 1160, 860, "pos_rect", "0", "+15V")
-    b.reg("U5", "LM79xx", 1160, 1100, "neg_rect", "0", "-15V")
+    # Output caps sit directly on the regulator output pin (reg_pos/reg_neg).
+    b.reg("U4", "LM78xx", 1160, 860, "pos_rect", "0", "reg_pos")
+    b.reg("U5", "LM79xx", 1160, 1100, "neg_rect", "0", "reg_neg")
 
-    # Regulator output caps + HF bypass on each regulated rail.
-    b.cap("C13", P.C13, 1320, 880, "+15V", "0")
-    b.cap("C17", P.C17, 1440, 880, "+15V", "0")
-    b.cap("C14", P.C14, 1320, 1080, "-15V", "0")
-    b.cap("C18", P.C18, 1440, 1080, "-15V", "0")
+    # Regulator output caps + HF bypass directly at each regulator output pin.
+    b.cap("C13", P.C13, 1320, 880, "reg_pos", "0")
+    b.cap("C17", P.C17, 1440, 880, "reg_pos", "0")
+    b.cap("C14", P.C14, 1320, 1080, "reg_neg", "0")
+    b.cap("C18", P.C18, 1440, 1080, "reg_neg", "0")
     b.text(1320, 840, "C13/C14 100u reg out caps, C17/C18 100n HF bypass.", 2)
+
+    # F2/F3 MF-R050 polyfuses -> 0.5 ohm series R (RF2/RF3 in SPICE).
+    # On the DC RAIL OUTPUT (reg pin -> +15V/-15V bus), AFTER the regulator
+    # and its output cap, so a downstream PCB short trips the fuse and
+    # protects the regulator (per parts-spec F2/F3, BOM, build-plan, builder
+    # guide). Modeled as 0.5 ohm series R; MF-R050 hold resistance ~0.7 ohm.
+    # SPICE reserves the F prefix for current-controlled sources, so the
+    # resistor instances are RF2/RF3 (F2/F3 designators live on the label).
+    b.res("RF2", P.RF2, 1500, 880, "reg_pos", "+15V")
+    b.res("RF3", P.RF3, 1500, 1080, "reg_neg", "-15V")
+    b.text(1500, 840, "F2/F3 MF-R050 polyfuse = 0.5ohm on DC rail (RF2/RF3).", 2)
 
     # Inline regulator subckts (no 78xx/79xx ships with installed LTspice).
     b.subckt(LM78XX_SUBCKT)

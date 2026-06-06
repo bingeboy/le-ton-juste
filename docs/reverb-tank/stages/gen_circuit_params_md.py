@@ -8,7 +8,8 @@ truth). The descriptive prose (function text, netlist nodes, notes) is editorial
 scaffold and lives in THIS script; the numbers are interpolated from the Python
 constants so they can never drift from the netlists.
 
-To change a value: edit circuit_params.py, then run this script (or sync.py).
+Edit circuit_params.py, then run sync.py. Do not edit circuit-params.md by hand
+-- it is generated.
 
 Usage: python3 gen_circuit_params_md.py
 """
@@ -172,15 +173,16 @@ def build_md():
     w("> **GENERATED FILE — do not edit by hand.** This table is produced by "
       "[`stages/gen_circuit_params_md.py`](./stages/gen_circuit_params_md.py) "
       "from [`stages/circuit_params.py`](./stages/circuit_params.py), the single "
-      "source of truth. To change a value, edit `circuit_params.py` and run "
-      "`python docs/reverb-tank/sync.py`.")
+      "source of truth. Edit `circuit_params.py`, then run "
+      "`python docs/reverb-tank/sync.py`. Do not edit `circuit-params.md` by "
+      "hand — it is generated.")
     w("")
     w("> **Authority:** This file is the single source of truth for all named parameters.")
     w("> The SPICE netlist (`stage_06_full.net`) is the computational authority and must match this file.")
     w("> All other docs (builder-guide, parts-spec, build-plan, design) reference this file — they do NOT restate numbers.")
-    w("> To change a value: edit `circuit_params.py`, then regenerate the netlists and this file with `sync.py`.")
+    w("> Edit `circuit_params.py`, then run `sync.py`. Do not edit `circuit-params.md` by hand — it is generated.")
     w("")
-    w("This table is THE authoritative human-readable source for every named value in the Ghost Spring circuit. The netlist [`stages/stage_06_full.net`](./stages/stage_06_full.net) is the computational mirror of this file and must agree with it byte-for-byte on values; the Python constants module [`stages/circuit_params.py`](./stages/circuit_params.py) is the machine-readable mirror that the generator scripts import. If any of the three disagree, that is a bug — fix it in `circuit_params.py` first, then regenerate.")
+    w("This table is THE authoritative human-readable source for every named value in the Ghost Spring circuit. The netlist [`stages/stage_06_full.net`](./stages/stage_06_full.net) is the computational mirror of this file and must agree with it byte-for-byte on values; the Python constants module [`stages/circuit_params.py`](./stages/circuit_params.py) is the machine-readable mirror that the generator scripts import. If any of the three disagree, that is a bug — edit `circuit_params.py`, then run `sync.py`. Do not edit `circuit-params.md` by hand — it is generated.")
     w("")
     w("Companion authorities (each owns a different *class* of value):")
     w("")
@@ -306,9 +308,9 @@ def build_md():
     w("| Q1 Ic | **≈%g mA** | %g mA | Ic ≈ Ve/R5 = %g / 68 |" % (P.Q1_IC_SIM * 1e3, P.Q1_IC_FIRSTORDER * 1e3, P.Q1_VE_SIM))
     w("| Q1 Vbe | ≈0.8 V | 0.7 V | Higher than 0.7V at this current (real Vbe) |")
     w("| Q1 Vce | ≈12.7–13.9 V | — | ≈Vc − Ve; dissipation ≈ Vce × Ic ≈ 0.22 W |")
-    w("| U1 output DC (`off_u1`) | **≈0 V (+0.8 fV)** | 0 V | Within ±10mV window |")
+    w("| U1 output DC (`off_u1`) | **≈%g V (≈0 V)** | 0 V | Within ±10mV window |" % P.OFF_U1_SIM)
     w("| U2 output DC (`off_u2`) | **+%g mV** | 0 V | Settles from ~72mV at 20ms to <0.5mV by 200ms |" % (P.OFF_U2_SIM * 1e3))
-    w("| U3 / output DC (`off_u3`) | **−0.35 µV (≈0 V)** | 0 V | At `v_out` (output jack) |")
+    w("| U3 / output DC (`off_u3`) | **%s µV (≈0 V)** | 0 V | At `v_out` (output jack) |" % _num(P.OFF_U3_SIM * 1e6))
     w("| +15V rail (`rail_pos`) | **≈+%s V** | +15 V | LM7815 on its 15.0V clamp (bus well above dropout) |" % _num1(P.RAIL_POS))
     w("| −15V rail (`rail_neg`) | **≈%s V** | −15 V | LM7915 on its −15.0V clamp |" % _num1(P.RAIL_NEG))
     w("")

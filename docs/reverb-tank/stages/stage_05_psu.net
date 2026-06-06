@@ -3,22 +3,22 @@
 .OPTIONS ALLOW_AMBIGUOUS_MODELS
 Vsec_p ac_pos 0 SINE(0 21.2 60)
 Vsec_n 0 ac_neg SINE(0 21.2 60)
-RF2 ac_pos f2_out 0.5
-RF3 ac_neg f3_out 0.5
-DBR1a f2_out pos_rect DN4007
-DBR1b f3_out pos_rect DN4007
-DBR1c neg_rect f2_out DN4007
-DBR1d neg_rect f3_out DN4007
+DBR1a ac_pos pos_rect DN4007
+DBR1b ac_neg pos_rect DN4007
+DBR1c neg_rect ac_pos DN4007
+DBR1d neg_rect ac_neg DN4007
 C11 pos_rect 0 2200u
 R_bleed1 pos_rect 0 10k
 C12 neg_rect 0 2200u
 R_bleed2 neg_rect 0 10k
-XU4 pos_rect 0 +15V LM78xx
-XU5 neg_rect 0 -15V LM79xx
-C13 +15V 0 100u
-C17 +15V 0 100n
-C14 -15V 0 100u
-C18 -15V 0 100n
+XU4 pos_rect 0 reg_pos LM78xx
+XU5 neg_rect 0 reg_neg LM79xx
+C13 reg_pos 0 100u
+C17 reg_pos 0 100n
+C14 reg_neg 0 100u
+C18 reg_neg 0 100n
+RF2 reg_pos +15V 0.5
+RF3 reg_neg -15V 0.5
 C15 +15V 0 10u
 C16 -15V 0 10u
 C5 +15V 0 100n
