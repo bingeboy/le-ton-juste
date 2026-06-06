@@ -11,9 +11,28 @@ The assembly order below (visual → power → driver → transformer → input 
 | DMM (digital multimeter) | DC voltages, resistance, diode-check, leakage |
 | Oscilloscope, 2-channel preferred | Waveforms, clipping, phase, resonant peak |
 | Signal generator or audio interface | Sine sweeps and fixed-tone test signals |
-| ±15V bench supply | Powers the circuit before the on-board PSU stage is built |
+| ±15V bench supply (current-limited) | Powers the circuit before the on-board PSU stage is built. Set the current limit to ~100mA for the first power-on of each stage — a wiring fault then trips the limit instead of cooking a part |
+| Series bulb (lamp) limiter | **Required for the first mains power-on (Stage 6 only).** A 40–60W incandescent bulb in series with the mains. A dead short downstream lights the bulb fully and drops the voltage across the transformer, so a build error can't blow the fuse or the bridge. See Stage 6 |
+| IR thermometer or thermocouple (optional) | Spot-checking Q1 and regulator tab temperatures — see the thermal notes in Stages 3 and 6 |
+
+> **Read this before any power-on.** For every stage on the bench supply (Stages 2–5), bring the supply up with the current limit set low (~100mA) and watch the meter as you switch on. The circuit draws roughly 30–50mA idle. If the supply jumps straight to its current limit, **switch off immediately** — you have a short or a backwards part. Do not "push through" a current-limited bring-up.
 
 > **Safety — PSU filter caps hold charge.** Once the on-board power supply (C11/C12, 2200µF) is built, those caps hold ~21V after power-off. The 10kΩ bleed resistors (R_bleed1/2) drain them, but it takes time: τ = 10kΩ × 2200µF = 22s, so ~110s to reach <2V. **Wait at least 1–2 minutes after switching off — or measure across the caps with the DMM — before touching the supply.** Until the PSU stage exists you are on the bench supply, which has no stored charge, but build the habit now.
+
+---
+
+## Pot positions for every test
+
+The SPICE assertions were run with the controls in defined positions. Set the pots the same way before each bench test or your numbers will not match the simulation. If a pot isn't fitted yet at a given stage, ignore its row.
+
+| Control | Ref / Value | Stage 3 (driver bias + signal) | Stage 4 (resonance) | Stage 6 (full chain) |
+|---|---|---|---|---|
+| **Dwell** | RV1 10kΩ linear | **Fully CW (max drive)** — gives the largest, easiest-to-see collector swing and the worst-case clipping check | **Fully CW** — you want maximum drive into the tank so the resonant peak is unambiguous | **~50% (noon)** for the sound check; **fully CW** when verifying recovery gain / headroom |
+| **Mix** | RV2 100kΩ audio | n/a | n/a | **Recovery-gain / HPF tests: fully CW (full wet)** so the dry path doesn't sum in and skew the reading. **Sound + phase check: 50/50 (noon).** **Output-DC-offset test: any position — DC offset is independent of mix** |
+| **Tone** | RV3 100kΩ audio | n/a | n/a | **Fully CW (full treble/open)** for gain and HPF measurements so the wet path isn't rolled off; set to taste for listening |
+| **Bright cap** | C_bright 47pF (not a control) | — | — | Fixed part across RV2; nothing to set. Its effect only appears with Mix near full-wet, which is why the gain test uses that position |
+
+> **Why full-wet for the gain and HPF tests.** The recovery gain (`recov_gain`) and HPF corner (`hpf_m3db`) are properties of the U2 → C4/R6 path alone. With the Mix pot anywhere but full wet, the dry signal from U1 sums into the same node and you measure a blend, not the wet path. Probe *at U2's output* (and after C4/R6 for the HPF) rather than at the output jack to isolate the wet path regardless of Mix setting — but keeping Mix full-wet also lets you confirm the result end-to-end at J2.
 
 ---
 
@@ -63,6 +82,13 @@ Corresponds to SPICE **Stage 2** `.op` (`q1_ve` 1.0–1.4V, `q1_ic` 10–26mA). 
 - Probe the transformer primary (L1 / Q1 collector): expect a clean AC swing with **no flat-top clipping**. (SPICE **Stage 2** `drv_pk` — clean drive current, no flat-top.)
 - Probe D3 cathode (collector side): should sit at +15V DC and only spike above it on hard transients. (SPICE **Stage 2** `d3_pk` < 1mA — D3 idle in normal use.) Continuous conduction here means the flyback clamp is engaging when it shouldn't — check the bias point first.
 
+> **Q1 temperature — warm is normal, hot is not.** At the design bias point (Ic ≈ 16–18mA, Vce ≈ 13.8V) Q1 dissipates ≈ 13.8V × 18mA ≈ **0.25W**. A TO-126 with the small clip-on heatsink fitted (parts-spec) will settle around **40–50°C** — warm to the touch, you can hold a finger on it indefinitely. This is correct. **What is NOT normal:**
+> - **Too hot to touch (>60°C) and climbing** → thermal runaway or a bias fault. Power down. Re-check R5 (68Ω emitter degeneration — if it's open or a wrong high value the current isn't limited), then the R3b/R4 divider, then confirm C2 isn't shorted (a shorted emitter bypass cap removes the DC drop across R5).
+> - **Ve drifting upward over the first minute** as the part warms is a small, expected settle (a few mV). Ve *running away* upward is the thermal-runaway signature — R5's degeneration should arrest it. If it doesn't, R5 is suspect.
+> - **Stone cold with Vc pinned at +15V** → Q1 isn't conducting at all (open device, reversed device, or broken bias chain), not a thermal issue. See the bias table above.
+>
+> Fit the BD139 heatsink before running this stage for any length of time — it holds the junction below 50°C and stops the long-term hFE drift that would walk the bias point over the life of the unit. **Check the TO-126 tab is not shorting to anything:** on the BD139 the metal tab is the collector, so it sits near +15V — if it touches the chassis or a grounded heatsink without isolation you short the collector. Use an isolating pad if the heatsink is grounded.
+
 ---
 
 ## Stage 4 — Transformer resonance ("the drip")
@@ -98,6 +124,36 @@ Corresponds to SPICE **Stage 5** (`stage_05_psu.asc`): the `op` (settled-DC) run
 
 > **Mains warning.** This stage carries line voltage on the T1 primary. Verify all primary-side wiring, fusing (F1), and earth bonding before first power-on, and keep fingers clear of the primary and the bridge while live. All DMM probing below is on the *secondary/DC* side.
 
+### First mains power-on — do this exactly once, in this order
+
+This is the only stage that has ever seen line voltage. Treat the very first switch-on as a deliberate, slow ceremony. Do not skip the bulb limiter.
+
+**Before applying any power (unit unplugged):**
+
+1. **Verify the T1 primary wiring.** The F-219X has two 115VAC primaries. For 120VAC mains they go in **parallel** (observe the phasing dots — both starts together, both finishes together). Series wiring makes it a 230VAC transformer and you'll get ~half the secondary voltage. (parts-spec T1.)
+2. **Verify the T1 secondary wiring.** The two 15VAC secondaries go in **series** to make 15-0-15: one end of winding A ties to one end of winding B, and *that junction is your 0V/GND center tap*. The two outer ends go to BR1's AC pins. Parallel secondaries give one ~20V rail and **no negative rail** — the LM7915 and every negative op-amp pin will be dead.
+3. **Confirm the mains-side parts are in:** F1 fuse fitted (500mA slow-blow), NTC1 inrush limiter in series after the fuse, MOV1 across L–N, and **safety earth bonded to the chassis** with a star washer. The earth bond is not optional.
+4. **DMM continuity, power off:** confirm no short from either DC rail to GND, and no short between +rail and −rail. Confirm the LM7815 and LM7915 tabs are *isolated from the chassis* by their mica pads — measure tab-to-chassis, expect open. (The 7815 tab is +15V, the 7915 tab is −15V; a missing mica pad on either shorts a rail to chassis, and if both are grounded you short +15V to −15V through the chassis.)
+5. **Disconnect the DC rails from the rest of the board** for the very first PSU bring-up if you can (unplug the Molex power feed to the signal board). Prove the supply alone before you let it feed everything.
+
+**Bulb-limiter bring-up:**
+
+6. Put the **40–60W incandescent bulb in series with the mains** (in series with Live, ahead of the IEC inlet). Plug in, switch on, and **watch the bulb.**
+   - **Bulb flashes bright then dims to a dim glow / out** → normal. That's the inrush charging C11/C12, then the steady ~3VA load. Good.
+   - **Bulb stays fully lit** → a hard short downstream (bridge in backwards, a rail shorted to ground, a regulator tab shorted to chassis). Switch off. The bulb just saved your bridge and fuse — find the short before trying again.
+7. With the bulb still in series, measure the unregulated bus and both rails per the table below. They'll read a little low because the bulb drops some voltage under load — that's expected. You're confirming polarity and that both regulators produce roughly ±15V, not final precision.
+8. **Remove the bulb limiter, plug straight into mains, switch on.** Re-measure the rails — now they should land in the 14.85–15.15V windows.
+9. **Reconnect the signal board** (Molex power feed) and re-check the rails under real load. A rail that was fine unloaded but sags now points to a regulator dropping out (check the unregulated bus headroom) or a downstream short pulling a polyfuse (F2/F3) toward trip.
+
+**What to look, listen, and smell for during the first minute live:**
+
+- **Smell:** any hot-varnish, scorched-resin, or "electrical" smell → switch off immediately. Usually a backwards electrolytic (C11/C12/C13/C14) or a regulator with no heatsink shorting.
+- **Look:** any electrolytic bulging or venting, any discoloration at a regulator or R_bleed resistor.
+- **Touch (after the rails check good):** the regulator tabs will get **warm** — see the thermal note below. The R_bleed resistors run barely-warm (44mW). Anything *hot* in the first minute is a fault.
+- **Listen:** a faint mechanical hum from the toroid is normal; a loud buzz or a rising whine is not.
+
+> **Regulator heatsinking — they run warm, and they must be heatsinked and isolated.** Each regulator drops (≈20.4V bus − 15V) ≈ **5–6V** at the unit's ~30–50mA load, so it dissipates roughly **0.15–0.3W** at idle. That is modest, but the LM78xx/79xx will still climb toward 60–70°C *without* a heatsink in a closed 2U chassis, and they thermally throttle (rail sags) before they fault. **Fit the TO-220 heatsink + mica isolation pad + thermal compound on both** (parts-spec Heatsinks). The mica pad is mandatory for the isolation reason in step 4 above, not just for heat. Expected tab temperature with heatsink fitted: **warm, ~45–55°C — comfortable to keep a finger on.** If a regulator is too hot to touch, check (a) it actually has its heatsink and compound, (b) the load isn't excessive (downstream short edging the polyfuse), and (c) the unregulated bus isn't abnormally high.
+
 > **In SPICE, the `op` rail check is a *settled-transient* average, not a true `.op`.** A rectifier-plus-filter supply has no meaningful DC operating point — the solver freezes the SINE sources at their t=0 value (0V), so the bridge sees no drive and the caps never charge. The generator therefore runs a 150ms transient and averages V(+15V)/V(−15V) over 100–120ms. That average is exactly the steady DC a bench DMM reads.
 
 | Test | Method | SPICE assertion | Expected | Fail action |
@@ -118,6 +174,8 @@ Corresponds to SPICE **Stage 5** (`stage_05_psu.asc`): the `op` (settled-DC) run
 ## Stage 7 — Full-chain integration verification
 
 This is the **integration stage**: it adds *no new parts*. Corresponds to SPICE **Stage 6** (`stage_06_full.asc` / `gen_stage6_full.py`), which carries the complete real circuit — the ±15V linear PSU, BD139 driver, REB3S transformer, spring tank, input protection, and all three op-amp stages — byte-for-byte, and **re-runs the original Stage 1 MVP signal-path assertions against the whole thing**. The point is a clean regression gate: if any baseline number drifted as the real supply/driver/protection were added, it surfaces here. Everything below is the verified bench equivalent of the simulated assertion suite.
+
+> **Bring-up order for the fully assembled unit.** Do the Stage 6 PSU first-mains-power-on ceremony (bulb limiter, rails verified) *with the signal board disconnected*, then reconnect the board and power up. Set the pots per the **Pot positions for every test** table at the top of this guide. Confirm the power LED lights (it's wired from +15V through 10kΩ — ~1.2mA, deliberately dim; a dark LED with good rails just means a reversed LED or wrong resistor, not a supply fault). Then work down the table below. Keep a hand near the switch for the first powered minute and watch/smell for the fault signs listed in the Stage 6 power-on section.
 
 **Verified simulation results** (all pass; three analysis variants, one active at a time — regenerate with `gen_stage6_full.py {op|ac|tran}`):
 
@@ -158,12 +216,29 @@ With the input shorted (no cable plugged in), the output should be quiet down in
 
 ---
 
-## Orientation quick-reference
+## Orientation, polarity & pinout quick-reference
 
-Three things are directional and produce *no reverb* (or wrong behavior) if reversed. Verify all three:
+These are the parts that are directional and cost real bench time — or real parts — if they go in wrong. Verify every row before first power-on of the relevant stage.
+
+### Directional — wrong = no reverb / wrong behavior
 
 | Part | Correct orientation | Symptom if reversed |
 |---|---|---|
 | **R1** | After C_in: from U1(+) pin to GND (shunt) | U1 output slams to a rail; no/weak dry signal (parts-spec R1) |
-| **Driver transformer (REB3S)** | Primary (L1) → Q1 collector; 8Ω secondary (L2) → tank input | No reverb — secondary can't drive the collector node |
-| **Spring tank** | 8Ω input side fed from the transformer; 2550Ω output side to U2. Mount **open-side DOWN, horizontal** | No/wrong reverb; springs drift over time if mounted open-side up (parts-spec Build Note 3) |
+| **Driver transformer (T2 / REB3S)** | Primary (L1) → Q1 collector; 8Ω secondary (L2) → tank input | No reverb — secondary can't drive the collector node |
+| **Spring tank (RT1 / 9AB3C1B)** | 8Ω input side fed from the transformer; 2550Ω output side to U2. Mount **open-side DOWN, horizontal** | No/wrong reverb; springs drift over time if mounted open-side up (parts-spec Build Note 3) |
+| **Tank output phase** | Either way works electrically; phase may need swapping vs the dry path | "Phasey"/hollow at 50/50 Mix — swap the 2550Ω-side wires (Phase note, Stage 7) |
+
+### Polarity & pinout — wrong = a destroyed part or a dead rail
+
+| Part | Watch out for | Symptom / consequence if wrong |
+|---|---|---|
+| **LM7815 vs LM7915** | **The 7915 pinout is NOT a mirror of the 7815.** 7815 (TO-220, tab = OUT/+15V): pin1=IN, pin2=GND, pin3=OUT. 7915 (tab = IN/−15V): pin1=GND, pin2=IN(−), pin3=OUT(−15V). Do not assume symmetry | Dead or wrong-polarity negative rail; part may overheat. Single most common PSU build error |
+| **Electrolytics C11/C12 (2200µF)** | C11 sits on the **+** unregulated bus, C12 on the **−** bus. Get the can polarity right per rail | Backwards electrolytic on a 20V bus vents/explodes within seconds of power-on. This is why first power-on uses the bulb limiter |
+| **Electrolytics C2, C13/C14, C15/C16** | C2 (+ toward Q1 emitter), C13/C15 on +15V, C14/C16 on −15V | Reversed cap heats, leaks, then vents |
+| **Bridge BR1 (W04G)** | The two ~ pins go to the transformer AC; **+** and **−** go to C11/C12. Don't swap AC pins for DC pins | Near-0V or half-wave bus; possible blown bridge if it shorts the transformer |
+| **D3, D_clamp+, D_clamp− (1N4148)** | Cathode = banded end. D3: anode→collector, cathode→+15V. D_clamp+: anode→U1(+), cathode→+15V. D_clamp−: anode→−15V, cathode→U1(+) | A reversed clamp reads ~0.6V forward at idle (Stage 5 diode-check catches it) and clamps the wrong polarity, leaving U1 unprotected |
+| **TVS1 (SMBJ15CA)** | Bidirectional — orientation doesn't matter electrically, but verify it's the **CA** (bidirectional) part, not a unidirectional SMBJ15A | A unidirectional TVS only clamps one polarity at the jack |
+| **Op-amps U1–U3 (OPA2134)** | Pin-1 notch/dot toward the board's pin-1 mark | Backwards IC = supply pins swapped, op-amp pulls hard or cooks |
+| **Q1 (BD139)** | **BD139 standard pinout — printed/marked face toward you, leads pointing down: pin1 = Emitter, pin2 = Collector, pin3 = Base.** The metal tab is also the Collector (internally tied to pin 2). This is **not** the EBC/“flat-side” order of common TO-92 small-signal parts — confirm against the BD139 datasheet before soldering | Reversed Q1 = no bias, stone-cold device with the collector pinned at +15V. Easy to mis-wire by assuming a 2N-series pin order |
+| **Regulator tabs vs chassis** | Both LM78xx/79xx tabs **must** be isolated from the chassis with mica pads (7815 tab=+15V, 7915 tab=−15V) | No pad = rail shorted to chassis; both unpadded = +15V shorted to −15V through the chassis |
