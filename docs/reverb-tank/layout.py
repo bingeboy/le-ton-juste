@@ -209,7 +209,7 @@ circ(ax, T1_CX, T1_CY, T1_R, fc=TOROID, ec='#604020', lw=2.0, zorder=3)
 circ(ax, T1_CX, T1_CY, 0.38, fc='#A09080', ec='#604020', lw=1.2, zorder=4)
 txt(ax, T1_CX, T1_CY + 0.22, 'T1', size=7.5, bold=True, color='#604020')
 txt(ax, T1_CX, T1_CY - 0.08, 'Triad F-219X', size=6, color=INK, mono=True)
-txt(ax, T1_CX, T1_CY - 0.33, '15VA toroidal', size=5.8, color=INK, mono=True)
+txt(ax, T1_CX, T1_CY - 0.33, '30VA toroidal', size=5.8, color=INK, mono=True)
 txt(ax, T1_CX, T1_CY - T1_R - 0.25, 'Ø75mm', size=5.5, color=DIM)
 
 # Regulator heatsinks on right chassis wall
