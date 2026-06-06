@@ -123,11 +123,11 @@ This is the **integration stage**: it adds *no new parts*. Corresponds to SPICE 
 
 | Assertion | Variant | Measured | Pass band | Result |
 |---|---|---|---|---|
-| `off_u1` | op | −0.0µV (≈0V) | ±10mV | ✅ |
+| `off_u1` | op | ≈0V (+0.8fV) | ±10mV | ✅ |
 | `off_u2` | op | +0.47mV | ±10mV | ✅ |
 | `off_u3` | op | −0.35µV (≈0V) | ±10mV | ✅ |
 | `q1_ve` | op | 1.092V | 1.0–1.4V | ✅ |
-| `recov_gain` | ac | 46.59dB = 213.7× @1kHz | 200–228× | ✅ |
+| `recov_gain` | ac | 46.59dB = 213.6× @1kHz | 200–228× | ✅ |
 | `hpf_m3db` | ac | 312Hz | 250–320Hz | ✅ |
 | `vout_pk` | tran | 1.16V | < 14V | ✅ |
 | `osc_ratio` | tran | 0.9998 | < 1.05 | ✅ |
@@ -139,7 +139,7 @@ This is the **integration stage**: it adds *no new parts*. Corresponds to SPICE 
 
 | Test | Method | Expected | Fail action |
 |---|---|---|---|
-| Recovery gain | Apply −40dBu to input, probe U2 output | ~46.6dB gain (≈214×; ~100mV in → ~10V out at U2) | Low: check Ri (470Ω) / Rf (100kΩ) ratio and Rbias (100kΩ, not 470Ω). Very high or oscillating: check feedback wiring and R2/R7 output isolation resistors |
+| Recovery gain | Apply −40dBu to input, probe U2 output | ~46.6dB gain (≈213.6×; ~100mV in → ~10V out at U2) | Low: check Ri (470Ω) / Rf (100kΩ) ratio and Rbias (100kΩ, not 470Ω). Very high or oscillating: check feedback wiring and R2/R7 output isolation resistors |
 | HPF corner | Sweep generator, probe wet at U2 output then after C4/R6 (ratio = the HPF transfer) | −3dB at ~312Hz (design 284Hz; accept 250–320Hz) | Wrong corner: check C4 (100nF) and R6 (5.6kΩ exactly — 4.7k → 338Hz, 6.8k → 234Hz) |
 | Output DC offset | DMM DC at J2 output jack | < ±10mV (sim ≈ 0V) | Check U3 output and C3 (no DC leaking from the tank into U2) |
 | Q1 emitter bias | DMM DC at Q1 emitter / R5 top | ≈1.09V (1.0–1.4V) — unchanged under the real regulated rails | Bias shifted: check R3b/R4 divider and R5 (68Ω); confirm the +15V rail first (Stage 6 above) |
