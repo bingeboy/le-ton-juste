@@ -325,7 +325,7 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 | `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_settle` | \|DC\| < 0.5 V (settles after clip) | U2 latched off-zero after a clip |
 
 > **Pass windows** are grounded in the circuit and tabulated in
-> `circuit_params.py` (`DWELL_MIN_DRY_WINDOW`, `DWELL_MAX_Q1_VE_WINDOW`,
+> `circuit_params.py` (`DWELL_MIN_DRY_WINDOW`, `DWELL_MAX_WIPER_PK_WINDOW`,
 > `DWELL_MAX_U2_PK_MAX`, `MIX_CCW_VOUT_WINDOW`, `WORST_CASE_SETTLE_MAX`). The dry
 > level ≈ 0.1 V pk follows from the 100 mVpk input through the unity U1 buffer and
 > the Rdry/RV2 divider; the < 13.5 V U2 ceiling is the ±15 V supply minus

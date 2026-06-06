@@ -352,9 +352,11 @@ def build(active_analysis="op"):
     b.opa("U1", 560, 200, "u1_pos", "u1_out", "+15V", "-15V", "u1_out")
     b.res("R2", P.R2, 640, 144, "u1_out", "u1_buf")
 
-    # Dwell pot divider (unchanged).
-    b.res("RV1a", P.RV1A, 760, 60, "u1_buf", "rv1_wiper")
-    b.res("RV1b", P.RV1B, 760, 180, "rv1_wiper", "0")
+    # Dwell pot divider. RV1a is the wiper-to-GND half (a = position×total),
+    # RV1b is the signal-to-wiper half (b = (1-position)×total). At CW (max
+    # Dwell) a≈total, b≈0 -> wiper ≈ u1_buf = MAXIMUM wet drive.
+    b.res("RV1a", P.RV1A, 760, 60, "rv1_wiper", "0")
+    b.res("RV1b", P.RV1B, 760, 180, "u1_buf", "rv1_wiper")
 
     # BD139 discrete driver (unchanged from Stage 4).
     b.cap("C_drive", P.C_DRIVE, 880, 144, "rv1_wiper", "q1_drv")
