@@ -185,7 +185,7 @@
 
 <div class="page-hero">
   <h1>Parts &amp; Ordering</h1>
-  <p>Four suppliers. Complete manufacturer part numbers. Upload the Mouser BOM CSV for one-click ordering of all electronics. Estimated total: ~$298–318.</p>
+  <p>Four suppliers. Complete manufacturer part numbers. Upload the Mouser BOM CSV for one-click ordering of all electronics. Estimated total: ~$357–382.</p>
 </div>
 
 <!-- BOM TOOL -->
@@ -249,7 +249,22 @@
       <tr><td>BD139 NPN transistor TO-126 (driver stage)</td><td class="mono">BD139</td><td>1</td><td>~$0.55</td></tr>
       <tr><td>LM7815CT/NOPB +15V regulator TO-220</td><td class="mono">LM7815CT/NOPB</td><td>1</td><td>~$0.75</td></tr>
       <tr><td>LM7915CT/NOPB −15V regulator TO-220</td><td class="mono">LM7915CT/NOPB</td><td>1</td><td>~$0.75</td></tr>
-      <tr><td>W02G-E4/51 bridge rectifier 1A/200V</td><td class="mono">W02G-E4/51</td><td>1</td><td>~$0.45</td></tr>
+      <tr><td>W04G bridge rectifier 2A/400V</td><td class="mono">W04G</td><td>1</td><td>~$0.55</td></tr>
+      <tr><td>1N4148 fast signal diode — D_clamp+ / D_clamp− input clamp + D3 collector flyback</td><td class="mono">1N4148</td><td>3</td><td>~$0.10 ea = $0.30</td></tr>
+    </table>
+  </div>
+
+  <h4>Protection &amp; Reliability</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Part</th><th>Mfr Part #</th><th>Qty</th><th>Est.</th></tr>
+      <tr><td>SMBJ15CA bidirectional TVS — input ESD clamp at jack (TVS1)</td><td class="mono">SMBJ15CA</td><td>1</td><td>~$0.45</td></tr>
+      <tr><td>Littelfuse V275LA20AP MOV — 275V mains surge clamp L–N (MOV1)</td><td class="mono">V275LA20AP</td><td>1</td><td>~$0.75</td></tr>
+      <tr><td>Ametherm MS32 5006 NTC thermistor — 5Ω 6A inrush limiter (NTC1)</td><td class="mono">MS32 5006</td><td>1</td><td>~$1.50</td></tr>
+      <tr><td>Bourns MF-R050 polyfuse — 500mA hold, DC rail overcurrent (F2 / F3, +15V / −15V rails)</td><td class="mono">MF-R050</td><td>2</td><td>~$0.50 ea = $1.00</td></tr>
+      <tr><td>Littelfuse 0218.500MXP — 500mA T slow-blow 5×20mm mains fuse (1 fitted + 1 spare)</td><td class="mono">0218.500MXP</td><td>2</td><td>~$0.55 ea = $1.10</td></tr>
+      <tr><td>SPDT mini toggle — ground-lift switch, rear panel</td><td class="mono">100SP1T1B1M1QEH</td><td>1</td><td>~$3.50</td></tr>
+      <tr><td>TE ring terminal 22-16AWG #8 stud — earth bond lugs (IEC ground pin to chassis + secondary bond)</td><td class="mono">34112</td><td>2</td><td>~$0.30 ea = $0.60</td></tr>
     </table>
   </div>
 
@@ -268,9 +283,9 @@
   <div class="table-wrap">
     <table>
       <tr><th>Part</th><th>Mfr Part #</th><th>Qty</th><th>Est.</th></tr>
-      <tr><td>2200µF/35V low-ESR — main PSU filter C13–C14</td><td class="mono">UKW1V222MHD</td><td>2</td><td>~$1.20 ea = $2.40</td></tr>
-      <tr><td>100µF/25V audio grade — reg output + emitter bypass C2, C15–C16</td><td class="mono">UKW1E101MED</td><td>3</td><td>~$0.35 ea = $1.05</td></tr>
-      <tr><td>10µF/25V — bulk rail decoupling C11–C12</td><td class="mono">UKW1E100MDD</td><td>2</td><td>~$0.25 ea = $0.50</td></tr>
+      <tr><td>2200µF/50V low-ESR — main PSU filter C11–C12</td><td class="mono">UKW1H222MHD</td><td>2</td><td>~$1.20 ea = $2.40</td></tr>
+      <tr><td>100µF/25V audio grade — emitter bypass + reg output C2, C13–C14</td><td class="mono">UKW1E101MED</td><td>3</td><td>~$0.35 ea = $1.05</td></tr>
+      <tr><td>10µF/25V — bulk rail decoupling C15–C16</td><td class="mono">UKW1E100MDD</td><td>2</td><td>~$0.25 ea = $0.50</td></tr>
     </table>
   </div>
 
@@ -279,24 +294,25 @@
     <table>
       <tr><th>Value</th><th>Mfr Part #</th><th>Qty</th><th>Location</th><th>Est.</th></tr>
       <tr><td>1MΩ</td><td class="mono">MFR-25FBF52-1M</td><td>5</td><td>R1 input impedance</td><td>~$0.40</td></tr>
-      <tr><td>100kΩ</td><td class="mono">MFR-25FBF52-100K</td><td>5</td><td>Rf recovery feedback</td><td>~$0.40</td></tr>
-      <tr><td>22kΩ</td><td class="mono">MFR-25FBF52-22K</td><td>5</td><td>Rdry dry path summing</td><td>~$0.40</td></tr>
-      <tr><td>10kΩ</td><td class="mono">MFR-25FBF52-10K</td><td>5</td><td>Rdry</td><td>~$0.40</td></tr>
+      <tr><td>100kΩ</td><td class="mono">MFR-25FBF52-100K</td><td>5</td><td>Rf recovery feedback · Rbias U2 input impedance</td><td>~$0.40</td></tr>
+      <tr><td>10kΩ</td><td class="mono">MFR-25FBF52-10K</td><td>5</td><td>Rdry dry path mixing</td><td>~$0.40</td></tr>
       <tr><td>6.8kΩ</td><td class="mono">MFR-25FBF52-6K8</td><td>5</td><td>R3b upper bias divider</td><td>~$0.40</td></tr>
       <tr><td>5.6kΩ</td><td class="mono">MFR-25FBF52-5K6</td><td>5</td><td>R6 HPF corner — use exactly 5.6kΩ</td><td>~$0.40</td></tr>
-      <tr><td>470Ω</td><td class="mono">MFR-25FBF52-470R</td><td>5</td><td>Ri recovery gain · Rbias U2 non-inv</td><td>~$0.40</td></tr>
+      <tr><td>470Ω</td><td class="mono">MFR-25FBF52-470R</td><td>5</td><td>Ri recovery gain set</td><td>~$0.40</td></tr>
       <tr><td>100Ω</td><td class="mono">MFR-25FBF52-100R</td><td>5</td><td>R2 U1 series · R7 U3 series output</td><td>~$0.40</td></tr>
       <tr><td>68Ω</td><td class="mono">MFR-25FBF52-68R</td><td>5</td><td>R5 emitter degeneration</td><td>~$0.40</td></tr>
       <tr><td>1kΩ</td><td class="mono">MFR-25FBF52-1K</td><td>5</td><td>R3 base drive · R4 lower bias divider</td><td>~$0.40</td></tr>
+      <tr><td>10kΩ / 1W flameproof</td><td class="mono">FMP100JR-52-10K</td><td>2</td><td>R_bleed1/R_bleed2 PSU cap bleed</td><td>~$0.30 ea = $0.60</td></tr>
+      <tr><td>10Ω</td><td class="mono">MFR-25FBF52-10R</td><td>2</td><td>Ground-lift RC network</td><td>~$0.40</td></tr>
     </table>
   </div>
 
-  <h4>Potentiometers — Vishay/Spectrol 296 (MIL-PRF-39023)</h4>
+  <h4>Potentiometers</h4>
   <div class="table-wrap">
     <table>
       <tr><th>Part</th><th>Mfr Part #</th><th>Qty</th><th>Est.</th></tr>
-      <tr><td>10kΩ linear — Dwell RV1</td><td class="mono">296UAL103B2</td><td>1</td><td>~$10</td></tr>
-      <tr><td>100kΩ linear — Mix RV2 + Tone RV3</td><td class="mono">296UAL104B2</td><td>2</td><td>~$10 ea = $20</td></tr>
+      <tr><td>10kΩ linear — Dwell RV1 (Vishay/Spectrol 296, MIL-PRF-39023)</td><td class="mono">296UAL103B2</td><td>1</td><td>~$10</td></tr>
+      <tr><td>100kΩ audio taper — Mix RV2 + Tone RV3 (Bourns PDB181-GTR; substitute 296UAL104B2 for linear)</td><td class="mono">PDB181-GTR01-104A0</td><td>2</td><td>~$2 ea = $4</td></tr>
     </table>
   </div>
 
@@ -306,11 +322,11 @@
       <tr><th>Part</th><th>Mfr Part #</th><th>Qty</th><th>Est.</th></tr>
       <tr><td>Switchcraft 112A ¼" TS jack — In + Out</td><td class="mono">112A</td><td>2</td><td>~$3.20 ea = $6.40</td></tr>
       <tr><td>DIP-8 machine-pin IC socket (for OPA2134)</td><td class="mono">A-108-A-LPT</td><td>2</td><td>~$0.50 ea = $1.00</td></tr>
-      <tr><td>Schurter IEC C14 inlet with fuse holder</td><td class="mono">4301.0527</td><td>1</td><td>~$8.00</td></tr>
+      <tr><td>Schurter EMI-filtered IEC C14 inlet with fuse holder</td><td class="mono">5110.1052</td><td>1</td><td>~$14.00</td></tr>
       <tr><td>TE SPST rocker switch 6A/250V</td><td class="mono">1825232-1</td><td>1</td><td>~$2.00</td></tr>
       <tr><td>TO-220 heatsink — for LM7815/7915</td><td class="mono">V7477X</td><td>2</td><td>~$1.50 ea = $3.00</td></tr>
       <tr><td>TO-220 mica insulating pad — mandatory, see warning below</td><td class="mono">4880SG</td><td>2</td><td>~$0.30 ea = $0.60</td></tr>
-      <tr><td>Triad F-219X toroidal transformer 15VA dual 15VAC</td><td class="mono">F-219X</td><td>1</td><td>~$28</td></tr>
+      <tr><td>Triad F-219X toroidal transformer 30VA dual-primary 2×15VAC</td><td class="mono">F-219X</td><td>1</td><td>~$28</td></tr>
       <tr><td>Vector T44 FR4 perfboard 0.1" pitch</td><td class="mono">T44</td><td>1</td><td>~$8.00</td></tr>
       <tr><td>Würth M3 nylon standoff 10mm — PCB isolation</td><td class="mono">971100311</td><td>4</td><td>~$0.50 ea = $2.00</td></tr>
       <tr><td>Würth M3 stainless screw</td><td class="mono">900151030030</td><td>10</td><td>~$0.20 ea = $2.00</td></tr>
@@ -325,7 +341,7 @@
       <div class="supplier-name">② Mouser Electronics</div>
       <div class="supplier-url">mouser.com — upload mouser-bom.csv via BOM Tool</div>
     </div>
-    <div class="supplier-total">Subtotal ~$145–165 — verify live prices in BOM tool</div>
+    <div class="supplier-total">Subtotal ~$170–190 — verify live prices in BOM tool</div>
   </div>
 </section>
 
@@ -405,11 +421,11 @@
     <table>
       <tr><th>Supplier</th><th>What</th><th>Est. Cost</th></tr>
       <tr><td>Amplified Parts</td><td>9AB3C1B tank + REB3S transformer</td><td>~$53</td></tr>
-      <tr><td>Mouser</td><td>All electronics</td><td>~$145–165</td></tr>
+      <tr><td>Mouser</td><td>All electronics</td><td>~$170–190</td></tr>
       <tr><td>Hammond</td><td>2U chassis with rack ears</td><td>~$50</td></tr>
       <tr><td>Front Panel Express</td><td>Custom engraved aluminum panel</td><td>~$35</td></tr>
       <tr><td>Knobs</td><td>3× ¼" D-shaft aluminum knobs</td><td>~$15</td></tr>
-      <tr class="cost-total"><td>Total</td><td></td><td>~$298–318</td></tr>
+      <tr class="cost-total"><td>Total</td><td></td><td>~$357–382</td></tr>
     </table>
   </div>
 </section>

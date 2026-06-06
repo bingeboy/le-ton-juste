@@ -141,7 +141,7 @@ Corresponds to SPICE **Stage 4** (`stage_04_input_protect.asc`): `.op` clamp rev
 
 ## Stage 6 — Power supply rails
 
-Corresponds to SPICE **Stage 5** (`stage_05_psu.asc`): the `op` (settled-DC) run measures the regulated rails (`rail_pos` 14.85–15.15V, `rail_neg` −15.15 to −14.85V), and the `tran` run measures post-regulator ripple over a 100–120ms window (`ripple_pos` < 10mVpp, `ripple_neg` < 10mVpp). This is the real ±15V linear supply that replaces the bench rails used through Stages 1–5: T1 (15‑0‑15VAC) → F2/F3 polyfuses → BR1 bridge → C11/C12 2200µF bulk + 10k bleed → U4 LM7815 / U5 LM7915 → C13/C14 100µF + C17/C18 100nF.
+Corresponds to SPICE **Stage 5** (`stage_05_psu.asc`): the `op` (settled-DC) run measures the regulated rails (`rail_pos` 14.85–15.15V, `rail_neg` −15.15 to −14.85V), and the `tran` run measures post-regulator ripple over a 100–120ms window (`ripple_pos` < 10mVpp, `ripple_neg` < 10mVpp). This is the real ±15V linear supply that replaces the bench rails used through Stages 1–5: T1 (15‑0‑15VAC) → BR1 bridge → C11/C12 2200µF bulk + 10k bleed → U4 LM7815 / U5 LM7915 → C13/C14 100µF + C17/C18 100nF → F2/F3 polyfuses → +15V / −15V rails. The F2/F3 polyfuses sit on the **regulated DC output** (after the regulators), protecting the regulated rails from a downstream PCB short — they are **not** on the AC secondary.
 
 > **Mains warning.** This stage carries line voltage on the T1 primary. Verify all primary-side wiring, fusing (F1), and earth bonding before first power-on, and keep fingers clear of the primary and the bridge while live. All DMM probing below is on the *secondary/DC* side.
 
