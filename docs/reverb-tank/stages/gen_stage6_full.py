@@ -350,11 +350,21 @@ def build(active_analysis="op"):
     # Tone RV3, Mix RV2, output buffer U3.
     b.res("RV3a", P.RV3A, 2180, 600, "hpf_out", "rv3_wiper")
     b.res("RV3b", P.RV3B, 2180, 720, "rv3_wiper", "0")
-    b.res("Rdry", P.RDRY, 640, 360, "u1_buf", "mix_top")
-    b.res("Rwet", P.RWET, 2300, 600, "rv3_wiper", "mix_top")
-    b.res("RV2a", P.RV2A, 2300, 760, "mix_top", "mix_node")
-    b.res("RV2b", P.RV2B, 2300, 880, "mix_node", "0")
-    b.cap("C_bright", P.C_BRIGHT, 2420, 760, "mix_top", "mix_node")
+    # --- Mix RV2: 3-terminal PASSIVE BLEND (not a volume knob). ---------------
+    # Physical wiring (parts-spec "Mix Stage Topology"):
+    #   Dry  (u1_buf) -> Rdry -> RV2 pin 1 (CCW end)  == node mix_dry
+    #   Wet  (rv3_wiper, Tone output) -> RV2 pin 3 (CW end) == node mix_wet
+    #   RV2 wiper (pin 2) -> U3(+)                     == node mix_node
+    #   C_bright (47p) bridges pin1<->pin3 (full pot, mix_dry<->mix_wet)
+    # RV2a = CCW half (pin1->wiper), RV2b = CW half (wiper->pin3). Full-CCW puts
+    # the wiper at mix_dry (100% dry); full-CW puts it at mix_wet (100% wet).
+    # The wet source ties DIRECTLY to mix_wet (no Rwet) so neither end is shorted.
+    b.res("Rdry", P.RDRY, 640, 360, "u1_buf", "mix_dry")
+    b.res("RV2a", P.RV2A, 2300, 760, "mix_dry", "mix_node")   # CCW half of pot
+    b.res("RV2b", P.RV2B, 2300, 880, "mix_node", "mix_wet")   # CW half of pot
+    b.cap("C_bright", P.C_BRIGHT, 2420, 760, "mix_dry", "mix_wet")  # bright cap across full pot
+    # Wet (Tone wiper) connects directly to the CW end of the pot.
+    b.res("Rwet_wire", "0", 2300, 600, "rv3_wiper", "mix_wet")  # direct wire, modelled 0 ohm
     b.opa("U3", 2560, 900, "mix_node", "u3_out", "+15V", "-15V", "u3_out")
     b.res("R7", P.R7, 2640, 844, "u3_out", "v_out")
     b.res("Rload", P.RLOAD, 2760, 844, "v_out", "0")
@@ -383,6 +393,15 @@ def build(active_analysis="op"):
         b.directive(".meas TRAN off_u2 AVG V(u2_out) FROM=190m TO=200m")
         b.directive(".meas TRAN off_u3 AVG V(v_out)  FROM=190m TO=200m")
         b.directive(".meas TRAN q1_ve  AVG V(q1_e)   FROM=190m TO=200m")
+        # Cross-check: Ic implied by the emitter voltage across R5 (Ic ~= Ve/R5,
+        # Ie ~= Ic for Bf=100). Compare to the current actually flowing through R5
+        # (I(R5) = Ie = Ic in the bias network) so q1_ic_calc has a real target.
+        # The divisor tracks circuit_params.R5 (not a hardcoded 68) so the formula
+        # never silently drifts if R5 changes.
+        b.directive(f".meas TRAN q1_ic_calc PARAM {{q1_ve/{P.R5}}}")
+        b.directive(".meas TRAN q1_ic FIND I(R5) AT=200m")
+        # Flag disagreement: |q1_ic_calc - q1_ic| / q1_ic must stay under 10%.
+        b.directive(".meas TRAN q1_ic_err PARAM {abs(q1_ic_calc - q1_ic) / q1_ic}")
         # Settled rail sanity (the bias points depend on them).
         b.directive(".meas TRAN rail_pos AVG V(+15V) FROM=190m TO=200m")
         b.directive(".meas TRAN rail_neg AVG V(-15V) FROM=190m TO=200m")

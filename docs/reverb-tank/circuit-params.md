@@ -42,8 +42,8 @@ All signal-path resistors: metal film, 1% tolerance, 250mW. (R_bleed1/2 are 1W f
 | Rf | 100k | U2 feedback upper leg (output → (−)); gain = 1 + Rf/Ri | `u2_out` → `u2_inv` |
 | R6 | 5.6k | Wet HPF resistor (with C4) | `hpf_out` → `0` |
 | Rbias | 100k | U2 non-inv (+) input bias / recovery input impedance | `u2_in_pos` → `0` |
-| Rdry | 10k | Dry-path mixing resistor into Mix node | `u1_buf` → `mix_top` |
-| Rwet | 0.001 | Wet-path tie from Tone wiper to Mix node (≈0Ω model of direct wire) | `rv3_wiper` → `mix_top` |
+| Rdry | 10k | Dry-path series R: U1 buffer → RV2 CCW end (dry end of Mix pot) | `u1_buf` → `mix_dry` |
+| Rwet_wire | 0Ω | Wet-path direct wire: Tone wiper → RV2 CW end (wet end of Mix pot; 0Ω wire model) | `rv3_wiper` → `mix_wet` |
 | R7 | 100 | U3 output isolation (series to output jack / MC100) | `u3_out` → `v_out` |
 | Rload | 47k | MC100 RCA input load (model of downstream device, not a fitted part) | `v_out` → `0` |
 | R_tank_in | 8 | Tank input impedance (8Ω side, lumped tank model) | `tank_in` → `0` |
@@ -55,8 +55,8 @@ All signal-path resistors: metal film, 1% tolerance, 250mW. (R_bleed1/2 are 1W f
 | RF3 | 0.5 | F3 polyfuse (MF-R050) model, −15V rail | `reg_neg` → `-15V` |
 | RV1a | 5k | Dwell pot upper half (U1 buf → wiper) | `u1_buf` → `rv1_wiper` |
 | RV1b | 5k | Dwell pot lower half (wiper → GND) | `rv1_wiper` → `0` |
-| RV2a | 50k | Mix pot upper half (Mix top → wiper) | `mix_top` → `mix_node` |
-| RV2b | 50k | Mix pot lower half (wiper → GND) | `mix_node` → `0` |
+| RV2a | 50k | Mix pot CCW half (dry end → wiper) | `mix_dry` → `mix_node` |
+| RV2b | 50k | Mix pot CW half (wiper → wet end) | `mix_node` → `mix_wet` |
 | RV3a | 50k | Tone pot upper half (HPF out → wiper) | `hpf_out` → `rv3_wiper` |
 | RV3b | 50k | Tone pot lower half (wiper → GND) | `rv3_wiper` → `0` |
 
@@ -75,7 +75,7 @@ Signal-path caps: film (WIMA MKS2/MKP). C2/C13–C16 electrolytic; C11/C12 bulk 
 | C2 | 100µF / 25V | Q1 emitter bypass (across R5, full AC gain) | `q1_e` → `0` |
 | C3 | 470nF / 63V | Tank output → U2 input DC block (~3Hz corner w/ Rbias) | `tank_out` → `u2_in_pos` |
 | C4 | 100nF / 63V | Wet HPF cap (with R6) | `u2_out` → `hpf_out` |
-| C_bright | 47pF | Bright cap across Mix pot (HF presence at low mix) | `mix_top` → `mix_node` |
+| C_bright | 47pF | Bright cap across full Mix pot (HF presence as pot approaches full-wet) | `mix_dry` → `mix_wet` |
 | C5 | 100nF / 63V | U1/U2 +15V supply decoupling | `+15V` → `0` |
 | C6 | 100nF / 63V | U1/U2 −15V supply decoupling | `-15V` → `0` |
 | C7 | 100nF / 63V | U3 +15V supply decoupling | `+15V` → `0` |

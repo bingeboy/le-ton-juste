@@ -24,13 +24,28 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 STAGES = os.path.join(HERE, "stages")
 PY = sys.executable
 
-# (script path, output file it writes with the DEFAULT analysis variant)
+# Each generator maps to a LIST of (analysis, output file) variants it must emit.
+# Most stages ship only their default op netlist. Stages 5 and 6 additionally
+# carry analysis-specific variants whose .meas assertions live in NO other file:
+#   - stage 5: op (rail DC) + tran (ripple_pos/ripple_neg < 10mVpp)
+#   - stage 6: op (bias) + ac (recov_gain / hpf_m3db / chain_gain_db) + tran
+#              (vout_pk / osc_ratio)
+# The FIRST variant in each list is the canonical default (matches the generator's
+# own __main__ default and the bare filename); the rest get a _<analysis> suffix.
 GENERATORS = [
-    (os.path.join(STAGES, "gen_stage2_asc.py"), os.path.join(STAGES, "stage_02_driver.net")),
-    (os.path.join(STAGES, "gen_stage3_asc.py"), os.path.join(STAGES, "stage_03_transformer.net")),
-    (os.path.join(STAGES, "gen_stage4_asc.py"), os.path.join(STAGES, "stage_04_input_protect.net")),
-    (os.path.join(STAGES, "gen_stage5_psu.py"), os.path.join(STAGES, "stage_05_psu.net")),
-    (os.path.join(STAGES, "gen_stage6_full.py"), os.path.join(STAGES, "stage_06_full.net")),
+    (os.path.join(STAGES, "gen_stage2_asc.py"),
+     [("op", os.path.join(STAGES, "stage_02_driver.net"))]),
+    (os.path.join(STAGES, "gen_stage3_asc.py"),
+     [("ac", os.path.join(STAGES, "stage_03_transformer.net"))]),
+    (os.path.join(STAGES, "gen_stage4_asc.py"),
+     [("op", os.path.join(STAGES, "stage_04_input_protect.net"))]),
+    (os.path.join(STAGES, "gen_stage5_psu.py"),
+     [("op", os.path.join(STAGES, "stage_05_psu.net")),
+      ("tran", os.path.join(STAGES, "stage_05_psu_tran.net"))]),
+    (os.path.join(STAGES, "gen_stage6_full.py"),
+     [("op", os.path.join(STAGES, "stage_06_full.net")),
+      ("ac", os.path.join(STAGES, "stage_06_full_ac.net")),
+      ("tran", os.path.join(STAGES, "stage_06_full_tran.net"))]),
 ]
 PARAMS_MD_GEN = os.path.join(STAGES, "gen_circuit_params_md.py")
 PARAMS_MD = os.path.join(HERE, "circuit-params.md")
@@ -43,9 +58,32 @@ def _hash(path):
     return hashlib.sha256(open(path, "rb").read()).hexdigest()
 
 
-def _run(script):
-    """Run a generator script; raise on failure so a broken generator is loud."""
-    subprocess.run([PY, script], cwd=STAGES, check=True,
+def _run(script, analysis, out):
+    """Generate ONE analysis variant of a generator into a SPECIFIC output path.
+
+    The generators' __main__ hardcode a single default output filename, so we
+    cannot select the analysis variant or the output file via argv. Instead we
+    import the generator module (its `sys.path.insert(0, dirname(__file__))` makes
+    `import circuit_params` resolve to the stages dir) and call build(analysis) +
+    dump() with our own paths. Run in a subprocess so module/bytecode caches never
+    leak between variants. Raises on failure so a broken generator branch is loud.
+    """
+    asc = os.path.splitext(out)[0] + ".asc"
+    snippet = (
+        "import importlib.util, os, sys\n"
+        "stages = %r\n"
+        "script = %r\n"
+        "analysis = %r\n"
+        "out = %r\n"
+        "asc = %r\n"
+        "sys.path.insert(0, stages)\n"
+        "spec = importlib.util.spec_from_file_location('gen_mod', script)\n"
+        "gen = importlib.util.module_from_spec(spec)\n"
+        "spec.loader.exec_module(gen)\n"
+        "b = gen.build(analysis)\n"
+        "b.dump(asc, out)\n"
+    ) % (STAGES, script, analysis, out, asc)
+    subprocess.run([PY, "-c", snippet], cwd=STAGES, check=True,
                    stdout=subprocess.DEVNULL)
 
 
@@ -56,22 +94,34 @@ def main():
     regenerated = []   # files whose content actually changed
     unchanged = []     # files re-emitted byte-identical (idempotent path)
 
-    targets = [(g, out) for g, out in GENERATORS]
-    targets.append((PARAMS_MD_GEN, PARAMS_MD))
-
     print("Ghost Spring sync - regenerating from circuit_params.py")
     print("-" * 60)
-    for script, out in targets:
-        before = _hash(out)
-        _run(script)
-        after = _hash(out)
-        rel = os.path.relpath(out, HERE)
-        if before != after:
-            regenerated.append(rel)
-            print("  regenerated  %s" % rel)
-        else:
-            unchanged.append(rel)
-            print("  unchanged    %s" % rel)
+    # Every netlist variant (op/ac/tran) of every generator.
+    for script, variants in GENERATORS:
+        for analysis, out in variants:
+            before = _hash(out)
+            _run(script, analysis, out)
+            after = _hash(out)
+            rel = os.path.relpath(out, HERE)
+            if before != after:
+                regenerated.append(rel)
+                print("  regenerated  %s" % rel)
+            else:
+                unchanged.append(rel)
+                print("  unchanged    %s" % rel)
+
+    # circuit-params.md (its generator writes its own fixed output path via argv).
+    before = _hash(PARAMS_MD)
+    subprocess.run([PY, PARAMS_MD_GEN], cwd=STAGES, check=True,
+                   stdout=subprocess.DEVNULL)
+    after = _hash(PARAMS_MD)
+    rel = os.path.relpath(PARAMS_MD, HERE)
+    if before != after:
+        regenerated.append(rel)
+        print("  regenerated  %s" % rel)
+    else:
+        unchanged.append(rel)
+        print("  unchanged    %s" % rel)
 
     print("-" * 60)
     print("Validating consistency...")

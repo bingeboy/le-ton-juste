@@ -159,8 +159,10 @@ Stages 2–5 each replace one idealized block of the MVP with its real hardware 
 | Check | Pass condition |
 |---|---|
 | All Stage 1 assertions | still pass |
-| Complete DC operating point | within spec (all op-amp outputs ±10 mV; Q1 bias as Stage 2) |
+| Complete DC operating point | within spec (all op-amp outputs ±10 mV *in simulation*; Q1 bias as Stage 2) |
 | Full signal-chain gain | within ±2 dB of design target |
+
+> The ±10 mV op-amp-output window is a **simulation** criterion (the SPICE model uses Vos=0). On the **bench**, a real OPA2134 at U2's 214× gain shows **20–150 mV DC at U2's output** (normal; multiplied input offset, blocked by C4) — see [`builder-guide.md`](./builder-guide.md) Stage 2. The ±10 mV bench window applies at U1's output and at the final output after C4 (U3, < 5 mV at J2).
 
 ---
 

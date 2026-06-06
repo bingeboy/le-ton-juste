@@ -58,12 +58,14 @@ Connect the ±15V bench supply. No input signal. Corresponds to the SPICE **Stag
 | +15V rail to GND | 14.85–15.15V | DMM DC | Check bench supply / rail wiring |
 | −15V rail to GND | −14.85 to −15.15V | DMM DC | Check bench supply / rail wiring |
 | U1 output pin | < ±10mV | DMM DC | Check R1 placement (after C_in), op-amp orientation |
-| U2 output pin | < ±10mV | DMM DC | Check Ri (470Ω) / Rf (100kΩ); check C3 not leaking DC |
+| U2 output pin | typically 20–150mV DC | DMM DC | This is **normal** for a real OPA2134 at 214× gain — its input offset (Vos up to ~500µV) is multiplied by the stage gain (500µV × 214 ≈ 107mV at the output), and C4 blocks this DC before the output. **If reading > 2V, suspect Ri/Rf wiring** (or C3 leaking DC). The idealized SPICE model uses Vos=0, so `off_u2` simulates near 0V — the bench part will not |
 | U3 output pin | < ±10mV | DMM DC | Check mix-stage wiring (Rdry, RV2, C_bright) |
 
-> **Let it settle before you read DC offset.** The recovery path sees residual tank/coupling DC through C3/Rbias into a 214× stage, and the tank's high-inductance output (modelled as 2H) bleeds its power-on transient slowly — in simulation `off_u2` reads ~72mV at 20ms but settles to <0.5mV by ~200ms. On the bench, **wait at least 2–3 seconds after the rails come up, then read.** A DMM auto-averages, so this is usually moot, but if you probe U2's output *immediately* on a scope you may see a decaying offset that is settling, not a fault. Read U2/U3 last, after a few seconds of settle. A reading that is high at switch-on but walks down to <10mV within a couple of seconds is normal, not a fail.
+> **Let it settle before you read DC offset.** The recovery path sees residual tank/coupling DC through C3/Rbias into a 214× stage, and the tank's high-inductance output (modelled as 2H) bleeds its power-on transient slowly — in simulation `off_u2` reads ~72mV at 20ms but settles by ~200ms. On the bench, **wait at least 2–3 seconds after the rails come up, then read.** A DMM auto-averages, so this is usually moot, but if you probe U2's output *immediately* on a scope you may see a decaying transient that is settling, not a fault. Read U2/U3 last, after a few seconds of settle. Note the settled U2 reading is **not** ~0V on a real part: the OPA2134's own input offset (Vos), multiplied by the 214× stage gain, leaves a steady **20–150mV** DC at U2's output — this is normal and is blocked by C4 before the output (see the U2-output row above). The idealized SPICE model sets Vos=0, so the simulated `off_u2` lands near 0V while the bench part will not.
 
 > If any op-amp output sits at or near a rail (±~13V) instead of near 0V, that stage's input has no DC reference or the op-amp is in backwards. On a FET-input part with no DC return the output slams to a rail — for U1 that almost always means R1 is missing or wired in series.
+
+> **Strongly recommended on perfboard — feedback compensation cap (Cf) across Rf.** Fit a small **10–22pF** capacitor across **Rf** (the 100kΩ U2 feedback resistor, `u2_out` → `u2_inv`). On point-to-point / perfboard construction the stray wiring capacitance at U2's inverting input forms a pole with Rf that can cause HF gain peaking (a few dB bump near the top of the audio band) or, worst case, ringing/oscillation in the 214× recovery stage. Cf rolls the loop off cleanly: with 100kΩ, 22pF sets a ~72kHz corner (above the audio band, no audible high-end loss). It is **not a BOM line** — it is a cheap (~$0.10), optional ceramic/film cap added at build time — but on perfboard it is strongly recommended insurance against layout-dependent instability. If U2's gain measures high or it oscillates (see the recovery-gain fail action in Stage 7), fit Cf first.
 
 ---
 
@@ -82,7 +84,7 @@ Corresponds to SPICE **Stage 2** `.op` (`q1_ve` 1.0–1.4V, `q1_ic` 10–26mA). 
 
 **Signal check (signal generator + oscilloscope):**
 
-- Apply 100mVpp, 1kHz sine to the input jack.
+- Apply 100mVpk (200mVpp), 1kHz sine to the input jack.
 - Probe the transformer primary (L1 / Q1 collector): expect a clean AC swing with **no flat-top clipping**. (SPICE **Stage 2** `drv_pk` — clean drive current, no flat-top.)
 - Probe D3 cathode (collector side): should sit at +15V DC and only spike above it on hard transients. (SPICE **Stage 2** `d3_pk` < 1mA — D3 idle in normal use.) Continuous conduction here means the flyback clamp is engaging when it shouldn't — check the bias point first.
 
@@ -198,6 +200,24 @@ This is the **integration stage**: it adds *no new parts*. Corresponds to SPICE 
 
 > **Bring-up order for the fully assembled unit.** Do the Stage 6 PSU first-mains-power-on ceremony (bulb limiter, rails verified) *with the signal board disconnected*, then reconnect the board and power up. Set the pots per the **Pot positions for every test** table at the top of this guide. Confirm the power LED lights (it's wired from +15V through 10kΩ — ~1.2mA, deliberately dim; a dark LED with good rails just means a reversed LED or wrong resistor, not a supply fault). Then work down the table below. Keep a hand near the switch for the first powered minute and watch/smell for the fault signs listed in the Stage 6 power-on section.
 
+### Mix pot (RV2) wiring — wire this exactly, per lug
+
+> **The Mix pot is a 3-terminal passive blend, NOT a volume knob.** The dry and wet signals enter **opposite ends** of the pot and the wiper taps the blend. If you wire both signals to the same lug (or tie the wet source to the wiper), you recreate the original netlist bug in hardware — the blend collapses and the pot stops working as a Mix control. Wire it per the table below; do not improvise.
+
+| RV2 lug | Connects to | Net name |
+|---|---|---|
+| **Lug 1 (CCW end)** | **Dry signal** — from U1 output via **Rdry (10kΩ)** | `mix_dry` |
+| **Lug 2 (wiper)** | **Output to U3** non-inverting (+) input | `mix_node` |
+| **Lug 3 (CW end)** | **Wet signal** — directly from the **Tone (RV3) wiper** | `mix_wet` |
+| **C_bright (47pF)** | **Across the FULL pot — lug 1 to lug 3** (`mix_dry`↔`mix_wet`), *not* lug-to-wiper | bridges `mix_dry`/`mix_wet` |
+
+- **Dry → lug 1 (CCW):** U1 output → Rdry (10kΩ) → RV2 lug 1. At full-CCW the wiper sits on this end → dry only.
+- **Wet → lug 3 (CW):** Tone (RV3) wiper → RV2 lug 3, no series resistor. At full-CW the wiper sits on this end → wet only.
+- **Wiper (lug 2) → U3(+):** the blend tap feeds the output buffer. Nothing else connects here.
+- **C_bright across lug 1↔lug 3 (the full pot):** the 47pF silver mica bridges the *two ends*, not a lug-to-wiper section. It adds HF "air" to the blend as the wiper approaches full-wet. (Netlist: `C_bright mix_dry mix_wet 47p`.)
+
+> **The single fatal mistake:** wiring the wet signal (or both dry and wet) onto the *wiper* lug, or tying dry and wet to the *same* end. Either collapses the 3-terminal blend into a shorted node — exactly the `Rwet = 0.001Ω` netlist bug that `validate.py check_mix_topology()` exists to catch. The Stage 7a sanity gates below (full-CCW dry test, full-CW wet test) are the bench check for this — but get the wiring right the first time.
+
 ### Stage 7a — Sanity gates (do these BEFORE the measurement battery)
 
 These cheap, fast checks catch gross wiring faults *before* you spend time chasing a measurement that is out of range for an obvious reason. **Do them in order. If any fails, stop and fix the signal path before touching the measurement table below — a precise gain number means nothing if the dry path is dead or the mix node is bridged.**
@@ -234,7 +254,7 @@ These cheap, fast checks catch gross wiring faults *before* you spend time chasi
 |---|---|---|---|
 | Recovery gain | **Measure gain across U2 itself, not the whole chain.** Inject directly at U2's (+) input node (the tank/C3 side of Rbias) — *not* the front-panel input jack, which is attenuated by the Dwell/driver/transformer/tank ahead of it. Apply a small **10mVpp, 1kHz** sine there, probe **U2 output**. Gain = Vout(pp) / Vin(pp). | **≈213.6× (46.6dB)** — accept the test-assertions band **200–228×**. With 10mVpp in you should read **~2.1Vpp** at U2 out. (Keep input small: at 213× even 60mVpp in clips U2 into the rails and the ratio reads *low* — a false fail.) | Low ratio (≈33×): Rbias is 470Ω instead of 100kΩ (loads the tank). Low (≈half): check Ri (470Ω) / Rf (100kΩ) ratio. Very high or oscillating: check feedback wiring and R2/R7 output isolation resistors |
 | HPF corner | Sweep generator, probe wet at U2 output then after C4/R6 (ratio = the HPF transfer) | −3dB at ~312Hz (design 284Hz; accept 250–320Hz) | Wrong corner: check C4 (100nF) and R6 (5.6kΩ exactly — 4.7k → 338Hz, 6.8k → 234Hz) |
-| Output DC offset | DMM DC at J2 output jack — **wait 2–3s after power-up for the tank transient to settle before reading** (sim settles by ~200ms; see Stage 2 settle note) | < ±10mV (sim ≈ 0V) | Check U3 output and C3 (no DC leaking from the tank into U2). A reading that *decays* to spec within a couple seconds is settling, not a fault |
+| Output DC offset | DMM DC at J2 output jack — **wait 2–3s after power-up for the tank transient to settle before reading** (sim settles by ~200ms; see Stage 2 settle note) | **< 5mV** (sim ≈ 0V) — this is *after* C4, so it must be far lower than U2's 20–150mV output offset, which C4 blocks | Check U3 output and C3 (no DC leaking from the tank into U2). If J2 reads tens of mV, C4 may be leaking DC through. A reading that *decays* to spec within a couple seconds is settling, not a fault |
 | Q1 emitter bias | DMM DC at Q1 emitter / R5 top | ≈1.09V (1.0–1.4V) — unchanged under the real regulated rails | Bias shifted: check R3b/R4 divider and R5 (68Ω); confirm the +15V rail first (Stage 6 above) |
 | Reverb sound check | Guitar / audio source in, monitor the output | Clear spring-reverb tail, dry signal audible and clean | No wet signal: check tank RCA connections and tank/transformer orientation; check polarity (see phase note below) |
 
@@ -267,6 +287,7 @@ These are the parts that are directional and cost real bench time — or real pa
 | **Driver transformer (T2 / REB3S)** | Primary (L1) → Q1 collector; 8Ω secondary (L2) → tank input | No reverb — secondary can't drive the collector node |
 | **Spring tank (RT1 / 9AB3C1B)** | 8Ω input side fed from the transformer; 2550Ω output side to U2. Mount **open-side DOWN, horizontal** | No/wrong reverb; springs drift over time if mounted open-side up (parts-spec Build Note 3) |
 | **Tank output phase** | Either way works electrically; phase may need swapping vs the dry path | "Phasey"/hollow at 50/50 Mix — swap the 2550Ω-side wires (Phase note, Stage 7) |
+| **Mix pot RV2 (3-terminal blend)** | Dry (via Rdry) → lug 1 (CCW); wet (from Tone wiper) → lug 3 (CW); wiper lug 2 → U3; C_bright across lug 1↔lug 3 | Both signals on one lug, or wet on the wiper = blend collapses (the netlist `Rwet=0.001Ω` bug in hardware). See "Mix pot (RV2) wiring" in Stage 7 |
 
 ### Polarity & pinout — wrong = a destroyed part or a dead rail
 
