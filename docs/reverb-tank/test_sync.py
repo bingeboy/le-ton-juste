@@ -1148,6 +1148,127 @@ def test_worst_case_pk_probes_v_out():
     raise AssertionError("worst_case_pk .meas not found in dwell_max_mix_cw netlist")
 
 
+# ---------------------------------------------------------------------------
+# Central .meas expression registry.
+#
+# Each entry: (netlist_filename, meas_name, [required_substrings])
+#
+# required_substrings must ALL appear in the .meas line in the committed
+# netlist — case-insensitively for analysis-type/form keywords, as-is for
+# node expressions (which are case-sensitive in LTspice).
+#
+# This table encodes every prior audit fix in machine-checkable form:
+#   - Wrong probe node  (V(u2_out) vs V(v_out))   — audits 12, 13
+#   - Wrong analysis    (OP vs TRAN)               — audits 13, 14
+#   - Wrong form        (FIND vs AVG)              — audits 13, 14
+#   - Wrong ratio       (bare V vs transfer ratio) — audit 13
+#
+# Add a row here whenever a .meas bug is fixed so the regression is permanent.
+# ---------------------------------------------------------------------------
+MEAS_SPEC = [
+    # ---- stage_06_full.net (baseline TRAN run) ----
+    ("stage_06_full.net",  "off_u1",         ["TRAN", "AVG", "V(u1_out)"]),
+    ("stage_06_full.net",  "off_u2",         ["TRAN", "AVG", "V(u2_out)"]),
+    ("stage_06_full.net",  "off_u3",         ["TRAN", "AVG", "V(v_out)"]),
+    ("stage_06_full.net",  "q1_ve",          ["TRAN", "AVG", "V(q1_e)"]),
+    ("stage_06_full.net",  "q1_ic",          ["TRAN", "AVG", "Ic(Q1)"]),
+    ("stage_06_full.net",  "q1_vc",          ["TRAN", "AVG", "V(q1_c)"]),      # saturation guard
+    ("stage_06_full.net",  "q1_vb",          ["TRAN", "AVG", "V(q1_base)"]),   # saturation guard
+    ("stage_06_full.net",  "u2_inpos_bias",  ["TRAN", "AVG", "V(u2_in_pos)"]),
+
+    # ---- stage_06_full_ac.net ----
+    # HPF corner must use transfer-ratio form (bare V(hpf_out) shifts corner
+    # when U2 itself rolls off — masks a real R6/C4 value error)
+    ("stage_06_full_ac.net", "hpf_ref",       ["AC",   "V(hpf_out)/V(u2_out)"]),
+    ("stage_06_full_ac.net", "hpf_m3db",      ["AC",   "V(hpf_out)/V(u2_out)"]),
+    # Recovery gain: across U2 only, not full vin→v_out chain
+    ("stage_06_full_ac.net", "recov_gain",    ["AC",   "V(u2_out)/V(u2_in_pos)"]),
+    ("stage_06_full_ac.net", "recov_gain_db", ["AC",   "V(u2_out)/V(u2_in_pos)"]),
+
+    # ---- stage_06_full_dwell_max.net ----
+    # Probes V(u2_out) — NOT V(v_out). v_out at Dwell-max/Mix-noon is ungated
+    # here; it is separately gated by worst_case_pk in the mix_cw variant.
+    ("stage_06_full_dwell_max.net",     "dwell_max_u2_pk",   ["TRAN", "MAX", "V(u2_out)"]),
+    ("stage_06_full_dwell_max.net",     "dwell_max_wiper_pk",["TRAN", "MAX", "V(rv1_wiper)"]),
+
+    # ---- stage_06_full_dwell_max_mix_cw.net ----
+    # Probes V(v_out) — NOT V(u2_out). u2_out is upstream of the Mix pot and
+    # is invariant to Mix position; probing it made the Mix=CW condition inert.
+    ("stage_06_full_dwell_max_mix_cw.net", "worst_case_pk",     ["TRAN", "MAX", "V(v_out)"]),
+    ("stage_06_full_dwell_max_mix_cw.net", "worst_case_settle", ["TRAN", "AVG", "V(v_out)"]),
+
+    # ---- stage_06_full_dwell_min.net ----
+    ("stage_06_full_dwell_min.net", "dwell_min_vout", ["TRAN", "MAX", "V(v_out)"]),
+    ("stage_06_full_dwell_min.net", "dwell_min_dry",  ["TRAN", "MAX", "V(mix_dry)"]),
+
+    # ---- stage_06_full_mix_ccw.net ----
+    ("stage_06_full_mix_ccw.net", "mix_ccw_vout_pk",   ["TRAN", "MAX", "V(v_out)"]),
+    # Wet-chain ratio across the real RV3 divider — cannot be tautological
+    # (hpf_out and mix_wet are separated by RV3a=50k)
+    ("stage_06_full_mix_ccw.net", "mix_ccw_wet_ratio", ["TRAN", "PARAM",
+                                                         "mix_ccw_wet_node/mix_ccw_wet_src"]),
+
+    # ---- stage_06_full_mix_cw.net ----
+    ("stage_06_full_mix_cw.net", "mix_cw_vout_pk",  ["TRAN", "MAX",   "V(v_out)"]),
+    ("stage_06_full_mix_cw.net", "mix_cw_dry_attn", ["TRAN", "PARAM", "mix_cw_dry_lvl/mix_cw_mix_node"]),
+
+    # ---- stage_04_input_protect.net (OP analysis — legitimately uses FIND) ----
+    ("stage_04_input_protect.net", "clamp_p_i", ["OP", "FIND", "I(Dclamp_p)"]),
+    ("stage_04_input_protect.net", "clamp_n_i", ["OP", "FIND", "I(Dclamp_n)"]),
+
+    # ---- stage_05_psu.net ----
+    ("stage_05_psu.net", "rail_pos",  ["TRAN", "AVG", "V(+15V)"]),
+    ("stage_05_psu.net", "rail_neg",  ["TRAN", "AVG", "V(-15V)"]),
+    ("stage_05_psu.net", "unreg_pos", ["TRAN", "AVG", "V(pos_rect)"]),
+    ("stage_05_psu.net", "unreg_neg", ["TRAN", "AVG", "V(neg_rect)"]),
+
+    # ---- stage_05_psu_tran.net ----
+    ("stage_05_psu_tran.net", "ripple_pos", ["TRAN", "PP", "V(+15V)"]),
+    ("stage_05_psu_tran.net", "ripple_neg", ["TRAN", "PP", "V(-15V)"]),
+]
+
+
+def test_meas_expressions_match_spec():
+    """Systematic check that every gated .meas has the right analysis type,
+    measurement form, and probe node in the committed netlist.
+
+    MEAS_SPEC (above) is the machine-readable record of every .meas expression
+    bug found and fixed across audits 12–14. Each row locks in a property that
+    a future edit could silently break — wrong probe node, wrong analysis type,
+    wrong form keyword. Adding a row when fixing a bug makes the regression
+    permanent without needing a new bespoke test function each time."""
+    failures = []
+    for filename, meas_name, required in MEAS_SPEC:
+        path = os.path.join(STAGES, filename)
+        try:
+            text = open(path).read()
+        except IOError:
+            failures.append("%s: file not found" % filename)
+            continue
+        found = False
+        for line in text.splitlines():
+            if re.search(r"\.meas\s", line, re.I) and \
+                    re.search(r"\b%s\b" % re.escape(meas_name), line):
+                found = True
+                for substr in required:
+                    # Analysis/form keywords are case-insensitive; node
+                    # expressions are case-sensitive (LTspice is case-sensitive
+                    # for net names in .meas).
+                    if substr.upper() in line.upper() or substr in line:
+                        continue
+                    failures.append(
+                        "%s / %s: expected %r in .meas line\n    got: %s"
+                        % (filename, meas_name, substr, line.strip())
+                    )
+                break
+        if not found:
+            failures.append("%s: .meas '%s' not found" % (filename, meas_name))
+    assert not failures, (
+        "MEAS_SPEC violations (%d):\n" % len(failures)
+        + "\n".join("  " + f for f in failures)
+    )
+
+
 def test_off_meas_use_tran_avg_form():
     """off_u1/2/3 in the baseline netlist must be .meas TRAN ... AVG, not
     .meas OP FIND. LTspice silently ignores analysis-type mismatches: a .meas OP

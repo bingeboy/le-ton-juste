@@ -1186,6 +1186,7 @@ def main():
     check_op_bias_guards()
     check_psu_unreg_meas()
     check_chain_gain_target()
+    check_fence_meas_forms()
     check_params_md()
     check_assertions_md()
     check_fence_meas_forms()
