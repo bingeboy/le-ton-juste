@@ -792,13 +792,23 @@ def check_chain_gain_target():
     names = _netlist_meas_names(NET6_AC)
     if names is None or "recov_gain_db" not in names:
         return  # nothing asserts recov_gain_db -> nothing to cross-check
-    checks += 1
     with open(ASSERT_MD) as f:
         text = f.read()
+
+    checks += 1
     needle = "%g dB" % P.CHAIN_GAIN_DB_SIM
     if needle not in text:
         fail("test-assertions.md: recov_gain_db target '%s' "
              "(CHAIN_GAIN_DB_SIM) not found" % needle)
+
+    # Window bounds must also match — drift here silently gives the builder
+    # the wrong pass band while validate.py keeps passing.
+    checks += 1
+    lo, hi = P.CHAIN_GAIN_DB_WINDOW
+    window_needle = "%g – %g dB" % (lo, hi)
+    if window_needle not in text:
+        fail("test-assertions.md: recov_gain_db window '%s' "
+             "(CHAIN_GAIN_DB_WINDOW) not found" % window_needle)
 
 
 # ---------------------------------------------------------------------------
