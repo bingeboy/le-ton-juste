@@ -62,9 +62,9 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 ## Stage 2 — BD139 driver
 
 ```spice
-; Stage 2 — OP: Q1 bias point
-.meas OP q1_ve FIND V(q1_e)
-.meas OP q1_ic FIND Ic(Q1)
+; Stage 2 — TRAN: Q1 bias point (steady-state AVG over 190–200ms)
+.meas TRAN q1_ve AVG V(q1_e) FROM=190m TO=200m
+.meas TRAN q1_ic AVG Ic(Q1)  FROM=190m TO=200m
 
 ; Stage 2 — OP cross-check: the collector current implied by the emitter
 ;   voltage across R5 (Ic ~= Ie = Ve/R5) must agree with the collector current
@@ -83,12 +83,12 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 .meas TRAN q1_ic      AVG Ic(Q1) FROM=190m TO=200m
 .meas TRAN q1_ic_err  PARAM {abs(q1_ic - q1_ic_calc) / q1_ic_calc}
 
-; Stage 2 — OP: Q1 must stay FORWARD-ACTIVE (not saturated). Read the collector
+; Stage 2 — TRAN: Q1 must stay FORWARD-ACTIVE (not saturated). Read the collector
 ;   DC and derive Vce = V(q1_c)-V(q1_e) and Vcb = V(q1_c)-V(q1_base). If Q1
 ;   saturates (Vce -> Vce(sat) ~0.2V, Vcb < 0) the transformer drive flat-tops
 ;   and the reverb send distorts -- a failure q1_ve/q1_ic alone never catch.
-.meas TRAN q1_vc  FIND V(q1_c)
-.meas TRAN q1_vb  FIND V(q1_base)
+.meas TRAN q1_vc  AVG V(q1_c)    FROM=190m TO=200m
+.meas TRAN q1_vb  AVG V(q1_base) FROM=190m TO=200m
 .meas TRAN q1_vce PARAM {q1_vc - q1_ve}
 .meas TRAN q1_vcb PARAM {q1_vc - q1_vb}
 
@@ -207,6 +207,8 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | `ripple_pos` | `PP V(+15V)` | < 10 mVpp | Insufficient filtering — ripple into recovery stage |
 | `ripple_neg` | `PP V(-15V)` | < 10 mVpp | Same on negative rail |
 | `rail_pos_avg` `rail_neg_avg` `unreg_pos_pp` `unreg_neg_pp` | — | *decorative — no gated window* | Informational only; not checked by validate.py |
+
+> *Note: `rail_pos`/`rail_neg` (14.85–15.15 V) and `ripple_pos`/`ripple_neg` (< 10 mVpp) pass by construction under the behavioural LM78xx/LM79xx model (`min(V(IN,COM)−2, Vout)`): as long as the unregulated bus clears ~17 V the regulator output is pinned to ±15 V with zero ripple, regardless of bulk capacitor values. The binding rows in this variant are `unreg_pos`/`unreg_neg` (bus AVG ≥ 17 V) — those are the only rows with real teeth in simulation. Actual rail ripple must be verified on the bench.*
 
 ---
 

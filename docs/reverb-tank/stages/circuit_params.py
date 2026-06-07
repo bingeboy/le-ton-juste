@@ -361,7 +361,9 @@ DWELL_MAX_WIPER_PK_WINDOW = (0.03, 0.15)  # at max drive the wiper sees most of 
                                         # loading brings it to ~40-100mVpk depending on
                                         # drive; window catches a dead path (< 0.03) or
                                         # weird amplification (> 0.15)
-DWELL_MAX_U2_PK_MAX    = 13.5           # U2 output must not rail beyond the +/-15V supply
+DWELL_MAX_U2_PK_MAX    = 13.5           # U2 output must not rail beyond the +/-15V supply.
+                                        # Large-margin clip guard: baseline sim shows < 5 Vpk;
+                                        # trips only on a gross gain/supply fault.
 WORST_CASE_PK_MAX      = 6.0            # v_out peak at Dwell-max/Mix-CW; U3 must not rail.
                                         # Analytical ceiling: v_out ≤ RV3_center(~0.4) ×
                                         # DWELL_MAX_U2_PK_MAX(13.5) = 5.4V. Using 6.0V
