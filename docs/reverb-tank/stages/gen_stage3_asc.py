@@ -198,8 +198,12 @@ def build(active_analysis="ac"):
     b.res("R2", P.R2, 640, 144, "u1_out", "u1_buf")
 
     # === Dwell pot divider (unchanged) ===
-    b.res("RV1a", P.RV1A, 760, 60, "u1_buf", "rv1_wiper")
-    b.res("RV1b", P.RV1B, 760, 180, "rv1_wiper", "0")
+    # RV1a is the wiper-to-GND half; RV1b is the signal-to-wiper half. This
+    # matches stage_06_full and builder-guide.md: GND->lug1(CCW)=RV1a rv1_wiper 0,
+    # dry(u1_buf)->lug3(CW)=RV1b u1_buf rv1_wiper. At CW the wiper sits on u1_buf
+    # (max drive); at CCW it is shunted to GND (min drive).
+    b.res("RV1a", P.RV1A, 760, 60, "rv1_wiper", "0")
+    b.res("RV1b", P.RV1B, 760, 180, "u1_buf", "rv1_wiper")
 
     # === BD139 discrete driver (unchanged from Stage 2) ===
     b.cap("C_drive", P.C_DRIVE, 880, 144, "rv1_wiper", "q1_drv")

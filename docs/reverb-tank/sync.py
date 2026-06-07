@@ -34,11 +34,18 @@ PY = sys.executable
 # own __main__ default and the bare filename); the rest get a _<analysis> suffix.
 GENERATORS = [
     (os.path.join(STAGES, "gen_stage2_asc.py"),
-     [("op", os.path.join(STAGES, "stage_02_driver.net"))]),
+     [("op", os.path.join(STAGES, "stage_02_driver.net")),
+      # Dynamic driver checks (d3_pk / drv_pk / drv_rms) live ONLY in this tran
+      # variant; the op netlist never runs them.
+      ("tran", os.path.join(STAGES, "stage_02_driver_tran.net"))]),
     (os.path.join(STAGES, "gen_stage3_asc.py"),
      [("ac", os.path.join(STAGES, "stage_03_transformer.net"))]),
     (os.path.join(STAGES, "gen_stage4_asc.py"),
-     [("op", os.path.join(STAGES, "stage_04_input_protect.net"))]),
+     [("op", os.path.join(STAGES, "stage_04_input_protect.net")),
+      # 20Vpp clamp-window overload (u1pos_hi/lo + clamp_p_pk/clamp_n_pk) lives
+      # ONLY in this overload tran variant.
+      ("overload",
+       os.path.join(STAGES, "stage_04_input_protect_overload.net"))]),
     (os.path.join(STAGES, "gen_stage5_psu.py"),
      [("op", os.path.join(STAGES, "stage_05_psu.net")),
       ("tran", os.path.join(STAGES, "stage_05_psu_tran.net")),

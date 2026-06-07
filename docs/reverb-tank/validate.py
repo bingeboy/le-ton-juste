@@ -44,6 +44,9 @@ NET6_DWELL_MAX = os.path.join(STAGES, "stage_06_full_dwell_max.net")
 NET6_MIX_CCW = os.path.join(STAGES, "stage_06_full_mix_ccw.net")
 NET6_MIX_CW = os.path.join(STAGES, "stage_06_full_mix_cw.net")
 NET6_DWELL_MAX_MIX_CW = os.path.join(STAGES, "stage_06_full_dwell_max_mix_cw.net")
+# Dynamic / overload variants whose .meas live in NO other netlist.
+NET2_TRAN = os.path.join(STAGES, "stage_02_driver_tran.net")
+NET4_OVERLOAD = os.path.join(STAGES, "stage_04_input_protect_overload.net")
 # Stage 8 realistic hardware stress variants.
 NET5_LOW_MAINS = os.path.join(STAGES, "stage_05_psu_low_mains.net")
 NET6_VOS = os.path.join(STAGES, "stage_06_full_vos.net")
@@ -556,6 +559,46 @@ def check_d3_flyback():
 
 
 # ---------------------------------------------------------------------------
+# 1f-ter. RV1 (Dwell pot) TOPOLOGY: every netlist that carries the Dwell pot must
+#     wire it the SAME way as stage_06_full and builder-guide.md:
+#       RV1a rv1_wiper 0       (the wiper-to-GND half)
+#       RV1b u1_buf rv1_wiper  (the signal-to-wiper half)
+#     The reverse wiring (RV1a u1_buf rv1_wiper / RV1b rv1_wiper 0) inverts the
+#     Dwell control sense (CW would minimise drive instead of maximising it) and
+#     diverges from the builder guide. Check EVERY netlist that contains an RV1a
+#     or RV1b card so a single mis-wired stage cannot ship.
+# ---------------------------------------------------------------------------
+# mvp_reverb.net is the pre-Stage-2 prototype (not part of the sync cascade and
+# carried frozen as a historical artifact), so it is excluded from the maintained-
+# stage Dwell-pot topology check.
+RV1_TOPOLOGY_SKIP = {"mvp_reverb.net"}
+
+
+def check_rv1_topology():
+    global checks
+    for fname in sorted(os.listdir(STAGES)):
+        if not fname.endswith(".net") or fname in RV1_TOPOLOGY_SKIP:
+            continue
+        path = os.path.join(STAGES, fname)
+        rv1a = _net_card(path, "RV1a")
+        rv1b = _net_card(path, "RV1b")
+        if rv1a is None and rv1b is None:
+            continue  # netlist has no Dwell pot (e.g. PSU stage)
+        checks += 1
+        if rv1a is None or len(rv1a) < 3:
+            fail("rv1 topology: %s has RV1b but no/malformed RV1a card" % fname)
+        elif rv1a[1:3] != ["rv1_wiper", "0"]:
+            fail("rv1 topology: %s RV1a must be 'RV1a rv1_wiper 0' (wiper-to-GND "
+                 "half), got nodes %s" % (fname, rv1a[1:3]))
+        checks += 1
+        if rv1b is None or len(rv1b) < 3:
+            fail("rv1 topology: %s has RV1a but no/malformed RV1b card" % fname)
+        elif rv1b[1:3] != ["u1_buf", "rv1_wiper"]:
+            fail("rv1 topology: %s RV1b must be 'RV1b u1_buf rv1_wiper' (signal-"
+                 "to-wiper half), got nodes %s" % (fname, rv1b[1:3]))
+
+
+# ---------------------------------------------------------------------------
 # 1g. DERIVED transfer functions (P1.8): confirm the component VALUES actually
 #     produce the specified transfer function, not just that they exist.
 #       recovery gain = 1 + Rf/Ri          -> RECOV_GAIN_WINDOW
@@ -632,6 +675,11 @@ def _netlist_meas_names(path):
 def check_variant_netlists():
     global checks
     for path, expected in (
+        # Stage 2 dynamic driver: D3 idle + driver no-clip live only here.
+        (NET2_TRAN, {"d3_pk", "drv_pk", "drv_rms"}),
+        # Stage 4 overload: clamp-window + clamp-conduction live only here.
+        (NET4_OVERLOAD,
+         {"u1pos_hi", "u1pos_lo", "clamp_p_pk", "clamp_n_pk"}),
         (NET5_TRAN, {"ripple_pos", "ripple_neg"}),
         (NET6_TRAN, {"vout_pk", "osc_ratio"}),
         (NET6_AC, {"recov_gain", "hpf_m3db", "recov_gain_db", "u1_buf_gain"}),
@@ -951,6 +999,31 @@ def check_assertions_md():
     # worst_case_settle: < 0.5
     expect("worst_case_settle max", "< %g V" % P.WORST_CASE_SETTLE_MAX)
 
+    # ----- Stage 4 input-protection idle + overload bounds: every measured
+    # quantity must carry an enforced numeric bound (no silent .meas).
+    # clamp_n_i: > -1 uA (reverse-biased at idle)
+    expect("clamp_n_i min",
+           "> %s µA (reverse-biased)" % _g(P.CLAMP_N_IDLE_MIN * 1e6))
+    # tvs_a_i / tvs_b_i: -1 uA - +1 uA at idle
+    expect("tvs_a_i window",
+           "%s µA – +%g µA (idle, not conducting)"
+           % (_g(P.TVS_IDLE_WINDOW[0] * 1e6), P.TVS_IDLE_WINDOW[1] * 1e6))
+    # vin_idle: -10 mV - +10 mV (0V DC)
+    expect("vin_idle window",
+           "%s mV – +%g mV (0 V DC)"
+           % (_g(P.VIN_IDLE_WINDOW[0] * 1e3), P.VIN_IDLE_WINDOW[1] * 1e3))
+    # Overload: u1pos_hi <= +16V, u1pos_lo >= -16V
+    expect("u1pos_hi max", "≤ +%g V" % P.U1POS_CLAMP_WINDOW[1])
+    expect("u1pos_lo min", "≥ %s V" % _g(P.U1POS_CLAMP_WINDOW[0]))
+    # Overload: clamp diodes MUST conduct (clamp_p_pk > 0, clamp_n_pk < 0)
+    expect("clamp_p_pk min", "> %g (clamp conducts)" % P.CLAMP_OVERLOAD_P_MIN)
+    expect("clamp_n_pk max", "< %g (clamp conducts)" % P.CLAMP_OVERLOAD_N_MAX)
+
+    # ----- Stage 2 dynamic driver bounds (tran variant): D3 idle + driver no-clip.
+    expect("d3_pk max", "< %g mA" % (P.D3_IDLE_PEAK_MAX * 1e3))
+    expect("drv_pk max", "< %g mA" % (P.DRV_PEAK_MAX * 1e3))
+    expect("drv_rms max", "< %g mA" % (P.DRV_RMS_MAX * 1e3))
+
     # ----- Stage 8 stress-variant windows: every new pass criterion must be
     # documented in test-assertions.md or it is a silent test.
     # 3a low mains: the 0.90 scale factor (108V on 120V nominal). Same rail/ripple
@@ -963,6 +1036,30 @@ def check_assertions_md():
     expect("bd139 low-beta BF", "BF=%g" % P.BD139_LO_BETA_BF)
 
 
+# ---------------------------------------------------------------------------
+# 1l. Q1 BASE BIAS constants (FIX 5): Q1_VB_WINDOW must exist and the unloaded
+#     divider voltage Q1_VB_UNLOADED (15 * R4/(R3b+R4)) must fall inside it. This
+#     ties the builder-guide's bench bias numbers to a single source of truth.
+# ---------------------------------------------------------------------------
+def check_q1_vb():
+    global checks
+    checks += 1
+    if not hasattr(P, "Q1_VB_WINDOW"):
+        fail("Q1 base bias: circuit_params has no Q1_VB_WINDOW")
+        return
+    if not hasattr(P, "Q1_VB_UNLOADED"):
+        fail("Q1 base bias: circuit_params has no Q1_VB_UNLOADED")
+        return
+    lo, hi = P.Q1_VB_WINDOW
+    checks += 1
+    if not (lo < hi):
+        fail("Q1 base bias: Q1_VB_WINDOW not lo<hi: %r" % (P.Q1_VB_WINDOW,))
+    checks += 1
+    if not (lo <= P.Q1_VB_UNLOADED <= hi):
+        fail("Q1 base bias: Q1_VB_UNLOADED %g outside Q1_VB_WINDOW %s"
+             % (P.Q1_VB_UNLOADED, P.Q1_VB_WINDOW))
+
+
 def main():
     check_netlist()
     check_stage_netlists()
@@ -971,6 +1068,8 @@ def main():
     check_opamp_feedback()
     check_decoupling_caps()
     check_d3_flyback()
+    check_rv1_topology()
+    check_q1_vb()
     check_derived_transfer()
     check_variant_netlists()
     check_q1_ic_crosscheck()

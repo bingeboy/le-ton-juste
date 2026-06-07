@@ -53,8 +53,12 @@ PY = sys.executable
 # Generated artifacts that sync.py (re)writes, used by the idempotency test.
 GENERATED_FILES = [
     os.path.join(STAGES, "stage_02_driver.net"),
+    # Stage 2 dynamic driver tran variant (d3_pk / drv_pk / drv_rms).
+    os.path.join(STAGES, "stage_02_driver_tran.net"),
     os.path.join(STAGES, "stage_03_transformer.net"),
     os.path.join(STAGES, "stage_04_input_protect.net"),
+    # Stage 4 20Vpp clamp-window overload tran variant.
+    os.path.join(STAGES, "stage_04_input_protect_overload.net"),
     os.path.join(STAGES, "stage_05_psu.net"),
     os.path.join(STAGES, "stage_05_psu_tran.net"),
     # Stage 8 stress variant (low mains).
@@ -533,9 +537,12 @@ def test_sync_idempotent():
 # generator branch ships green (W2). The FIRST entry per generator is the
 # canonical default (bare filename); others get the _<analysis> suffix.
 GEN_TO_NETS = {
-    "gen_stage2_asc.py": [("op", "stage_02_driver.net")],
+    "gen_stage2_asc.py": [("op", "stage_02_driver.net"),
+                          ("tran", "stage_02_driver_tran.net")],
     "gen_stage3_asc.py": [("ac", "stage_03_transformer.net")],
-    "gen_stage4_asc.py": [("op", "stage_04_input_protect.net")],
+    "gen_stage4_asc.py": [("op", "stage_04_input_protect.net"),
+                          ("overload",
+                           "stage_04_input_protect_overload.net")],
     "gen_stage5_psu.py": [("op", "stage_05_psu.net"),
                           ("tran", "stage_05_psu_tran.net"),
                           # Stage 8 stress: 108V (10%-low) mains variant.
@@ -892,6 +899,111 @@ def test_op_netlist_has_bias_guard_meas():
         assert needed in names, \
             "stage_06_full.net (op) missing .meas %s (got %s)" \
             % (needed, sorted(names))
+
+
+# ---------------------------------------------------------------------------
+# Stage 4 input-overload variant (FIX 1): the 20Vpp clamp-window run carries the
+# overload .meas that exist in NO other netlist, and drives V1 at 20Vpp.
+# ---------------------------------------------------------------------------
+def test_stage4_overload_variant_exists_and_meas():
+    """stage_04_input_protect_overload.net exists, drives V1 with the 20Vpp
+    overload stimulus, runs a tran, and carries the clamp-window + clamp-
+    conduction measurements."""
+    path = os.path.join(STAGES, "stage_04_input_protect_overload.net")
+    assert os.path.exists(path), \
+        "stage_04_input_protect_overload.net missing -- run sync.py"
+    text = open(path).read()
+    assert ".tran" in text, "overload variant must carry a .tran analysis"
+    assert net_line(text, "V1").endswith("SINE(0 10 1k) AC 1"), \
+        "overload variant must drive V1 with the 20Vpp SINE(0 10 1k) stimulus"
+    names = _meas_names(text)
+    for needed in ("u1pos_hi", "u1pos_lo", "clamp_p_pk", "clamp_n_pk"):
+        assert needed in names, \
+            "overload netlist missing .meas %s (got %s)" % (needed, sorted(names))
+
+
+# ---------------------------------------------------------------------------
+# Stage 2 dynamic driver variant (FIX 6): the driver-current/flyback .meas exist
+# only in this tran variant, driven at the normal 100mVpk 1kHz level.
+# ---------------------------------------------------------------------------
+def test_stage2_driver_tran_variant_exists_and_meas():
+    """stage_02_driver_tran.net exists, drives V1 at 100mVpk 1kHz, runs a tran,
+    and carries the D3-idle / driver-no-clip measurements."""
+    path = os.path.join(STAGES, "stage_02_driver_tran.net")
+    assert os.path.exists(path), \
+        "stage_02_driver_tran.net missing -- run sync.py"
+    text = open(path).read()
+    assert ".tran" in text, "stage2 tran variant must carry a .tran analysis"
+    assert net_line(text, "V1").endswith("SINE(0 100m 1k) AC 1"), \
+        "stage2 tran variant must drive V1 with the 100mVpk 1kHz stimulus"
+    names = _meas_names(text)
+    for needed in ("d3_pk", "drv_pk", "drv_rms"):
+        assert needed in names, \
+            "stage2 tran netlist missing .meas %s (got %s)" \
+            % (needed, sorted(names))
+
+
+# ---------------------------------------------------------------------------
+# RV1 (Dwell pot) topology (FIX 3): every maintained stage netlist wires the
+# Dwell pot the same way as stage_06_full + builder-guide.md.
+# ---------------------------------------------------------------------------
+RV1_BEARING_NETS = [
+    "stage_02_driver.net", "stage_02_driver_tran.net",
+    "stage_03_transformer.net",
+    "stage_04_input_protect.net", "stage_04_input_protect_overload.net",
+    "stage_06_full.net",
+]
+
+
+@pytest.mark.parametrize("net_name", RV1_BEARING_NETS)
+def test_rv1_topology_consistent(net_name):
+    """The Dwell pot is wired RV1a rv1_wiper 0 (wiper-to-GND half) and
+    RV1b u1_buf rv1_wiper (signal-to-wiper half) in every maintained stage,
+    matching builder-guide.md. The reverse wiring inverts the Dwell sense."""
+    text = open(os.path.join(STAGES, net_name)).read()
+    rv1a = net_line(text, "RV1a")
+    rv1b = net_line(text, "RV1b")
+    assert rv1a is not None and rv1b is not None, \
+        "%s missing RV1a/RV1b" % net_name
+    assert rv1a.split()[1:3] == ["rv1_wiper", "0"], \
+        "%s RV1a must be 'rv1_wiper 0', got %s" % (net_name, rv1a)
+    assert rv1b.split()[1:3] == ["u1_buf", "rv1_wiper"], \
+        "%s RV1b must be 'u1_buf rv1_wiper', got %s" % (net_name, rv1b)
+
+
+def test_validate_catches_reversed_rv1(tmp_path):
+    """Red-before-green for validate.py check_rv1_topology(): reverse the Dwell
+    pot in a COPY of a stage netlist and confirm validate.py flags it. A reversed
+    RV1 inverts the Dwell control sense and diverges from the builder guide."""
+    tree = tmp_path / "reverb-tank"
+    shutil.copytree(HERE, tree, ignore=shutil.ignore_patterns("__pycache__"))
+    bad_net = tree / "stages" / "stage_04_input_protect.net"
+
+    text = bad_net.read_text()
+    assert "RV1a rv1_wiper 0 5k" in text and "RV1b u1_buf rv1_wiper 5k" in text
+    # Swap to the reversed (wrong) wiring.
+    text = text.replace("RV1a rv1_wiper 0 5k", "RV1a u1_buf rv1_wiper 5k", 1)
+    text = text.replace("RV1b u1_buf rv1_wiper 5k", "RV1b rv1_wiper 0 5k", 1)
+    bad_net.write_text(text)
+
+    result = subprocess.run([PY, str(tree / "validate.py")],
+                            capture_output=True, text=True)
+    assert result.returncode != 0, \
+        "validate.py did NOT catch the reversed RV1:\n%s" % result.stdout
+    assert "rv1 topology" in result.stdout, \
+        "validate.py failed but not on the RV1 topology:\n%s" % result.stdout
+
+
+def test_q1_vb_constants_consistent(P):
+    """Q1 base bias: the unloaded divider voltage (15 * R4/(R3b+R4)) sits inside
+    the loaded bench window, and both constants exist (FIX 5)."""
+    assert hasattr(P, "Q1_VB_WINDOW"), "circuit_params missing Q1_VB_WINDOW"
+    assert hasattr(P, "Q1_VB_UNLOADED"), "circuit_params missing Q1_VB_UNLOADED"
+    lo, hi = P.Q1_VB_WINDOW
+    assert lo < hi, "Q1_VB_WINDOW not lo<hi: %r" % (P.Q1_VB_WINDOW,)
+    assert lo <= P.Q1_VB_UNLOADED <= hi, \
+        "Q1_VB_UNLOADED %g outside Q1_VB_WINDOW %r" \
+        % (P.Q1_VB_UNLOADED, P.Q1_VB_WINDOW)
 
 
 def test_ac_netlist_has_u1_buffer_gain_meas():

@@ -248,6 +248,53 @@ OSC_RATIO_MAX      = 1.05
 CLAMP_IDLE_MAX     = 1e-6          # < 1 uA at idle
 CLAMP_VOLTAGE      = 15.7          # ~ clamp threshold at U1(+), volts
 U1POS_CLAMP_WINDOW = (-16.0, 16.0)  # V under 20Vpp overload
+# Under the 20Vpp overload (Stage 4 'overload' tran), the clamp diodes MUST
+# conduct on the peaks (proving the clamp engages). Dclamp_p carries forward
+# (positive) current on the +peak; Dclamp_n forward current shows as a NEGATIVE
+# I(Dclamp_n) (it is wired -15V->u1_pos, so conduction is the -direction). The
+# guard is only that they conduct AT ALL (> 0 / < 0), not a magnitude.
+CLAMP_OVERLOAD_P_MIN = 0.0        # I(Dclamp_p) peak MUST be > 0 under overload
+CLAMP_OVERLOAD_N_MAX = 0.0        # I(Dclamp_n) peak MUST be < 0 under overload
+# At idle the negative clamp (Dclamp_n, wired -15V->u1_pos) is reverse-biased,
+# so its current floor is just below 0 (same |I| < 1uA reasoning as clamp_p_i,
+# but the sign convention makes it a NEGATIVE-side floor).
+CLAMP_N_IDLE_MIN = -1e-6          # I(Dclamp_n) > -1 uA at idle (reverse-biased)
+# The TVS pair (DTVS1a/DTVS1b) is non-conducting at idle (vin ~0V << 15V knee),
+# so each zener's idle current sits in a tight window around 0.
+TVS_IDLE_WINDOW = (-1e-6, 1e-6)   # I(DTVS1a)/I(DTVS1b) at idle: ~0, +/-1 uA
+# At the DC operating point the AC source V1 sits at 0V, so the jack node vin is
+# at 0V DC (no DC path charges it). Same +/-10mV window as the op-amp offsets.
+VIN_IDLE_WINDOW = (-10e-3, 10e-3)  # V(vin) at idle DC: 0V, +/-10 mV
+
+# ============================================================================
+# STAGE 2 DRIVER DYNAMIC (transient) PASS CRITERIA
+# ============================================================================
+# The stage_02 .op netlist only checks DC bias; the dynamic driver behaviour
+# (flyback diode idle, no driver clip) needs a transient. These gate the
+# stage_02_driver_tran variant (1kHz 100mVpk, .tran 0 10m 0 5u):
+#   d3_pk   : the D3 flyback diode must NOT conduct during normal drive. Under
+#             normal operation the collector never flies above +15V (the tank is
+#             a soft load and L1 returns to the rail), so D3 stays reverse-biased.
+D3_IDLE_PEAK_MAX = 1e-3            # < 1 mA peak through D3 in normal drive
+#   drv_pk  : peak |I(L1)| (the driver/primary current). Quiescent Ic ~16mA flows
+#             through L1; a healthy driver's AC swing keeps the peak well under
+#             this ceiling. A driver CLIPPING/over-driving the transformer would
+#             flat-top and push |I(L1)| past it. Ceiling = quiescent Ic high
+#             (Q1_IC_WINDOW = 26mA) + generous AC headroom, still far below the
+#             BD139 1.5A rating, so it reads as a clip/over-drive detector.
+DRV_PEAK_MAX  = 0.1               # < 100 mA peak |I(L1)| (no driver clip)
+#   drv_rms : RMS I(L1). DC-dominated (~Ic), so it sits near the quiescent
+#             current and must stay under the same ceiling (RMS <= peak always).
+DRV_RMS_MAX   = 0.1               # < 100 mA RMS I(L1)
+
+# ============================================================================
+# Q1 BASE BIAS (divider operating point)
+# ============================================================================
+# Q1 base DC, set by the R3b (6.8k, +15V->base) / R4 (1k, base->GND) divider.
+# Unloaded (no base current) the divider sits at 15 * R4/(R3b+R4). Loaded by the
+# base current it pulls down a little, so the bench window is wider/lower.
+Q1_VB_UNLOADED = round(15 * 1000 / (6800 + 1000), 4)   # 1.923V (15*R4/(R3b+R4))
+Q1_VB_WINDOW   = (1.65, 2.05)     # loaded V(q1_base), with base current
 
 # Bench noise floor (Stage 7)
 NOISE_FLOOR_MAX_VRMS = 1e-3        # < 1 mVrms at J2
