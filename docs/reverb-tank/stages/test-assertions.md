@@ -40,7 +40,7 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 .meas TRAN vout_pk MAX abs(V(v_out))
 
 ; Stage 1 — TRAN: no oscillation — RMS late window vs early window
-.meas TRAN rms_early RMS V(v_out) FROM=0     TO=10m
+.meas TRAN rms_early RMS V(v_out) FROM=40m   TO=50m
 .meas TRAN rms_late  RMS V(v_out) FROM=90m   TO=100m
 .meas TRAN osc_ratio PARAM rms_late/rms_early
 ```
