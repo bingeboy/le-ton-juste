@@ -76,8 +76,10 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 ;   goes through the transistor model and differs from Ie by the base current ~1%
 ;   at Bf=100, so the cross-check is now a real ~1% read.) This catches an
 ;   inconsistent bias read that q1_ve / q1_ic alone would each pass. The divisor
-;   tracks circuit_params.R5, so it never silently drifts if R5 changes:
-.meas TRAN q1_ic_calc PARAM {q1_ve/R5}
+;   tracks circuit_params.R5, so it never silently drifts if R5 changes.
+;   (R5=68Ω, interpolated by the generator — 'R5' is a component instance name in
+;   LTspice, NOT a .param, so the literal {q1_ve/68} is what the netlist carries.)
+.meas TRAN q1_ic_calc PARAM {q1_ve/68}
 .meas TRAN q1_ic      AVG Ic(Q1) FROM=190m TO=200m
 .meas TRAN q1_ic_err  PARAM {abs(q1_ic - q1_ic_calc) / q1_ic_calc}
 
@@ -102,7 +104,7 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 |---|---|---|---|
 | `q1_ve` | `V(q1_e)` | 1.0 – 1.4 V (sim 1.09 V; first-order 1.22 V) | Bias divider/R5 wrong — wrong operating point |
 | `q1_ic` | `Ic(Q1)` | 10 – 26 mA (sim 16 mA; first-order 18 mA) | Quiescent current off — under/over-driven tank |
-| `q1_ic_calc` | `q1_ve/R5` (Ve across R5) | compared to `q1_ic` below | Ve-implied Ic and the BJT collector current disagree — wrong R5 or mis-probed emitter |
+| `q1_ic_calc` | `q1_ve/68` (Ve across R5; R5=68Ω, interpolated by generator) | compared to `q1_ic` below | Ve-implied Ic and the BJT collector current disagree — wrong R5 or mis-probed emitter |
 | `q1_ic` | `Ic(Q1)` (collector current through the BJT) | 10 – 26 mA | the independent comparison target for `q1_ic_calc` |
 | `q1_ic_err` | `\|q1_ic − q1_ic_calc\| / q1_ic_calc` | < 10% | Ve-implied Ic and the measured collector current disagree by > 10% |
 | `q1_vc` | `V(q1_c)` (collector DC) | 3 – 15.2 V (sim ≈14.6 V) | Collector pinned low — Q1 saturated or transformer/D3 short |
@@ -307,13 +309,16 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 .meas TRAN dwell_max_vout_pk MAX abs(V(u2_out)) FROM=50m TO=200m
 .meas TRAN dwell_max_wiper_pk MAX abs(V(rv1_wiper)) FROM=190m TO=200m
 
-; mix_ccw — Mix 0% (RV2a≈0, RV2b=100k = full dry): wiper ties to mix_dry; the
-;   wet contribution at the wiper must be negligible (wet_bleed ≈ 1, i.e. the
-;   wiper just tracks the dry node — no extra wet on top).
+; mix_ccw — Mix 0% (RV2a≈0, RV2b=100k = full dry): wiper ties to mix_dry. The old
+;   mix_ccw_wet_bleed = mix_node/mix_dry was a tautology — RV2a=0.001 hard-shorts
+;   mix_node to mix_dry at full-CCW, so the ratio is ~1 regardless of the wet path.
+;   Instead probe the WET path directly: the wet signal must arrive INTACT at the
+;   pot's wet lug (mix_wet) from the wet source (rv3_wiper, tied by the 0R
+;   Rwet_wire), so mix_ccw_wet_ratio = V(mix_wet)/V(rv3_wiper) ≈ 1.
 .meas TRAN mix_ccw_vout_pk   MAX abs(V(v_out))    FROM=190m TO=200m
-.meas TRAN mix_ccw_mix_node  MAX abs(V(mix_node)) FROM=190m TO=200m
-.meas TRAN mix_ccw_dry_lvl   MAX abs(V(mix_dry))  FROM=190m TO=200m
-.meas TRAN mix_ccw_wet_bleed PARAM {mix_ccw_mix_node/mix_ccw_dry_lvl}
+.meas TRAN mix_ccw_wet_src   RMS V(rv3_wiper) FROM=190m TO=200m
+.meas TRAN mix_ccw_wet_node  RMS V(mix_wet)   FROM=190m TO=200m
+.meas TRAN mix_ccw_wet_ratio PARAM {mix_ccw_wet_node/mix_ccw_wet_src}
 
 ; mix_cw — Mix 100% (RV2a=100k, RV2b≈0 = full wet): wiper ties to mix_wet (Tone
 ;   output); the dry node sees little of the wiper (dry_attn small).
@@ -335,7 +340,7 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 | `dwell_max` | 100 % / 50 % / 50 % | `dwell_max_vout_pk` | < 13.5 V (no hard clip at U2) | U2 railing at max Dwell drive |
 | `dwell_max` | 100 % / 50 % / 50 % | `dwell_max_wiper_pk` | 0.03 – 0.15 V (wiper carries the drive) | Wet drive dead at max Dwell — Dwell pot inverted or wiper open |
 | `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_vout_pk` | 0.05 – 0.15 V (dry present) | Dry signal absent at full-CCW |
-| `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_wet_bleed` | 0.9 – 1.05 (wiper tracks dry node ≈ 1) | Wet bleeds through at full-CCW |
+| `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_wet_ratio` | 0.9 – 1.05 (wet arrives intact at pot wet lug `V(mix_wet)/V(rv3_wiper)` ≈ 1) | Wet path broken/attenuated at full-CCW |
 | `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_vout_pk` | > 0.01 V (wet signal present) | Output dead at full-CW |
 | `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_dry_attn` | < 0.5 (dry node attenuated vs wiper) | Dry bleeds through at full-CW |
 | `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_pk` | ≤ 13.5 V (U2 within supply → DWELL_MAX_U2_PK_MAX) | U2 rails on the worst-case path |
@@ -399,6 +404,8 @@ floor `UNREG_TROUGH_MIN` (> 17 V (trough)).
 | `psu_low_mains` (0.90×) | `unreg_pos` / `unreg_neg` | > 17 V | Bus below dropout — rail unregulates |
 | `psu_low_mains` (0.90×) | `unreg_pos_min` / `\|unreg_neg_min\|` | > 17 V (trough) | Ripple trough dips below dropout — rail unregulates at the bottom of each cycle |
 
+> *Note: the `rail_pos`/`rail_neg` and `ripple_pos`/`ripple_neg` rows pass by construction under the behavioural LM78xx/LM79xx model (`min(V(IN,COM)−2, 15)`): as long as the bus trough clears 17 V the regulator output is pinned to ±15 V with no ripple. The binding constraint on this variant is `unreg_pos_min`/`unreg_neg_min` (trough ≥ 17 V) — that is the only row with real teeth here.*
+
 ### 8b — U2 input offset injection (Vos stress)
 
 A real **OPA2134** has an input offset voltage **Vos up to 500 µV** (typ 50 µV).
@@ -431,9 +438,11 @@ fall out of window at BF=40, the bias design is *not* beta-independent — a rea
 defect.
 
 ```spice
-; lo_beta — BD139 with BF=40 (datasheet hFE min); SAME Q1 bias windows
+; lo_beta — BD139 with BF=40 (datasheet hFE min); SAME Q1 bias windows.
+;   q1_ic = Ic(Q1) (collector current through the BJT), NOT I(R5) (emitter Ie):
+;   at BF=40 the base current is ~2.4% of Ie, the corner where Ic and Ie diverge.
 .meas TRAN q1_ve AVG V(q1_e) FROM=190m TO=200m
-.meas TRAN q1_ic AVG I(R5)   FROM=190m TO=200m
+.meas TRAN q1_ic AVG Ic(Q1)  FROM=190m TO=200m
 ```
 
 | Variant | Assertion | Pass condition | Fail means |

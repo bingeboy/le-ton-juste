@@ -688,7 +688,7 @@ def check_variant_netlists():
         # that exist in NO other netlist.
         (NET6_DWELL_MIN, {"dwell_min_vout", "dwell_min_dry"}),
         (NET6_DWELL_MAX, {"dwell_max_vout_pk", "dwell_max_wiper_pk"}),
-        (NET6_MIX_CCW, {"mix_ccw_vout_pk", "mix_ccw_wet_bleed"}),
+        (NET6_MIX_CCW, {"mix_ccw_vout_pk", "mix_ccw_wet_ratio"}),
         (NET6_MIX_CW, {"mix_cw_vout_pk", "mix_cw_dry_attn"}),
         (NET6_DWELL_MAX_MIX_CW, {"worst_case_pk", "worst_case_settle"}),
         # Stage 8 stress variants (idealized -> realistic hardware deviations).
@@ -996,8 +996,8 @@ def check_assertions_md():
     # mix_ccw_vout_pk: 0.05 – 0.15 V
     expect("mix_ccw_vout window",
            "%g – %g V" % (P.MIX_CCW_VOUT_WINDOW[0], P.MIX_CCW_VOUT_WINDOW[1]))
-    # mix_ccw_wet_bleed: 0.9 – 1.05
-    expect("mix_ccw_wet_bleed window",
+    # mix_ccw_wet_ratio: 0.9 – 1.05 (wet signal arrives intact at the pot wet lug)
+    expect("mix_ccw_wet_ratio window",
            "%g – %g" % (P.MIX_CCW_WET_BLEED_WINDOW[0], P.MIX_CCW_WET_BLEED_WINDOW[1]))
     # mix_cw_vout_pk: > 0.01 V
     expect("mix_cw_vout_pk min", "> %g V" % P.MIX_CW_VOUT_PK_MIN)

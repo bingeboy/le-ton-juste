@@ -88,7 +88,7 @@ B1 OUT COM V=max(V(IN,COM)+2, -{Vout})
 .model DN4007 D(Is=14.1n N=1.984 Rs=33.9m Ikf=94.8 Cjo=51.7p M=0.333 Vj=0.7 Bv=1000 Ibv=10u)
 .tran 0 200m 0 2u
 .meas TRAN q1_ve AVG V(q1_e) FROM=190m TO=200m
-.meas TRAN q1_ic AVG I(R5) FROM=190m TO=200m
+.meas TRAN q1_ic AVG Ic(Q1) FROM=190m TO=200m
 .meas TRAN rail_pos AVG V(+15V) FROM=190m TO=200m
 .meas TRAN rail_neg AVG V(-15V) FROM=190m TO=200m
 .lib UniversalOpAmp2.lib

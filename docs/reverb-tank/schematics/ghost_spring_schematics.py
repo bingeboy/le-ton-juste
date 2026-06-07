@@ -123,12 +123,29 @@ def section2():
     d = new_drawing()
     title(d, 'GHOST SPRING - Sec 2: Dwell Driver', at=(0, 3.5))
 
-    # Input u1_buf -> RV1 pot (resistor with wiper tap) -> C_drive
-    start = elm.Dot(open=True).label('u1_buf', loc='left')
+    # RV1 Dwell pot drawn as a TRUE 3-terminal divider (NOT a 2-terminal series
+    # resistor). Physical wiring: lug3(CW)->u1_buf, lug1(CCW)->GND, lug2(wiper)->
+    # C_drive. The pot is a resistive element from u1_buf down to GND with the
+    # wiper tapped off the middle; the wiper drives C_drive. A builder following a
+    # 2-terminal drawing would mis-wire this as a series pot instead of a divider.
+    start = elm.Dot(open=True).at((0, 2.5)).label('lug3 -> u1_buf', loc='left')
     d.add(start)
-    rv1 = elm.ResistorVar().right().at(start.start).label(f'RV1\n{cp.RV1_TOTAL}', loc='top').label('rv1_wiper', loc='bottom')
-    d.add(rv1)
-    cdrv = elm.Capacitor().right().at(rv1.end).label(f'C_drive\n{cp.C_DRIVE}F', loc='top')
+    # Top half: u1_buf (lug3, CW end) down to the wiper tap node.
+    rv1_top = elm.Resistor().down().at(start.start).length(1.5).label(
+        f'RV1\n{cp.RV1_TOTAL}', loc='left')
+    d.add(rv1_top)
+    wiper = rv1_top.end
+    d.add(elm.Dot().at(wiper))
+    # Bottom half: wiper tap node down to GND (lug1, CCW end).
+    rv1_bot = elm.Resistor().down().at(wiper).length(1.5).label(
+        'lug1 -> GND', loc='left')
+    d.add(rv1_bot)
+    d.add(elm.Ground().at(rv1_bot.end))
+    # Wiper (lug2) taps off to the right and feeds C_drive.
+    d.add(elm.Line().right().at(wiper).length(0.8).color('blue'))
+    d.add(elm.Dot().at(d.here).label('lug2 (wiper)\n-> C_drive', loc='top'))
+    cdrv = elm.Capacitor().right().at(d.here).label(
+        f'C_drive\n{cp.C_DRIVE}F', loc='top')
     d.add(cdrv)
 
     # wire right to q1_drv

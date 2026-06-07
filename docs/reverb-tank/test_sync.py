@@ -1073,12 +1073,14 @@ def test_pot_sweep_variant_exists(variant, net_name):
         "%s must drive V1 with the 100mVpk 1kHz stimulus" % net_name
 
 
-def test_mix_ccw_has_wet_bleed_meas():
+def test_mix_ccw_has_wet_ratio_meas():
     """mix_ccw (Mix full-CCW = full dry) carries both its output-level meas and
-    the wet-bleed proxy that gates dry-only output (no wet leaking through)."""
+    the wet-ratio probe that confirms the wet signal arrives intact at the pot's
+    wet lug (V(mix_wet)/V(rv3_wiper) ≈ 1) -- a real wet-path read, not the old
+    mix_node/mix_dry tautology shorted by RV2a=0.001 at full-CCW."""
     text = open(os.path.join(STAGES, "stage_06_full_mix_ccw.net")).read()
     names = _meas_names(text)
-    for needed in ("mix_ccw_vout_pk", "mix_ccw_wet_bleed"):
+    for needed in ("mix_ccw_vout_pk", "mix_ccw_wet_ratio"):
         assert needed in names, \
             "mix_ccw netlist missing .meas %s (got %s)" % (needed, sorted(names))
 
