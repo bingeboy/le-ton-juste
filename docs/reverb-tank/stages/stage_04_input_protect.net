@@ -56,10 +56,10 @@ X§U3 mix_node u3_out +15V -15V u3_out level2 Avol=1Meg GBW=8Meg Slew=20Meg Ilim
 R7 u3_out v_out 100
 Rload v_out 0 47k
 .model D D
-.lib C:\users\crossover\AppData\Local\LTspice\lib\cmp\standard.dio
+.lib standard.dio
 * BD139 driver model + BZX84C15L zener model + analysis directives
 .model BD139 NPN(Is=1e-14 Bf=100 Vaf=50 Rb=1 Rc=0.1 Re=0.05 Cje=30p Cjc=15p)
-.model BZX84C15L D(BV=15 N=1.6 Rs=2 IBV=5m Cjo=80p Iave=200m)
+.model BZX84C15L D(BV=15 N=1.6 Rs=2 IBV=5m Cjo=80p)
 .op
 .meas OP clamp_p_i FIND I(Dclamp_p)
 .meas OP clamp_n_i FIND I(Dclamp_n)

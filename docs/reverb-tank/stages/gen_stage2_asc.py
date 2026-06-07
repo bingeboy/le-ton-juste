@@ -139,7 +139,7 @@ class Build:
         # standard diode model + the stock standard.dio library (as MVP).
         # standard.dio defines 1N4148 (Dclamp_p/Dclamp_n/D3).
         net.append(".model D D")
-        net.append(r".lib C:\users\crossover\AppData\Local\LTspice\lib\cmp\standard.dio")
+        net.append(r".lib standard.dio")
         net.append("* BD139 driver model + analysis/measurement directives")
         for card in self.directives:
             net.append(card)

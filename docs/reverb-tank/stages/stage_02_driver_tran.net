@@ -53,7 +53,7 @@ X§U3 mix_node u3_out +15V -15V u3_out level2 Avol=1Meg GBW=8Meg Slew=20Meg Ilim
 R7 u3_out v_out 100
 Rload v_out 0 47k
 .model D D
-.lib C:\users\crossover\AppData\Local\LTspice\lib\cmp\standard.dio
+.lib standard.dio
 * BD139 driver model + analysis/measurement directives
 .model BD139 NPN(Is=1e-14 Bf=100 Vaf=50 Rb=1 Rc=0.1 Re=0.05 Cje=30p Cjc=15p)
 .tran 0 10m 0 5u
