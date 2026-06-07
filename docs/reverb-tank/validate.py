@@ -1084,6 +1084,92 @@ def check_q1_vb():
              % (P.Q1_VB_UNLOADED, P.Q1_VB_WINDOW))
 
 
+# ---------------------------------------------------------------------------
+# 1m. FENCE vs NETLIST DRIFT: every .meas line shown in a ```spice fence in
+#     test-assertions.md must have matching analysis type, form, AND probe
+#     expression in at least one committed netlist. Catches M1-class bugs
+#     (wrong analysis type / form) and M2-class bugs (wrong probe node or
+#     wrong time window).
+# ---------------------------------------------------------------------------
+def _norm_probe(s):
+    """Strip inline ; comments then collapse whitespace — for fence vs netlist comparison."""
+    return " ".join(s.split(";")[0].split())
+
+
+def check_fence_meas_forms():
+    global checks
+    with open(ASSERT_MD) as f:
+        doc = f.read()
+
+    # Collect (analysis, form, probe_expr) tuples from all committed .net files.
+    # probe_expr is everything after the form keyword, normalized.
+    netlist_meas = {}   # name -> set of (analysis, form, probe_expr)
+    for fname in sorted(os.listdir(STAGES)):
+        if not fname.endswith(".net"):
+            continue
+        try:
+            lines = open(os.path.join(STAGES, fname)).read().splitlines()
+        except IOError:
+            continue
+        for line in lines:
+            m = re.match(r"\.meas\s+(\w+)\s+(\w+)\s+(\w+)\s*(.*)", line, re.I)
+            if m:
+                analysis = m.group(1).upper()
+                name = m.group(2).lower()
+                form = m.group(3).upper()
+                probe = _norm_probe(m.group(4))
+                netlist_meas.setdefault(name, set()).add((analysis, form, probe))
+
+    # Extract .meas lines from ```spice fences.
+    in_fence = False
+    for line in doc.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("```spice"):
+            in_fence = True
+            continue
+        if in_fence and stripped == "```":
+            in_fence = False
+            continue
+        if not in_fence:
+            continue
+        m = re.match(r"\.meas\s+(\w+)\s+(\w+)\s+(\w+)\s*(.*)", stripped, re.I)
+        if not m:
+            continue
+        fence_analysis = m.group(1).upper()
+        name = m.group(2).lower()
+        fence_form = m.group(3).upper()
+        fence_probe = _norm_probe(m.group(4))
+
+        if name not in netlist_meas:
+            continue  # intermediate PARAM / legacy example not in any netlist
+
+        # Check 1: analysis type + form keyword match at least one netlist entry.
+        checks += 1
+        af_matches = [(a, f, p) for (a, f, p) in netlist_meas[name]
+                      if a == fence_analysis and f == fence_form]
+        if not af_matches:
+            actual = sorted(netlist_meas[name])
+            fail(
+                "test-assertions.md fence shows '.meas %s %s %s ...', "
+                "but no committed netlist has (%s, %s) for '%s' — "
+                "actual: %s"
+                % (fence_analysis, name, fence_form,
+                   fence_analysis, fence_form, name, actual)
+            )
+            continue
+
+        # Check 2: probe expression matches (catches wrong node, wrong window).
+        checks += 1
+        if (fence_analysis, fence_form, fence_probe) not in netlist_meas[name]:
+            actual_probes = [p for (a, f, p) in netlist_meas[name]
+                             if a == fence_analysis and f == fence_form]
+            fail(
+                "test-assertions.md fence '%s' probe mismatch — "
+                "fence: %r  netlist: %r"
+                % (name, fence_probe, actual_probes)
+            )
+
+
 def main():
     check_netlist()
     check_stage_netlists()
@@ -1102,6 +1188,7 @@ def main():
     check_chain_gain_target()
     check_params_md()
     check_assertions_md()
+    check_fence_meas_forms()
 
     if errors:
         print("VALIDATION FAILED (%d of %d checks):" % (len(errors), checks))
