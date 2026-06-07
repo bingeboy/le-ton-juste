@@ -619,17 +619,20 @@ def build(active_analysis="op"):
             b.directive(".meas TRAN dwell_max_wiper_pk MAX abs(V(rv1_wiper)) FROM=190m TO=200m")
         elif active_analysis == "mix_ccw":
             # Mix at 0% -> RV2a≈0, the wiper (mix_node) ties to mix_dry: 100% DRY.
-            # v_out should carry the dry signal. The old mix_ccw_wet_bleed compared
-            # mix_node/mix_dry, but at full-CCW RV2a=0.001 hard-shorts mix_node to
-            # mix_dry, so that ratio is ~1 regardless of the wet path -- the very
-            # short that keeps SPICE stable masked any real wet bleed (tautology).
-            # Instead probe the WET path isolation directly: measure the wet signal
-            # ARRIVING at the pot's wet lug (mix_wet) against the wet SOURCE
-            # (rv3_wiper). The wet wire (Rwet_wire, 0R) ties them, so the ratio is
-            # ~1 (wet signal arrives intact at the pot) -- a real read of the wet
-            # chain, independent of the dry-end short.
+            # v_out should carry the dry signal.
+            #
+            # Wet-chain integrity probe: mix_ccw_wet_ratio = V(mix_wet)/V(hpf_out).
+            # These nodes are separated by the real RV3 divider (RV3a=50k series,
+            # RV3b=50k||RV2b=100k shunt). At center-wiper the ratio is ~0.40.
+            # A broken RV3 wiper, open Rwet_wire, or shorted RV3b all push it
+            # outside the window. Cannot be 1.0 by construction -- hpf_out and
+            # mix_wet are always separated by RV3a=50k, so this is a genuine test.
+            #
+            # Previous attempts were tautologies:
+            #   v1: V(mix_node)/V(mix_dry) -- RV2a=0.001 hard-shorts both nodes.
+            #   v2: V(mix_wet)/V(rv3_wiper) -- Rwet_wire=0R makes them the same node.
             b.directive(".meas TRAN mix_ccw_vout_pk  MAX abs(V(v_out))   FROM=190m TO=200m")
-            b.directive(".meas TRAN mix_ccw_wet_src  RMS V(rv3_wiper) FROM=190m TO=200m")
+            b.directive(".meas TRAN mix_ccw_wet_src  RMS V(hpf_out)  FROM=190m TO=200m")
             b.directive(".meas TRAN mix_ccw_wet_node RMS V(mix_wet)   FROM=190m TO=200m")
             b.directive(".meas TRAN mix_ccw_wet_ratio PARAM {mix_ccw_wet_node/mix_ccw_wet_src}")
         elif active_analysis == "mix_cw":

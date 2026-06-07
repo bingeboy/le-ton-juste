@@ -243,7 +243,7 @@ def test_stage7_sweep_constants_are_numeric(P):
 
     # 2-tuple windows: numeric, lo < hi.
     for name in ["DWELL_MIN_DRY_WINDOW", "DWELL_MAX_WIPER_PK_WINDOW",
-                 "MIX_CCW_VOUT_WINDOW", "MIX_CCW_WET_BLEED_WINDOW"]:
+                 "MIX_CCW_VOUT_WINDOW", "MIX_CCW_WET_ARRIVAL_WINDOW"]:
         win = getattr(P, name)
         assert isinstance(win, tuple) and len(win) == 2, "%s should be a 2-tuple" % name
         lo, hi = win
@@ -1075,9 +1075,9 @@ def test_pot_sweep_variant_exists(variant, net_name):
 
 def test_mix_ccw_has_wet_ratio_meas():
     """mix_ccw (Mix full-CCW = full dry) carries both its output-level meas and
-    the wet-ratio probe that confirms the wet signal arrives intact at the pot's
-    wet lug (V(mix_wet)/V(rv3_wiper) ≈ 1) -- a real wet-path read, not the old
-    mix_node/mix_dry tautology shorted by RV2a=0.001 at full-CCW."""
+    the wet-ratio probe. mix_ccw_wet_ratio = V(mix_wet)/V(hpf_out) spans the real
+    RV3 divider (RV3a=50k series); ratio ~0.40 at center wiper. A broken wiper or
+    open Rwet_wire pushes it outside 0.20-0.65 window."""
     text = open(os.path.join(STAGES, "stage_06_full_mix_ccw.net")).read()
     names = _meas_names(text)
     for needed in ("mix_ccw_vout_pk", "mix_ccw_wet_ratio"):
