@@ -156,7 +156,7 @@ VRAIL_IDEAL = "15"           # ideal +/-15V bench-rail source value (Stages 1-4,
 # SIGNAL SOURCE / STIMULI (SPICE source strings)
 # ============================================================================
 V1_SINE_NORMAL   = "SINE(0 100m 1k)"  # normal 100mVpk 1kHz test stimulus
-V1_SINE_OVERLOAD = "SINE(0 10 1k)"    # 20Vpp clamp-window overload (Stage 4)
+V1_SINE_OVERLOAD = "SINE(0 20 1k)"    # 40Vpp clamp-window overload (Stage 4): 20Vpk drives the input well past the ~15.7V clamp threshold
 V1_SINE_KILLED   = "SINE(0 0 1k)"     # signal killed -> pure DC bias (op variant)
 V1_AC_TOKEN      = "AC 1"             # small-signal AC drive token on V1
 
@@ -213,6 +213,12 @@ RIPPLE_MAX_PP    = 10e-3           # < 10 mVpp on each rail
 # rail would follow the ripple. The PSU netlists measure unreg_pos/unreg_neg but
 # nothing gated them -> a silent dropout. |V(bus)| must clear this floor.
 UNREG_HEADROOM_MIN = 17.0          # V; |unreg bus| floor = Vout(15) + dropout(2)
+# Unregulated-bus RIPPLE TROUGH. The AVG check above can pass while the
+# instantaneous trough of the rippling bus dips below dropout (the regulator
+# follows the ripple at the bottom of each cycle). The low-mains variant also
+# gates the bus MINIMUM (the trough) against the SAME dropout floor: the instant-
+# aneous |unreg bus| must clear Vout+dropout, not just its average.
+UNREG_TROUGH_MIN = 17.0            # V; |unreg bus| trough floor = same dropout 17V
 
 # ============================================================================
 # KEY AC PARAMETERS (verified by stage_06_full sim)
@@ -247,14 +253,16 @@ OSC_RATIO_MAX      = 1.05
 # Input-clamp pass criteria
 CLAMP_IDLE_MAX     = 1e-6          # < 1 uA at idle
 CLAMP_VOLTAGE      = 15.7          # ~ clamp threshold at U1(+), volts
-U1POS_CLAMP_WINDOW = (-16.0, 16.0)  # V under 20Vpp overload
-# Under the 20Vpp overload (Stage 4 'overload' tran), the clamp diodes MUST
-# conduct on the peaks (proving the clamp engages). Dclamp_p carries forward
-# (positive) current on the +peak; Dclamp_n forward current shows as a NEGATIVE
-# I(Dclamp_n) (it is wired -15V->u1_pos, so conduction is the -direction). The
-# guard is only that they conduct AT ALL (> 0 / < 0), not a magnitude.
-CLAMP_OVERLOAD_P_MIN = 0.0        # I(Dclamp_p) peak MUST be > 0 under overload
-CLAMP_OVERLOAD_N_MAX = 0.0        # I(Dclamp_n) peak MUST be < 0 under overload
+U1POS_CLAMP_WINDOW = (-16.0, 16.0)  # V under 40Vpp overload
+# Under the 40Vpp overload (Stage 4 'overload' tran, V1 = SINE(0 20 1k)), the
+# clamp diodes MUST conduct on the peaks (proving the clamp engages). Dclamp_p
+# carries forward (positive) current on the +peak; Dclamp_n forward current shows
+# as a NEGATIVE I(Dclamp_n) (it is wired -15V->u1_pos, so conduction is the
+# -direction). Dclamp_p conducts when u1_pos exceeds ~15.6V; at 20Vpk in, R1 (1M)
+# limits the peak clamp current to ~(20-15.6)/1M ~= 4.4uA, so the guard is a real
+# microamp-scale floor (1uA), not the trivial >0/<0 that idle leakage satisfied.
+CLAMP_OVERLOAD_P_MIN = 1e-6      # I(Dclamp_p) peak MUST be > 1uA under overload
+CLAMP_OVERLOAD_N_MAX = -1e-6     # I(Dclamp_n) peak MUST be < -1uA under overload
 # At idle the negative clamp (Dclamp_n, wired -15V->u1_pos) is reverse-biased,
 # so its current floor is just below 0 (same |I| < 1uA reasoning as clamp_p_i,
 # but the sign convention makes it a NEGATIVE-side floor).

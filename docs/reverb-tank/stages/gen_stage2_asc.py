@@ -272,7 +272,7 @@ def build(active_analysis="op"):
     elif active_analysis == "ac":
         b.directive(".ac dec 200 20 20k")
         # Stage 1 regression: recovery gain (1 + Rf/Ri = 214x).
-        b.directive(".meas AC recov_gain FIND V(u2_out)/V(u2_in_pos) AT=1k")
+        b.directive(".meas AC recov_gain FIND mag(V(u2_out)/V(u2_in_pos)) AT=1k")
         # Stage 1 regression: wet HPF -3dB corner (C4 100n + R6 5.6k ~= 284Hz).
         # Measure the HPF's OWN transfer V(hpf_out)/V(u2_out) referenced to its
         # settled passband (5kHz). Referencing an absolute node level at 5kHz

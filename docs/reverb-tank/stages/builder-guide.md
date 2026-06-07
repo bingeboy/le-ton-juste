@@ -77,12 +77,12 @@ Corresponds to SPICE **Stage 2** `.op` (`q1_ve` 1.0–1.4V, `q1_ic` 10–26mA). 
 |---|---|---|---|
 | Q1 emitter (R5 top) to GND | 1.0–1.4V DC (sim 1.09V; first-order 1.22V) | DMM DC | Low: check R3b (6.8k) / R4 (1k) divider. Zero: Q1 reversed or open |
 | Q1 base to GND | 1.65–2.05V DC (unloaded divider 1.923V; loaded ~1.9V with base current) | DMM DC | Check R3b, R4, R3 (1k base series) |
-| Q1 collector to GND | ~13–14V DC | DMM DC | High (=+15V): Q1 not conducting — check bias chain |
+| Q1 collector to GND | ~14–15V DC (sim 14.6V) | DMM DC | High (=+15V): Q1 not conducting — check bias chain |
 | Across R5 (68Ω) | ~1.0–1.3V (R5's bottom is GND, so this equals Ve) | DMM DC | Ic = V/68Ω should land 10–26mA (sim ~16mA) |
 
 > The Q1 base voltage is set by the **R3b (6.8kΩ) / R4 (1kΩ) divider** from +15V: unloaded it sits at 15 × R4/(R3b+R4) = 15 × 1k/(6.8k+1k) = **1.923V**. Base current pulls it down slightly, so the loaded bench reading lands near ~1.9V; the accept window is **1.65–2.05V**. (These numbers derive from the divider; they live as `Q1_VB_UNLOADED` / `Q1_VB_WINDOW` in `circuit_params.py`.)
 
-> The collector sits a volt or two below +15V because L1 (transformer primary) is a near-DC-short to the +15V rail, so the collector idles close to the rail and only swings *down* under drive. Don't expect a mid-rail collector here — this is a transformer-loaded collector, not a resistor-loaded one.
+> The collector sits a volt or two below +15V because L1 (transformer primary) is a near-DC-short to the +15V rail, so the collector idles close to the rail and only swings *down* under drive. Don't expect a mid-rail collector here — this is a transformer-loaded collector, not a resistor-loaded one. The sim puts it at **14.6V** (collector 14.6V − emitter 1.1V → Vce ≈ 13.5V); a real BD139 with a higher Vbe draws slightly less Ic and may read a touch lower at the bench, so the **~14–15V** window is intentionally generous.
 
 **Signal check (signal generator + oscilloscope):**
 
@@ -90,7 +90,7 @@ Corresponds to SPICE **Stage 2** `.op` (`q1_ve` 1.0–1.4V, `q1_ic` 10–26mA). 
 - Probe the transformer primary (L1 / Q1 collector): expect a clean AC swing with **no flat-top clipping**. (SPICE **Stage 2** `drv_pk` — clean drive current, no flat-top.)
 - Probe D3 cathode (collector side): should sit at +15V DC and only spike above it on hard transients. (SPICE **Stage 2** `d3_pk` < 1mA — D3 idle in normal use.) Continuous conduction here means the flyback clamp is engaging when it shouldn't — check the bias point first.
 
-> **Q1 temperature — warm is normal, hot is not.** At the design bias point (Ic ≈ 16–18mA, Vce ≈ 13.8V) Q1 dissipates ≈ 13.8V × 18mA ≈ **0.25W**. A TO-126 with the small clip-on heatsink fitted (parts-spec) will settle around **40–50°C** — warm to the touch, you can hold a finger on it indefinitely. This is correct. **What is NOT normal:**
+> **Q1 temperature — warm is normal, hot is not.** At the design bias point (Ic ≈ 16–18mA, Vce ≈ 13.5V) Q1 dissipates ≈ 13.5V × 18mA ≈ **0.25W**. A TO-126 with the small clip-on heatsink fitted (parts-spec) will settle around **40–50°C** — warm to the touch, you can hold a finger on it indefinitely. This is correct. **What is NOT normal:**
 > - **Too hot to touch (>60°C) and climbing** → thermal runaway or a bias fault. Power down. Re-check R5 (68Ω emitter degeneration — if it's open or a wrong high value the current isn't limited), then the R3b/R4 divider, then confirm C2 isn't shorted (a shorted emitter bypass cap removes the DC drop across R5).
 > - **Ve drifting upward over the first minute** as the part warms is a small, expected settle (a few mV). Ve *running away* upward is the thermal-runaway signature — R5's degeneration should arrest it. If it doesn't, R5 is suspect.
 > - **Stone cold with Vc pinned at +15V** → Q1 isn't conducting at all (open device, reversed device, or broken bias chain), not a thermal issue. See the bias table above.

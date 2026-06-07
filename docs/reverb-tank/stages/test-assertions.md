@@ -28,7 +28,7 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 
 ; Stage 1 — AC: recovery stage gain = 1 + Rf/Ri = 1 + 100k/470 = 213.8x nominal
 ;   (component values per stage_06_full.net; pass band below covers 1% Rf/Ri parts + meas error)
-.meas AC recov_gain FIND V(u2_out)/V(u2_in_pos) AT=1k
+.meas AC recov_gain FIND mag(V(u2_out)/V(u2_in_pos)) AT=1k
 
 ; Stage 1 — AC: wet HPF -3dB corner. DESIGN corner = 1/(2*pi*R6*C4)
 ;   = 1/(2*pi*5.6k*100n) = 284Hz. MEASURED in stage_06_full sim = 312Hz
@@ -67,16 +67,19 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 .meas OP q1_ic FIND Ic(Q1)
 
 ; Stage 2 — OP cross-check: the collector current implied by the emitter
-;   voltage across R5 (Ic ~= Ie = Ve/R5) must agree with the current actually
-;   flowing through R5. The op variant of stage_06_full.net now emits BOTH the
-;   implied current (q1_ic_calc) AND its real comparison target q1_ic = I(R5),
-;   plus q1_ic_err = |q1_ic_calc - q1_ic| / q1_ic, which must stay under 10%.
-;   This catches an inconsistent bias read (e.g. a wrong R5 or a mis-probed
-;   emitter node) that q1_ve / q1_ic alone would each pass. The divisor tracks
-;   circuit_params.R5, so it never silently drifts if R5 changes:
+;   voltage across R5 (Ic ~= Ie = Ve/R5) must agree with the collector current
+;   measured DIRECTLY through the BJT, Ic(Q1). The op variant of stage_06_full.net
+;   emits BOTH the implied current (q1_ic_calc = Ve/R5) AND its INDEPENDENT
+;   comparison target q1_ic = Ic(Q1), plus q1_ic_err = |q1_ic - q1_ic_calc| /
+;   q1_ic_calc, which must stay under 10%. (The old target q1_ic = I(R5) made this
+;   a tautology: I(R5) is identically V(q1_e)/R5, so q1_ic_err was always ~0. Ic(Q1)
+;   goes through the transistor model and differs from Ie by the base current ~1%
+;   at Bf=100, so the cross-check is now a real ~1% read.) This catches an
+;   inconsistent bias read that q1_ve / q1_ic alone would each pass. The divisor
+;   tracks circuit_params.R5, so it never silently drifts if R5 changes:
 .meas TRAN q1_ic_calc PARAM {q1_ve/R5}
-.meas TRAN q1_ic      FIND I(R5) AT=200m
-.meas TRAN q1_ic_err  PARAM {abs(q1_ic_calc - q1_ic) / q1_ic}
+.meas TRAN q1_ic      AVG Ic(Q1) FROM=190m TO=200m
+.meas TRAN q1_ic_err  PARAM {abs(q1_ic - q1_ic_calc) / q1_ic_calc}
 
 ; Stage 2 — OP: Q1 must stay FORWARD-ACTIVE (not saturated). Read the collector
 ;   DC and derive Vce = V(q1_c)-V(q1_e) and Vcb = V(q1_c)-V(q1_base). If Q1
@@ -99,9 +102,9 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 |---|---|---|---|
 | `q1_ve` | `V(q1_e)` | 1.0 – 1.4 V (sim 1.09 V; first-order 1.22 V) | Bias divider/R5 wrong — wrong operating point |
 | `q1_ic` | `Ic(Q1)` | 10 – 26 mA (sim 16 mA; first-order 18 mA) | Quiescent current off — under/over-driven tank |
-| `q1_ic_calc` | `q1_ve/R5` (Ve across R5) | compared to `q1_ic` below | Ve and the R5 current disagree — wrong R5 or mis-probed emitter |
-| `q1_ic` | `I(R5)` (current through R5 = Ic) | 10 – 26 mA | the real comparison target for `q1_ic_calc` |
-| `q1_ic_err` | `\|q1_ic_calc − q1_ic\| / q1_ic` | < 10% | Ve-implied Ic and measured R5 current disagree by > 10% |
+| `q1_ic_calc` | `q1_ve/R5` (Ve across R5) | compared to `q1_ic` below | Ve-implied Ic and the BJT collector current disagree — wrong R5 or mis-probed emitter |
+| `q1_ic` | `Ic(Q1)` (collector current through the BJT) | 10 – 26 mA | the independent comparison target for `q1_ic_calc` |
+| `q1_ic_err` | `\|q1_ic − q1_ic_calc\| / q1_ic_calc` | < 10% | Ve-implied Ic and the measured collector current disagree by > 10% |
 | `q1_vc` | `V(q1_c)` (collector DC) | 3 – 15.2 V (sim ≈14.6 V) | Collector pinned low — Q1 saturated or transformer/D3 short |
 | `q1_vce` | `V(q1_c) − V(q1_e)` | > 1 V (≫ Vce(sat) 0.2 V) | Q1 saturated — collector swing flat-tops, send distorts |
 | `q1_vcb` | `V(q1_c) − V(q1_base)` | ≥ 0 V (CBJ reverse-biased) | Collector below base — Q1 in saturation |
@@ -142,9 +145,9 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 .meas OP tvs_b_i FIND I(DTVS1b)
 .meas OP vin_idle FIND V(vin)
 
-; Stage 4 — TRAN (overload variant): with 20Vpp overload, U1+ node is clamped
+; Stage 4 — TRAN (overload variant): with 40Vpp overload, U1+ node is clamped
 ;   AND the clamp diodes MUST conduct on the peaks (proving the clamp engages).
-;   (drive V1 = SINE(0 10 1k) for this run = 20Vpp; .tran 0 5m 0 10u.)
+;   (drive V1 = SINE(0 20 1k) for this run = 20Vpk / 40Vpp; .tran 0 5m 0 10u.)
 ;   The input MUST exceed the ~15.7V clamp threshold for this assertion to mean
 ;   anything — a sub-threshold drive passes trivially without testing the clamp.
 ;   On the bench, see builder-guide Stage 5 PRE-CHECK (generator must hit >=19Vpp).
@@ -161,10 +164,10 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | `tvs_a_i` | `I(DTVS1a)` | −1 µA – +1 µA (idle, not conducting) | TVS conducting at idle — wrong part/orientation |
 | `tvs_b_i` | `I(DTVS1b)` | −1 µA – +1 µA (idle, not conducting) | TVS conducting at idle — wrong part/orientation |
 | `vin_idle` | `V(vin)` | −10 mV – +10 mV (0 V DC) | Jack node biased off 0 V — DC leak onto the input |
-| `u1pos_hi` | `MAX V(u1_pos)` (20 Vpp in) | ≤ +16 V | Positive overload not clamped — U1 input at risk |
-| `u1pos_lo` | `MIN V(u1_pos)` (20 Vpp in) | ≥ −16 V | Negative overload not clamped |
-| `clamp_p_pk` | `MAX I(Dclamp_p)` (20 Vpp in) | > 0 (clamp conducts) | +clamp never engages — positive overload not absorbed |
-| `clamp_n_pk` | `MIN I(Dclamp_n)` (20 Vpp in) | < 0 (clamp conducts) | −clamp never engages — negative overload not absorbed |
+| `u1pos_hi` | `MAX V(u1_pos)` (40 Vpp in) | ≤ +16 V | Positive overload not clamped — U1 input at risk |
+| `u1pos_lo` | `MIN V(u1_pos)` (40 Vpp in) | ≥ −16 V | Negative overload not clamped |
+| `clamp_p_pk` | `MAX I(Dclamp_p)` (40 Vpp in) | > 1e-06 (clamp conducts) | +clamp never engages — positive overload not absorbed |
+| `clamp_n_pk` | `MIN I(Dclamp_n)` (40 Vpp in) | < -1e-06 (clamp conducts) | −clamp never engages — negative overload not absorbed |
 
 ---
 
@@ -370,7 +373,11 @@ source by `PSU_LOW_MAINS_VFACTOR = 0.9×` (108 V = 10 % low) and re-runs the
 nominal mains there is ample dropout headroom, so even at 0.90× the regulators
 must still hold ±15 V and ripple must stay in spec. **Same windows apply** —
 `rail_pos`/`rail_neg` (14.85 – 15.15 V), `ripple_pos`/`ripple_neg` (< 10 mVpp),
-and `unreg_pos`/`unreg_neg` (> 17 V dropout headroom on the sagged bus).
+and `unreg_pos`/`unreg_neg` (> 17 V dropout headroom on the sagged bus). The AVG
+headroom check can pass while the **rippling bus trough** dips below dropout, so
+the variant also gates the instantaneous trough — `unreg_pos_min` (bus MIN) and
+`unreg_neg_min` (the −bus MAX = least-negative = its trough) — against the SAME
+floor `UNREG_TROUGH_MIN` (> 17 V (trough)).
 
 ```spice
 ; psu_low_mains — T1 secondary scaled to 108V (0.90x), SAME ripple/rail checks
@@ -380,6 +387,9 @@ and `unreg_pos`/`unreg_neg` (> 17 V dropout headroom on the sagged bus).
 .meas TRAN rail_neg AVG V(-15V) FROM=100m TO=120m
 .meas TRAN unreg_pos AVG V(pos_rect) FROM=100m TO=120m
 .meas TRAN unreg_neg AVG V(neg_rect) FROM=100m TO=120m
+; trough (instantaneous) — must clear dropout, not just the average
+.meas TRAN unreg_pos_min MIN V(pos_rect) FROM=50m TO=100m
+.meas TRAN unreg_neg_min MAX V(neg_rect) FROM=50m TO=100m
 ```
 
 | Variant | Assertion | Pass condition | Fail means |
@@ -387,6 +397,7 @@ and `unreg_pos`/`unreg_neg` (> 17 V dropout headroom on the sagged bus).
 | `psu_low_mains` (0.90×) | `ripple_pos` / `ripple_neg` | < 10 mVpp | Ripple rejection fails on low mains |
 | `psu_low_mains` (0.90×) | `rail_pos` / `rail_neg` | 14.85 – 15.15 V | Regulator drops out on low mains |
 | `psu_low_mains` (0.90×) | `unreg_pos` / `unreg_neg` | > 17 V | Bus below dropout — rail unregulates |
+| `psu_low_mains` (0.90×) | `unreg_pos_min` / `\|unreg_neg_min\|` | > 17 V (trough) | Ripple trough dips below dropout — rail unregulates at the bottom of each cycle |
 
 ### 8b — U2 input offset injection (Vos stress)
 

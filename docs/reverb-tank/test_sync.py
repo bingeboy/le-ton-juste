@@ -914,8 +914,8 @@ def test_stage4_overload_variant_exists_and_meas():
         "stage_04_input_protect_overload.net missing -- run sync.py"
     text = open(path).read()
     assert ".tran" in text, "overload variant must carry a .tran analysis"
-    assert net_line(text, "V1").endswith("SINE(0 10 1k) AC 1"), \
-        "overload variant must drive V1 with the 20Vpp SINE(0 10 1k) stimulus"
+    assert net_line(text, "V1").endswith("SINE(0 20 1k) AC 1"), \
+        "overload variant must drive V1 with the 40Vpp SINE(0 20 1k) stimulus"
     names = _meas_names(text)
     for needed in ("u1pos_hi", "u1pos_lo", "clamp_p_pk", "clamp_n_pk"):
         assert needed in names, \

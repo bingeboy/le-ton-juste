@@ -283,7 +283,7 @@ def build(active_analysis="ac"):
     elif active_analysis == "ac_regression":
         # Stage 1 regression checks via AC (recovery gain + HPF corner).
         b.directive(".ac dec 100 20 20k")
-        b.directive(".meas AC recov_gain FIND V(u2_out)/V(u2_in_pos) AT=1k")
+        b.directive(".meas AC recov_gain FIND mag(V(u2_out)/V(u2_in_pos)) AT=1k")
         b.directive(".meas AC hpf_pb FIND mag(V(hpf_out)/V(u2_out)) AT=5k")
         b.directive(".meas AC hpf_m3db WHEN mag(V(hpf_out)/V(u2_out))=hpf_pb*0.7079 RISE=1")
     elif active_analysis == "op":
