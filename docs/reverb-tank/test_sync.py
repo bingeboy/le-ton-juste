@@ -1087,18 +1087,38 @@ def test_mix_ccw_has_wet_ratio_meas():
 
 
 def test_dwell_max_has_wiper_pk_meas():
-    """dwell_max (Dwell full-CW = max wet drive) carries the U2-clip guard and
-    the wiper-level meas (dwell_max_wiper_pk). The wiper level is what the Dwell
-    position actually controls; the old dwell_max_q1_ve probed a Dwell-independent
-    DC bias (C_drive blocks DC) and so could never catch a Dwell failure."""
+    """dwell_max (Dwell full-CW = max wet drive) carries the U2-clip guard
+    (dwell_max_u2_pk) and the wiper-level meas (dwell_max_wiper_pk). The name
+    dwell_max_u2_pk is the machine-readable contract: it probes V(u2_out),
+    not V(v_out). v_out at Dwell-max is separately gated by worst_case_pk
+    in the dwell_max_mix_cw variant."""
     text = open(os.path.join(STAGES, "stage_06_full_dwell_max.net")).read()
     names = _meas_names(text)
-    for needed in ("dwell_max_vout_pk", "dwell_max_wiper_pk"):
+    for needed in ("dwell_max_u2_pk", "dwell_max_wiper_pk"):
         assert needed in names, \
             "dwell_max netlist missing .meas %s (got %s)" % (needed, sorted(names))
+    # The misnamed form must be gone — it implied v_out was probed when u2_out was.
+    assert "dwell_max_vout_pk" not in names, \
+        "dwell_max still uses the misleading name dwell_max_vout_pk"
     # The replaced assertion must be gone (it tested a Dwell-independent quantity).
     assert "dwell_max_q1_ve" not in names, \
         "dwell_max still carries the Dwell-independent dwell_max_q1_ve meas"
+
+
+def test_dwell_max_u2_pk_probes_u2_out():
+    """dwell_max_u2_pk must probe V(u2_out), not V(v_out). V(v_out) is downstream
+    of the Mix pot and is separately gated by worst_case_pk in the combined
+    Dwell-max/Mix-CW variant. Probing V(v_out) here would make both assertions
+    gate the same node under different pot conditions — the prior bug class."""
+    text = open(os.path.join(STAGES, "stage_06_full_dwell_max.net")).read()
+    for line in text.splitlines():
+        if re.search(r"\.meas\s", line, re.I) and "dwell_max_u2_pk" in line:
+            assert "V(u2_out)" in line, \
+                "dwell_max_u2_pk must probe V(u2_out), got: %s" % line.strip()
+            assert "V(v_out)" not in line, \
+                "dwell_max_u2_pk must not probe V(v_out), got: %s" % line.strip()
+            return
+    raise AssertionError("dwell_max_u2_pk .meas not found in dwell_max netlist")
 
 
 def test_dwell_max_mix_cw_has_worst_case_meas():
@@ -1110,6 +1130,56 @@ def test_dwell_max_mix_cw_has_worst_case_meas():
         assert needed in names, \
             "dwell_max_mix_cw netlist missing .meas %s (got %s)" \
             % (needed, sorted(names))
+
+
+def test_worst_case_pk_probes_v_out():
+    """worst_case_pk (Dwell-max + Mix-CW combined stress) must probe V(v_out),
+    not V(u2_out). V(u2_out) is upstream of the Mix pot and invariant to Mix
+    position — probing it there was the prior bug that made the Mix=CW condition
+    have zero effect on the measurement result."""
+    text = open(os.path.join(STAGES, "stage_06_full_dwell_max_mix_cw.net")).read()
+    for line in text.splitlines():
+        if re.search(r"\.meas\s", line, re.I) and "worst_case_pk" in line:
+            assert "V(v_out)" in line, \
+                "worst_case_pk must probe V(v_out), got: %s" % line.strip()
+            assert "V(u2_out)" not in line, \
+                "worst_case_pk must not probe V(u2_out), got: %s" % line.strip()
+            return
+    raise AssertionError("worst_case_pk .meas not found in dwell_max_mix_cw netlist")
+
+
+def test_off_meas_use_tran_avg_form():
+    """off_u1/2/3 in the baseline netlist must be .meas TRAN ... AVG, not
+    .meas OP FIND. LTspice silently ignores analysis-type mismatches: a .meas OP
+    directive in a TRAN run produces no result, so the assertion passes vacuously
+    and never catches a real DC offset."""
+    text = open(os.path.join(STAGES, "stage_06_full.net")).read()
+    for meas_name in ("off_u1", "off_u2", "off_u3"):
+        for line in text.splitlines():
+            if re.search(r"\.meas\s", line, re.I) and meas_name in line:
+                assert "TRAN" in line.upper(), \
+                    "%s must use TRAN analysis (not OP FIND): %s" % (meas_name, line.strip())
+                assert "AVG" in line.upper(), \
+                    "%s must use AVG form (not FIND): %s" % (meas_name, line.strip())
+                break
+        else:
+            raise AssertionError("%s .meas not found in stage_06_full.net" % meas_name)
+
+
+def test_hpf_meas_uses_ratio_form():
+    """hpf_ref and hpf_m3db must use the transfer-ratio form
+    mag(V(hpf_out)/V(u2_out)), not bare V(hpf_out). The bare form measures the
+    absolute HPF node voltage, so U2's own response roll-off shifts the apparent
+    -3dB corner — a false reading that would mask a real R6/C4 value error."""
+    text = open(os.path.join(STAGES, "stage_06_full_ac.net")).read()
+    for meas_name in ("hpf_ref", "hpf_m3db"):
+        for line in text.splitlines():
+            if re.search(r"\.meas\s", line, re.I) and meas_name in line:
+                assert "V(hpf_out)/V(u2_out)" in line, \
+                    "%s must use ratio V(hpf_out)/V(u2_out), got: %s" % (meas_name, line.strip())
+                break
+        else:
+            raise AssertionError("%s .meas not found in stage_06_full_ac.net" % meas_name)
 
 
 def test_pot_split_drives_halves_to_rail():

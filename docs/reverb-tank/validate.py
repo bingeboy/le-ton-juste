@@ -687,7 +687,7 @@ def check_variant_netlists():
         # carries the .meas assertions that gate its specific failure mode and
         # that exist in NO other netlist.
         (NET6_DWELL_MIN, {"dwell_min_vout", "dwell_min_dry"}),
-        (NET6_DWELL_MAX, {"dwell_max_vout_pk", "dwell_max_wiper_pk"}),
+        (NET6_DWELL_MAX, {"dwell_max_u2_pk", "dwell_max_wiper_pk"}),
         (NET6_MIX_CCW, {"mix_ccw_vout_pk", "mix_ccw_wet_ratio"}),
         (NET6_MIX_CW, {"mix_cw_vout_pk", "mix_cw_dry_attn"}),
         (NET6_DWELL_MAX_MIX_CW, {"worst_case_pk", "worst_case_settle"}),
@@ -995,7 +995,7 @@ def check_assertions_md():
     # dwell_max_wiper_pk: 0.03 – 0.15 V
     expect("dwell_max_wiper_pk window",
            "%g – %g V" % (P.DWELL_MAX_WIPER_PK_WINDOW[0], P.DWELL_MAX_WIPER_PK_WINDOW[1]))
-    # dwell_max_vout_pk: < 13.5 V
+    # dwell_max_u2_pk: < 13.5 V
     expect("dwell_max_u2_pk max", "< %g V" % P.DWELL_MAX_U2_PK_MAX)
     # worst_case_pk: ≤ 6.0 V (v_out at Dwell-max/Mix-CW; analytical ceiling 0.4×13.5=5.4V)
     expect("worst_case_pk max", "≤ %g V" % P.WORST_CASE_PK_MAX)

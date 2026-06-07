@@ -86,7 +86,7 @@ B1 OUT COM V=max(V(IN,COM)+2, -{Vout})
 .model BZX84C15L D(BV=15 N=1.6 Rs=2 IBV=5m Cjo=80p)
 .model DN4007 D(Is=14.1n N=1.984 Rs=33.9m Ikf=94.8 Cjo=51.7p M=0.333 Vj=0.7 Bv=1000 Ibv=10u)
 .tran 0 200m 0 5u
-.meas TRAN dwell_max_vout_pk MAX abs(V(u2_out)) FROM=50m TO=200m
+.meas TRAN dwell_max_u2_pk MAX abs(V(u2_out)) FROM=50m TO=200m
 .meas TRAN dwell_max_wiper_pk MAX abs(V(rv1_wiper)) FROM=190m TO=200m
 .lib UniversalOpAmp2.lib
 .backanno

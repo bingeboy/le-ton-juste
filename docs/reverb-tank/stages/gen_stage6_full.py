@@ -615,7 +615,7 @@ def build(active_analysis="op"):
             # Dwell at 100% (CW) -> RV1b≈0 (wiper pulled to u1_buf) = MAXIMUM wet
             # drive. Check U2 output does not hard-clip. dwell_max_wiper_pk gates
             # the AC level at the wiper, which IS what the Dwell position controls.
-            b.directive(".meas TRAN dwell_max_vout_pk MAX abs(V(u2_out)) FROM=50m TO=200m")
+            b.directive(".meas TRAN dwell_max_u2_pk MAX abs(V(u2_out)) FROM=50m TO=200m")
             b.directive(".meas TRAN dwell_max_wiper_pk MAX abs(V(rv1_wiper)) FROM=190m TO=200m")
         elif active_analysis == "mix_ccw":
             # Mix at 0% -> RV2a≈0, the wiper (mix_node) ties to mix_dry: 100% DRY.

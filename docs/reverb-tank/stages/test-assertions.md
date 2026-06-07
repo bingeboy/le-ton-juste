@@ -21,10 +21,10 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 ## Stage 1 — MVP baseline
 
 ```spice
-; Stage 1 — DC: every op-amp output sits at virtual 0V (no offset)
-.meas OP off_u1 FIND V(u1_out)
-.meas OP off_u2 FIND V(u2_out)
-.meas OP off_u3 FIND V(v_out)
+; Stage 1 — TRAN: every op-amp output DC-settles near 0V (Vos=0 model)
+.meas TRAN off_u1 AVG V(u1_out) FROM=190m TO=200m
+.meas TRAN off_u2 AVG V(u2_out) FROM=190m TO=200m
+.meas TRAN off_u3 AVG V(v_out)  FROM=190m TO=200m
 
 ; Stage 1 — AC: recovery stage gain = 1 + Rf/Ri = 1 + 100k/470 = 213.8x nominal
 ;   (component values per stage_06_full.net; pass band below covers 1% Rf/Ri parts + meas error)
@@ -33,8 +33,8 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 ; Stage 1 — AC: wet HPF -3dB corner. DESIGN corner = 1/(2*pi*R6*C4)
 ;   = 1/(2*pi*5.6k*100n) = 284Hz. MEASURED in stage_06_full sim = 312Hz
 ;   (the two differ because of loading; both fall inside the 250-320Hz pass band).
-.meas AC hpf_ref  FIND V(hpf_out) AT=5k
-.meas AC hpf_m3db WHEN V(hpf_out)=hpf_ref*0.7079 RISE=1
+.meas AC hpf_ref  FIND mag(V(hpf_out)/V(u2_out)) AT=5k
+.meas AC hpf_m3db WHEN mag(V(hpf_out)/V(u2_out))=hpf_ref*0.7079 RISE=1
 
 ; Stage 1 — TRAN: output not clipping
 .meas TRAN vout_pk MAX abs(V(v_out))
@@ -216,16 +216,16 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 ; Stage 6 — re-run ALL Stage 1 assertions (off_u1/2/3, recov_gain,
 ;           hpf_m3db, vout_pk, osc_ratio) unchanged.
 
-; Stage 6 — OP: complete DC operating point (op-amps + driver bias)
-.meas OP off_u1 FIND V(u1_out)
-.meas OP off_u2 FIND V(u2_out)
-.meas OP off_u3 FIND V(v_out)
-.meas OP q1_ve  FIND V(q1_e)
+; Stage 6 — TRAN: DC operating point extracted as steady-state AVG (190–200ms)
+.meas TRAN off_u1 AVG V(u1_out) FROM=190m TO=200m
+.meas TRAN off_u2 AVG V(u2_out) FROM=190m TO=200m
+.meas TRAN off_u3 AVG V(v_out)  FROM=190m TO=200m
+.meas TRAN q1_ve  AVG V(q1_e)   FROM=190m TO=200m
 
-; Stage 6 — OP: U2 non-inverting input DC bias. Rbias (100k) holds u2_in_pos at
+; Stage 6 — TRAN: U2 non-inverting input DC bias. Rbias (100k) holds u2_in_pos at
 ;   0V and C3 (470n) blocks tank/rail DC. If Rbias opened or a rail leaked in,
 ;   this node floats to a DC offset that the 214x stage multiplies into U2 clip.
-.meas OP u2_inpos_bias FIND V(u2_in_pos)
+.meas TRAN u2_inpos_bias AVG V(u2_in_pos) FROM=190m TO=200m
 
 ; Stage 6 — AC: U1 input buffer is a unity-gain follower. V(u1_buf) must track
 ;   V(vin) at ~1.0x; a dead/mis-wired U1 would not pass signal at unity.
@@ -252,6 +252,7 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | `u1_buf_gain` | `\|V(u1_buf)/V(vin)\|` @1k | 0.9 – 1.05 | U1 buffer dead/mis-wired — front-end not passing signal |
 | `recov_gain_db` | `20log10(V(u2_out)/V(u2_in_pos))` @1k | 44.6 – 48.6 dB (target 46.59 dB ±2 dB) | Recovery-stage gain drifted out of spec |
 | `recov_lvl` | `V(u2_out)` @1k | *decorative — no gated window* | Context probe: raw U2 output level; the gated quantity is `recov_gain_db` |
+| `rail_pos` `rail_neg` | `AVG V(±15V)` | *decorative — no gated window* | Context: rail stability in TRAN run; the gated rail windows live in Stage 5 |
 
 ---
 
@@ -314,7 +315,7 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 
 ; dwell_max — Dwell 100% (CW): RV1b≈0 pulls the wiper to u1_buf = MAXIMUM wet
 ;   drive. U2 output must not hard-clip and the wiper must carry the drive signal.
-.meas TRAN dwell_max_vout_pk MAX abs(V(u2_out)) FROM=50m TO=200m
+.meas TRAN dwell_max_u2_pk MAX abs(V(u2_out)) FROM=50m TO=200m
 .meas TRAN dwell_max_wiper_pk MAX abs(V(rv1_wiper)) FROM=190m TO=200m
 
 ; mix_ccw — Mix 0% (RV2a≈0, RV2b=100k = full dry): wiper ties to mix_dry. Two
@@ -348,7 +349,7 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 |---|---|---|---|---|
 | `dwell_min` | 0 % / 50 % / 50 % | `dwell_min_dry` | 0.05 – 0.15 V (≈0.1 V pk) | Dry path dead at min Dwell — Dwell wrongly gates dry |
 | `dwell_min` | 0 % / 50 % / 50 % | `dwell_min_vout` | 0.02 – 0.12 V (≈0.045 V pk; dry-only through RV2 noon divider → DWELL_MIN_VOUT_WINDOW) | Whole output dead at min Dwell — Rdry open or RV2 mis-wired |
-| `dwell_max` | 100 % / 50 % / 50 % | `dwell_max_vout_pk` | < 13.5 V (no hard clip at U2) | U2 railing at max Dwell drive |
+| `dwell_max` | 100 % / 50 % / 50 % | `dwell_max_u2_pk` | < 13.5 V (no hard clip at U2; probes `V(u2_out)` → DWELL_MAX_U2_PK_MAX) | U2 railing at max Dwell drive |
 | `dwell_max` | 100 % / 50 % / 50 % | `dwell_max_wiper_pk` | 0.03 – 0.15 V (wiper carries the drive) | Wet drive dead at max Dwell — Dwell pot inverted or wiper open |
 | `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_vout_pk` | 0.05 – 0.15 V (dry present) | Dry signal absent at full-CCW |
 | `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_wet_ratio` | 0.2 – 0.65 (`V(mix_wet)/V(hpf_out)` across RV3 divider; ~0.40 at center wiper) | Wet chain broken: open RV3 wiper, shorted RV3b, or open Rwet_wire |
@@ -364,7 +365,7 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 > `DWELL_MAX_U2_PK_MAX`, `WORST_CASE_PK_MAX`, `MIX_CCW_VOUT_WINDOW`,
 > `WORST_CASE_SETTLE_MAX`). The dry level ≈ 0.1 V pk follows from the 100 mVpk
 > input through the unity U1 buffer and the Rdry/RV2 divider; the < 13.5 V ceiling
-> gates U2's output (`dwell_max_vout_pk`); the ≤ 6 V ceiling gates `v_out`
+> gates U2's output (`dwell_max_u2_pk`); the ≤ 6 V ceiling gates `v_out`
 > downstream of U3 (`worst_case_pk`, analytical ceiling 0.4 × 13.5 = 5.4 V). As
 > with the Mix-blend section, the **wiper position is not a swept SPICE variable**,
 > so each pot extreme is a SEPARATE generated netlist rather than one parametric
@@ -441,6 +442,8 @@ bench-documented **20–150 mV** typical band and is blocked by C4 before v_out.
 | Variant | Assertion | Pass condition | Fail means |
 |---|---|---|---|
 | `stage6_vos` (500 µV) | `u2_out_dc_vos` | \|val\| ≤ 150 mV | Vos×214 exceeds C4-blockable headroom — U2 near clip |
+| `stage6_vos` (500 µV) | `u2_inpos_vos` | *decorative — no gated window* | Context probe: actual U2(+) DC under Vos injection (≈ Vos = 500 µV) |
+| `stage6_vos` (500 µV) | `rail_pos` `rail_neg` | *decorative — no gated window* | Context: rail stability unchanged by Vos injection |
 
 ### 8c — BD139 low-beta corner
 
@@ -464,6 +467,7 @@ defect.
 |---|---|---|---|
 | `lo_beta` (BF=40) | `q1_ve` | 1.0 – 1.4 V | Bias shifts with beta — divider too soft / R5 wrong |
 | `lo_beta` (BF=40) | `q1_ic` | 10 – 26 mA | Quiescent current beta-dependent — under/over-driven tank |
+| `lo_beta` (BF=40) | `rail_pos` `rail_neg` | *decorative — no gated window* | Context: rail stability unchanged at low beta |
 
 ---
 
