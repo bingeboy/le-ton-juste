@@ -991,6 +991,8 @@ def check_assertions_md():
            "%g – %g V" % (P.DWELL_MAX_WIPER_PK_WINDOW[0], P.DWELL_MAX_WIPER_PK_WINDOW[1]))
     # dwell_max_vout_pk: < 13.5 V
     expect("dwell_max_u2_pk max", "< %g V" % P.DWELL_MAX_U2_PK_MAX)
+    # worst_case_pk: ≤ 13.5 V (same physical U2-vs-rail ceiling -> DWELL_MAX_U2_PK_MAX)
+    expect("worst_case_pk max", "≤ %g V" % P.DWELL_MAX_U2_PK_MAX)
     # mix_ccw_vout_pk: 0.05 – 0.15 V
     expect("mix_ccw_vout window",
            "%g – %g V" % (P.MIX_CCW_VOUT_WINDOW[0], P.MIX_CCW_VOUT_WINDOW[1]))
@@ -1003,6 +1005,14 @@ def check_assertions_md():
     expect("mix_cw_dry_attn max", "< %g" % P.MIX_CW_DRY_ATTN_MAX)
     # worst_case_settle: < 0.5
     expect("worst_case_settle max", "< %g V" % P.WORST_CASE_SETTLE_MAX)
+
+    # ----- Stage 3 tank-interface AC bounds (the "drip"): tank_pk_f resonance
+    # band + tank_drive_db level. These were documented but previously unenforced.
+    # tank_pk_f: 1 – 5 kHz
+    expect("tank_pk_f window",
+           "%g – %g kHz" % (P.TANK_PKF_MIN / 1e3, P.TANK_PKF_MAX / 1e3))
+    # tank_drive_db: > −60 dB
+    expect("tank_drive_db min", "> %s dB" % _g(P.TANK_DRIVE_DB_MIN))
 
     # ----- Stage 4 input-protection idle + overload bounds: every measured
     # quantity must carry an enforced numeric bound (no silent .meas).

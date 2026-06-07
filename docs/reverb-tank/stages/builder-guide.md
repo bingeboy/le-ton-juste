@@ -120,22 +120,22 @@ Corresponds to SPICE **Stage 3** `.ac` (`tank_pk_f` 1–5kHz, `tank_drive_db` > 
 
 ## Stage 5 — Input protection
 
-Corresponds to SPICE **Stage 4** (`stage_04_input_protect.asc`): `.op` clamp reverse-bias (`clamp_p_i`, `clamp_n_i` < 1µA) and the 20Vpp overload `.tran` (`u1pos_hi` ≤ +16V, `u1pos_lo` ≥ −16V). This is the front-end: C_in, R1, the 1N4148 clamp pair (Dclamp+/−), and TVS1 (SMBJ15CA) across the jack.
+Corresponds to SPICE **Stage 4** (`stage_04_input_protect.asc`): `.op` clamp reverse-bias (`clamp_p_i`, `clamp_n_i` < 1µA) and the 40Vpp (20Vpk) overload `.tran` (`u1pos_hi` ≤ +16V, `u1pos_lo` ≥ −16V). This is the front-end: C_in, R1, the 1N4148 clamp pair (Dclamp+/−), and TVS1 (SMBJ15CA) across the jack.
 
 | Test | Method | Expected | Fail action |
 |---|---|---|---|
 | Input clamp diodes idle | DMM diode-check across Dclamp+ (and Dclamp−) with power on | Reverse-biased — diode-check reads open/OL in the blocking direction; leakage < 1µA | Reads a forward drop (~0.6V) or conducts at idle: clamp diode is in backwards |
 | TVS1 at idle | DMM DC across input jack tip–sleeve, nothing plugged in | 0V (TVS not conducting) | Any standing voltage: wiring fault at the jack or a shorted TVS |
-| Overload clamp | Apply 20Vpp 1kHz to the input (**careful — this is a deliberate overload**), probe U1(+). **Do the PRE-CHECK below first.** | Waveform clamped, U1(+) never exceeds ±16V (design clamps at ~±15.7V) | Exceeds ±16V: check TVS1 (both zeners / correct bidirectional part) and the 1N4148 clamp-pair orientation |
+| Overload clamp | Apply 40Vpp (20Vpk) 1kHz to the input (**careful — this is a deliberate overload**), probe U1(+). **Do the PRE-CHECK below first.** | Waveform clamped, U1(+) never exceeds ±16V (design clamps at ~±15.7V) | Exceeds ±16V: check TVS1 (both zeners / correct bidirectional part) and the 1N4148 clamp-pair orientation |
 
-> **⚠ PRE-CHECK — this test silently passes if your generator can't reach 20Vpp.** The clamp only fires above ~15.7V at U1(+). If your generator tops out at 10Vpp (many do), nothing ever clamps, U1(+) stays under 16V, and the test "passes" for the wrong reason — false confidence. The pre-check below is designed to **fail** if your setup can't actually exercise the clamp. Do it *before* connecting anything to the circuit:
+> **⚠ PRE-CHECK — this test silently passes if your generator can't reach 40Vpp (20Vpk).** The clamp only fires above ~15.7Vpk at U1(+). If your generator tops out at 10Vpk (20Vpp, many do), nothing ever clamps, U1(+) stays under 16V, and the test "passes" for the wrong reason — false confidence. The pre-check below is designed to **fail** if your setup can't actually exercise the clamp. Do it *before* connecting anything to the circuit:
 >
-> 1. Set the generator to **20Vpp, 1kHz sine**.
+> 1. Set the generator to **40Vpp (20Vpk), 1kHz sine**.
 > 2. Measure the generator output with your DMM or scope — **NOT the circuit input, the generator output terminal directly** (open-circuit or into your scope's high-Z input).
-> 3. Confirm it reads **≥19Vpp** (accounting for DMM AC accuracy; on a DMM in Vrms that is ≥6.7Vrms for a sine).
-> 4. **If it reads less than 19Vpp, your generator cannot run this test as written — STOP. Do not run the overload test, it will pass meaninglessly.** Either:
->    - (a) use a different generator that can hit 20Vpp, **or**
->    - (b) scale the test: set the generator to its *maximum* Vpp, confirm that maximum still **exceeds 15.7Vpp** (otherwise the clamp can never engage and the test is impossible on this generator), then re-run. The acceptance criterion is unchanged: U1(+) must still be clamped to **≤16V** as long as the input exceeds the ~15.7V clamp threshold.
+> 3. Confirm it reads **≥38Vpp** (accounting for DMM AC accuracy; on a DMM in Vrms that is ≥13.4Vrms for a sine).
+> 4. **If it reads less than 38Vpp, your generator cannot run this test as written — STOP. Do not run the overload test, it will pass meaninglessly.** Either:
+>    - (a) use a different generator that can hit 40Vpp (20Vpk), **or**
+>    - (b) scale the test: set the generator to its *maximum* Vpp, confirm that maximum still **exceeds 32Vpp (16Vpk)** (otherwise the peak can never clear the ~15.7Vpk clamp threshold and the test is impossible on this generator), then re-run. The acceptance criterion is unchanged: U1(+) must still be clamped to **≤16V** as long as the input peak exceeds the ~15.7Vpk clamp threshold.
 >
 > Only once the pre-check passes (generator verified to deliver enough amplitude to actually trip the clamp) do you connect to the circuit and run the overload test above.
 

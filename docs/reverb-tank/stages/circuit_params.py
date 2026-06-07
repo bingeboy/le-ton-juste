@@ -245,6 +245,12 @@ HPF_CORNER_SIM     = 312.0         # Hz (measured R6/C4 transfer)
 HPF_CORNER_DESIGN  = 284.0         # Hz = 1/(2*pi*R6*C4)
 HPF_CORNER_WINDOW  = (250.0, 320.0)  # Hz pass band
 TANK_PEAK_WINDOW   = (1e3, 5e3)    # Hz "drip" resonance band (~2-3kHz)
+# Stage 3 tank-interface AC bounds (the "drip"). tank_pk_f is the frequency of the
+# mechanical-resonance peak at tank_in; tank_drive_db is the signal level reaching
+# the tank input relative to the Dwell wiper at 2kHz.
+TANK_PKF_MIN = 1000   # Hz — mechanical resonance must be in audible range
+TANK_PKF_MAX = 5000   # Hz
+TANK_DRIVE_DB_MIN = -60.0  # dB — tank must pass some signal
 VOUT_PK_SIM        = 1.16          # V, 100mVpk in
 VOUT_PK_MAX        = 14.0          # V clipping limit
 OSC_RATIO_SIM      = 0.9998        # RMS_late / RMS_early
@@ -287,13 +293,16 @@ D3_IDLE_PEAK_MAX = 1e-3            # < 1 mA peak through D3 in normal drive
 #   drv_pk  : peak |I(L1)| (the driver/primary current). Quiescent Ic ~16mA flows
 #             through L1; a healthy driver's AC swing keeps the peak well under
 #             this ceiling. A driver CLIPPING/over-driving the transformer would
-#             flat-top and push |I(L1)| past it. Ceiling = quiescent Ic high
-#             (Q1_IC_WINDOW = 26mA) + generous AC headroom, still far below the
-#             BD139 1.5A rating, so it reads as a clip/over-drive detector.
-DRV_PEAK_MAX  = 0.1               # < 100 mA peak |I(L1)| (no driver clip)
+#             flat-top and push |I(L1)| past it. Ceiling = ~2.8x quiescent Ic
+#             (16mA -> 45mA), tight enough to catch clipping BEFORE it becomes
+#             gross yet above the worst-case clean AC swing on top of quiescent,
+#             still far below the BD139 1.5A rating -> a real clip/over-drive
+#             detector (the old 100mA = 6x quiescent only caught catastrophe).
+DRV_PEAK_MAX  = 0.045             # < 45 mA peak |I(L1)| (~2.8x quiescent, no clip)
 #   drv_rms : RMS I(L1). DC-dominated (~Ic), so it sits near the quiescent
-#             current and must stay under the same ceiling (RMS <= peak always).
-DRV_RMS_MAX   = 0.1               # < 100 mA RMS I(L1)
+#             current (~16mA) and must stay under a ceiling near it. ~2.5x
+#             quiescent (40mA) keeps it tight while staying <= peak (RMS <= peak).
+DRV_RMS_MAX   = 0.040             # < 40 mA RMS I(L1) (~2.5x quiescent)
 
 # ============================================================================
 # Q1 BASE BIAS (divider operating point)
