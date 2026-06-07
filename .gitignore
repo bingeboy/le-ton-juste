@@ -4,3 +4,23 @@ Thumbs.db
 *.log
 node_modules/
 .env
+
+# LTspice simulation outputs
+*.raw
+*.op.raw
+*.db
+*.cir
+
+# LTspice auto-generated schematics (not for repo)
+docs/reverb-tank/stages/*_display.asc
+docs/reverb-tank/stages/*_clean.asc
+docs/reverb-tank/stages/*_preview.png
+docs/reverb-tank/ghost_spring_*.asc
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Scratch / intermediate sim files
+docs/reverb-tank/stages/minimal_test.*
+docs/reverb-tank/stages/mvp_reverb.*
