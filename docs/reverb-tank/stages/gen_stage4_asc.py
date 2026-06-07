@@ -39,8 +39,8 @@ does not depend on whether the installed standard.dio carries the part.
 
 Analysis variants (ONE active at a time):
   op            : idle reverse-bias check on the clamp diodes (Stage 4 green #1)
-  overload      : 20Vpp transient overload (V1 = SINE(0 10 1k)); confirm the
-                  U1(+) node is clamped to +/-16V max (Stage 4 green #2)
+  overload      : 40Vpp (20Vpk) transient overload (V1 = SINE(0 20 1k)); confirm
+                  the U1(+) node is clamped to +/-16V max (Stage 4 green #2)
   tran          : normal-level transient (V1 = SINE(0 100m 1k)); driver/output
                   regression (D3 idle, no clipping, no oscillation)
   ac            : Stage 3 resonance regression (the "drip")
@@ -196,7 +196,7 @@ class Build:
 def build(active_analysis="op"):
     """active_analysis in {'op','overload','tran','ac','ac_regression'}.
     Only ONE analysis active at a time. Stage 4's primary analyses are .op
-    (idle clamp reverse-bias) and the 'overload' .tran (20Vpp clamp window)."""
+    (idle clamp reverse-bias) and the 'overload' .tran (40Vpp/20Vpk clamp window)."""
     b = Build()
     b.text(16, -40, "Ghost Spring Stage 4 - Input Protection (C_in, R1, Dclamp+/-, TVS1)", 4)
     b.text(16, 8, "Stage 3 + TVS1 (SMBJ15CA) across the input jack vin->0, modelled as two BZX84C15L zeners back-to-back (cathodes tied at tvs_mid). C_in/R1/Dclamp_p/Dclamp_n confirmed unchanged from MVP. Connectivity by net labels (FLAG at each pin).", 2)
@@ -212,7 +212,7 @@ def build(active_analysis="op"):
     b.cap("C8", P.C8, 1024, 1200, "-15V", "0")
     b.text(64, 1160, "Power: idealised +/-15V. C5-C8 100n decoupling, C15/C16 10u bulk.", 2)
 
-    # Input source. Normal 100mVpk; the 'overload' analysis swaps to 20Vpp.
+    # Input source. Normal 100mVpk; the 'overload' analysis swaps to 40Vpp (20Vpk).
     vin_value = P.V1_SINE_OVERLOAD if active_analysis == "overload" else P.V1_SINE_NORMAL
     b.vsrc("V1", vin_value, 64, 160, "vin", "0", value2=P.V1_AC_TOKEN)
 
@@ -313,7 +313,7 @@ def build(active_analysis="op"):
         b.directive(".meas OP off_u2 FIND V(u2_out)")
         b.directive(".meas OP off_u3 FIND V(v_out)")
     elif active_analysis == "overload":
-        # Stage 4 green #2: 20Vpp overload -> U1(+) node clamped to +/-16V max,
+        # Stage 4 green #2: 40Vpp (20Vpk) overload -> U1(+) node clamped to +/-16V max,
         # and the clamp diodes MUST conduct (forward current) to prove the clamp
         # actually engages under overload (positive peak forces Dclamp_p, negative
         # peak forces Dclamp_n).

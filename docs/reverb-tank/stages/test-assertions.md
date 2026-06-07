@@ -109,8 +109,8 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | `q1_vce` | `V(q1_c) − V(q1_e)` | > 1 V (≫ Vce(sat) 0.2 V) | Q1 saturated — collector swing flat-tops, send distorts |
 | `q1_vcb` | `V(q1_c) − V(q1_base)` | ≥ 0 V (CBJ reverse-biased) | Collector below base — Q1 in saturation |
 | `d3_pk` | `MAX abs(I(D3))` | < 1 mA | D3 conducting in normal use — clamp engaging wrongly |
-| `drv_pk` | `MAX abs(I(L1))` | < 100 mA (within linear swing, no flat-top) | Driver clipping the transient |
-| `drv_rms` | `RMS I(L1)` | < 100 mA (DC-dominated, ≈ quiescent Ic) | Driver over-driven / clipping |
+| `drv_pk` | `MAX abs(I(L1))` | < 45 mA (≈2.8× quiescent Ic; within linear swing, no flat-top) | Driver clipping the transient |
+| `drv_rms` | `RMS I(L1)` | < 40 mA (DC-dominated, ≈2.5× quiescent Ic) | Driver over-driven / clipping |
 
 > Before the transformer exists (Stage 2 in isolation), substitute `I(R_drive)` / collector-load current for `I(L1)`.
 
@@ -129,8 +129,8 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 
 | Assertion name | Expression | Pass condition | Fail means |
 |---|---|---|---|
-| `tank_pk_f` | freq of max `V(tank_in)` | 1 – 5 kHz (≈2–3 kHz) | No "drip" — transformer L or K1 coupling wrong |
-| `tank_drive_db` | `20log10(V(tank_in)/V(rv1_wiper))` @2k | > −60 dB | No signal reaching tank — winding/K1 error |
+| `tank_pk_f` | freq of max `V(tank_in)` | 1 – 5 kHz (≈2–3 kHz → TANK_PKF_MIN/TANK_PKF_MAX) | No "drip" — transformer L or K1 coupling wrong |
+| `tank_drive_db` | `20log10(V(tank_in)/V(rv1_wiper))` @2k | > −60 dB (→ TANK_DRIVE_DB_MIN) | No signal reaching tank — winding/K1 error |
 
 ---
 
@@ -150,7 +150,7 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 ;   (drive V1 = SINE(0 20 1k) for this run = 20Vpk / 40Vpp; .tran 0 5m 0 10u.)
 ;   The input MUST exceed the ~15.7V clamp threshold for this assertion to mean
 ;   anything — a sub-threshold drive passes trivially without testing the clamp.
-;   On the bench, see builder-guide Stage 5 PRE-CHECK (generator must hit >=19Vpp).
+;   On the bench, see builder-guide Stage 5 PRE-CHECK (generator must hit >=38Vpp).
 .meas TRAN u1pos_hi MAX V(u1_pos)
 .meas TRAN u1pos_lo MIN V(u1_pos)
 .meas TRAN clamp_p_pk MAX I(Dclamp_p)
@@ -338,7 +338,7 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 | `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_wet_bleed` | 0.9 – 1.05 (wiper tracks dry node ≈ 1) | Wet bleeds through at full-CCW |
 | `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_vout_pk` | > 0.01 V (wet signal present) | Output dead at full-CW |
 | `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_dry_attn` | < 0.5 (dry node attenuated vs wiper) | Dry bleeds through at full-CW |
-| `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_pk` | ≤ 13.5 V (U2 within supply) | U2 rails on the worst-case path |
+| `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_pk` | ≤ 13.5 V (U2 within supply → DWELL_MAX_U2_PK_MAX) | U2 rails on the worst-case path |
 | `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_settle` | \|DC\| < 0.5 V (settles after clip) | U2 latched off-zero after a clip |
 
 > **Pass windows** are grounded in the circuit and tabulated in
