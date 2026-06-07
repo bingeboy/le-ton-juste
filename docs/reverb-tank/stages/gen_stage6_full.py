@@ -192,7 +192,7 @@ class Build:
                ".OPTIONS ALLOW_AMBIGUOUS_MODELS"]
         net += self.net
         net.append(".model D D")
-        net.append(r".lib C:\users\crossover\AppData\Local\LTspice\lib\cmp\standard.dio")
+        net.append(r".lib standard.dio")
         # inline regulator subckts
         for blk in self.subckts:
             net += blk
@@ -650,10 +650,10 @@ def build(active_analysis="op"):
             # MAXIMUM wet drive (RV1a is the 10k wiper-to-GND leg, not a short to
             # ground). So this combines the loudest wet send (Dwell CW) with the
             # 100%-wet Mix position -- the genuine worst case for U2 headroom. The
-            # gate is that U2's output never exceeds the supply and its DC settles
-            # back to ~0 (no latch-up).
-            b.directive(".meas TRAN worst_case_pk     MAX abs(V(u2_out)) FROM=50m TO=200m")
-            b.directive(".meas TRAN worst_case_settle AVG V(u2_out)      FROM=190m TO=200m")
+            # gate is that v_out (downstream of U3) never exceeds WORST_CASE_PK_MAX
+            # and its DC settles back to ~0 (no latch-up).
+            b.directive(".meas TRAN worst_case_pk     MAX abs(V(v_out)) FROM=50m TO=200m")
+            b.directive(".meas TRAN worst_case_settle AVG V(v_out)      FROM=190m TO=200m")
 
     b.text(16, 1620,
            "Active analysis: ." + active_analysis +

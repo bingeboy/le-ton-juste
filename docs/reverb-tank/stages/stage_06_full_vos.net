@@ -73,7 +73,7 @@ X§U3 mix_node u3_out +15V -15V u3_out level2 Avol=1Meg GBW=8Meg Slew=20Meg Ilim
 R7 u3_out v_out 100
 Rload v_out 0 47k
 .model D D
-.lib C:\users\crossover\AppData\Local\LTspice\lib\cmp\standard.dio
+.lib standard.dio
 .subckt LM78xx IN COM OUT
 .param Vout=15
 B1 OUT COM V=min(V(IN,COM)-2, {Vout})
@@ -84,7 +84,7 @@ B1 OUT COM V=max(V(IN,COM)+2, -{Vout})
 .ends LM79xx
 * BD139 driver model + zener/rectifier models + analysis directives
 .model BD139 NPN(Is=1e-14 Bf=100 Vaf=50 Rb=1 Rc=0.1 Re=0.05 Cje=30p Cjc=15p)
-.model BZX84C15L D(BV=15 N=1.6 Rs=2 IBV=5m Cjo=80p Iave=200m)
+.model BZX84C15L D(BV=15 N=1.6 Rs=2 IBV=5m Cjo=80p)
 .model DN4007 D(Is=14.1n N=1.984 Rs=33.9m Ikf=94.8 Cjo=51.7p M=0.333 Vj=0.7 Bv=1000 Ibv=10u)
 .tran 0 200m 0 2u
 .meas TRAN u2_out_dc_vos AVG V(u2_out) FROM=190m TO=200m

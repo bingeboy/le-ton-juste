@@ -183,7 +183,7 @@ class Build:
                ".OPTIONS ALLOW_AMBIGUOUS_MODELS"]
         net += self.net
         net.append(".model D D")
-        net.append(r".lib C:\users\crossover\AppData\Local\LTspice\lib\cmp\standard.dio")
+        net.append(r".lib standard.dio")
         net.append("* BD139 driver model + BZX84C15L zener model + analysis directives")
         for card in self.directives:
             net.append(card)

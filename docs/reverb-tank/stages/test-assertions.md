@@ -190,6 +190,11 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 ; Stage 5 — TRAN: supply ripple under load (settle first, then measure)
 .meas TRAN ripple_pos PP V(+15V) FROM=100m TO=120m
 .meas TRAN ripple_neg PP V(-15V) FROM=100m TO=120m
+; Decorative informational probes — no gated window, reported for context only:
+.meas TRAN rail_pos_avg AVG V(+15V) FROM=100m TO=120m   ; settled rail mean (duplicates ripple context)
+.meas TRAN rail_neg_avg AVG V(-15V) FROM=100m TO=120m   ; settled rail mean (duplicates ripple context)
+.meas TRAN unreg_pos_pp PP V(pos_rect) FROM=100m TO=120m ; unregulated-bus ripple (bench context)
+.meas TRAN unreg_neg_pp PP V(neg_rect) FROM=100m TO=120m ; unregulated-bus ripple (bench context)
 ```
 
 | Assertion name | Expression | Pass condition | Fail means |
@@ -200,6 +205,7 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | `unreg_neg` | `\|V(neg_rect)\|` | > 17 V (sim ≈19 V) | −reg dropout — bus too low, −rail unregulates |
 | `ripple_pos` | `PP V(+15V)` | < 10 mVpp | Insufficient filtering — ripple into recovery stage |
 | `ripple_neg` | `PP V(-15V)` | < 10 mVpp | Same on negative rail |
+| `rail_pos_avg` `rail_neg_avg` `unreg_pos_pp` `unreg_neg_pp` | — | *decorative — no gated window* | Informational only; not checked by validate.py |
 
 ---
 
@@ -329,10 +335,11 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 .meas TRAN mix_cw_dry_lvl  MAX abs(V(mix_dry))  FROM=190m TO=200m
 .meas TRAN mix_cw_dry_attn PARAM {mix_cw_dry_lvl/mix_cw_mix_node}
 
-; dwell_max_mix_cw — worst-case clip path (Dwell max + Mix full-CW): U2 output
-;   must not exceed the supply and its DC must settle back to ~0 (no latch-up).
-.meas TRAN worst_case_pk     MAX abs(V(u2_out)) FROM=50m TO=200m
-.meas TRAN worst_case_settle AVG V(u2_out)      FROM=190m TO=200m
+; dwell_max_mix_cw — worst-case clip path (Dwell max + Mix full-CW): v_out
+;   (downstream of U3) must not exceed WORST_CASE_PK_MAX and its DC must settle
+;   back to ~0 (no latch-up).
+.meas TRAN worst_case_pk     MAX abs(V(v_out)) FROM=50m TO=200m
+.meas TRAN worst_case_settle AVG V(v_out)      FROM=190m TO=200m
 ```
 
 | Variant | Pots (Dwell / Mix / Tone) | Assertion | Pass condition | Fail means |
@@ -343,19 +350,21 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 | `dwell_max` | 100 % / 50 % / 50 % | `dwell_max_wiper_pk` | 0.03 – 0.15 V (wiper carries the drive) | Wet drive dead at max Dwell — Dwell pot inverted or wiper open |
 | `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_vout_pk` | 0.05 – 0.15 V (dry present) | Dry signal absent at full-CCW |
 | `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_wet_ratio` | 0.2 – 0.65 (`V(mix_wet)/V(hpf_out)` across RV3 divider; ~0.40 at center wiper) | Wet chain broken: open RV3 wiper, shorted RV3b, or open Rwet_wire |
-| `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_vout_pk` | > 0.01 V (wet signal present) | Output dead at full-CW |
+| `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_vout_pk` | > 0.2 V (wet signal at useful level; baseline Mix-noon sim = 1.16 V) | Output dead or badly attenuated at full-CW |
 | `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_dry_attn` | < 0.5 (dry node attenuated vs wiper) | Dry bleeds through at full-CW |
-| `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_pk` | ≤ 13.5 V (U2 within supply → DWELL_MAX_U2_PK_MAX) | U2 rails on the worst-case path |
-| `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_settle` | \|DC\| < 0.5 V (settles after clip) | U2 latched off-zero after a clip |
+| `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_pk` | ≤ 6 V (`v_out` at Dwell-max/Mix-CW → WORST_CASE_PK_MAX; analytical ceiling 0.4 × 13.5 V = 5.4 V) | U3 rails on worst-case path |
+| `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_settle` | \|DC\| < 0.5 V (settles after clip) | U3 latched off-zero after a clip |
 
 > **Pass windows** are grounded in the circuit and tabulated in
 > `circuit_params.py` (`DWELL_MIN_DRY_WINDOW`, `DWELL_MAX_WIPER_PK_WINDOW`,
-> `DWELL_MAX_U2_PK_MAX`, `MIX_CCW_VOUT_WINDOW`, `WORST_CASE_SETTLE_MAX`). The dry
-> level ≈ 0.1 V pk follows from the 100 mVpk input through the unity U1 buffer and
-> the Rdry/RV2 divider; the < 13.5 V U2 ceiling is the ±15 V supply minus
-> headroom. As with the Mix-blend section, the **wiper position is not a swept
-> SPICE variable**, so each pot extreme is a SEPARATE generated netlist rather
-> than one parametric `.meas`.
+> `DWELL_MAX_U2_PK_MAX`, `WORST_CASE_PK_MAX`, `MIX_CCW_VOUT_WINDOW`,
+> `WORST_CASE_SETTLE_MAX`). The dry level ≈ 0.1 V pk follows from the 100 mVpk
+> input through the unity U1 buffer and the Rdry/RV2 divider; the < 13.5 V ceiling
+> gates U2's output (`dwell_max_vout_pk`); the ≤ 6 V ceiling gates `v_out`
+> downstream of U3 (`worst_case_pk`, analytical ceiling 0.4 × 13.5 = 5.4 V). As
+> with the Mix-blend section, the **wiper position is not a swept SPICE variable**,
+> so each pot extreme is a SEPARATE generated netlist rather than one parametric
+> `.meas`.
 
 ---
 
