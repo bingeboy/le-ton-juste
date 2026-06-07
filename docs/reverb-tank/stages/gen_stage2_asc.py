@@ -177,8 +177,12 @@ def build(active_analysis="op"):
     b.res("R2", P.R2, 640, 144, "u1_out", "u1_buf")
 
     # === Dwell pot divider (unchanged) ===
-    b.res("RV1a", P.RV1A, 760, 60, "u1_buf", "rv1_wiper")
-    b.res("RV1b", P.RV1B, 760, 180, "rv1_wiper", "0")
+    # RV1a is the wiper-to-GND half; RV1b is the signal-to-wiper half. This
+    # matches stage_06_full and builder-guide.md: GND->lug1(CCW)=RV1a rv1_wiper 0,
+    # dry(u1_buf)->lug3(CW)=RV1b u1_buf rv1_wiper. At CW the wiper sits on u1_buf
+    # (max drive); at CCW it is shunted to GND (min drive).
+    b.res("RV1a", P.RV1A, 760, 60, "rv1_wiper", "0")
+    b.res("RV1b", P.RV1B, 760, 180, "u1_buf", "rv1_wiper")
 
     # === STAGE 2: BD139 discrete driver ===
     # C_drive (1u): the fix -- blocks pot DC from reaching the bias divider.
@@ -259,15 +263,12 @@ def build(active_analysis="op"):
         b.directive(".meas OP off_u2 FIND V(u2_out)")
         b.directive(".meas OP off_u3 FIND V(v_out)")
     elif active_analysis == "tran":
-        b.directive(".tran 0 100m 0 1u")
+        # Dynamic driver checks (1kHz 100mVpk): D3 flyback idle, driver not
+        # clipping. d3_pk < 1mA, drv_pk/drv_rms < the no-clip ceiling.
+        b.directive(".tran 0 10m 0 5u")
         b.directive(".meas TRAN d3_pk MAX abs(I(D3))")
         b.directive(".meas TRAN drv_pk MAX abs(I(L1))")
         b.directive(".meas TRAN drv_rms RMS I(L1)")
-        b.directive(".meas TRAN tankin_pk MAX abs(I(R_tank_in))")
-        b.directive(".meas TRAN vout_pk MAX abs(V(v_out))")
-        b.directive(".meas TRAN rms_early RMS V(v_out) FROM=0 TO=10m")
-        b.directive(".meas TRAN rms_late RMS V(v_out) FROM=90m TO=100m")
-        b.directive(".meas TRAN osc_ratio PARAM rms_late/rms_early")
     elif active_analysis == "ac":
         b.directive(".ac dec 200 20 20k")
         # Stage 1 regression: recovery gain (1 + Rf/Ri = 214x).

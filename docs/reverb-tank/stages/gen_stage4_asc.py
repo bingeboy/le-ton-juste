@@ -233,8 +233,12 @@ def build(active_analysis="op"):
     b.res("R2", P.R2, 640, 144, "u1_out", "u1_buf")
 
     # === Dwell pot divider (unchanged) ===
-    b.res("RV1a", P.RV1A, 760, 60, "u1_buf", "rv1_wiper")
-    b.res("RV1b", P.RV1B, 760, 180, "rv1_wiper", "0")
+    # RV1a is the wiper-to-GND half; RV1b is the signal-to-wiper half. This
+    # matches stage_06_full and builder-guide.md: GND->lug1(CCW)=RV1a rv1_wiper 0,
+    # dry(u1_buf)->lug3(CW)=RV1b u1_buf rv1_wiper. At CW the wiper sits on u1_buf
+    # (max drive); at CCW it is shunted to GND (min drive).
+    b.res("RV1a", P.RV1A, 760, 60, "rv1_wiper", "0")
+    b.res("RV1b", P.RV1B, 760, 180, "u1_buf", "rv1_wiper")
 
     # === BD139 discrete driver (unchanged from Stage 3) ===
     b.cap("C_drive", P.C_DRIVE, 880, 144, "rv1_wiper", "q1_drv")
@@ -309,13 +313,15 @@ def build(active_analysis="op"):
         b.directive(".meas OP off_u2 FIND V(u2_out)")
         b.directive(".meas OP off_u3 FIND V(v_out)")
     elif active_analysis == "overload":
-        # Stage 4 green #2: 20Vpp overload -> U1(+) node clamped to +/-16V max.
-        b.directive(".tran 0 5m 0 1u")
+        # Stage 4 green #2: 20Vpp overload -> U1(+) node clamped to +/-16V max,
+        # and the clamp diodes MUST conduct (forward current) to prove the clamp
+        # actually engages under overload (positive peak forces Dclamp_p, negative
+        # peak forces Dclamp_n).
+        b.directive(".tran 0 5m 0 10u")
         b.directive(".meas TRAN u1pos_hi MAX V(u1_pos)")
         b.directive(".meas TRAN u1pos_lo MIN V(u1_pos)")
-        # Also report what the jack node itself does (TVS clamp window).
-        b.directive(".meas TRAN vin_hi MAX V(vin)")
-        b.directive(".meas TRAN vin_lo MIN V(vin)")
+        b.directive(".meas TRAN clamp_p_pk MAX I(Dclamp_p)")
+        b.directive(".meas TRAN clamp_n_pk MIN I(Dclamp_n)")
     elif active_analysis == "tran":
         # Normal-level driver/output regression (Stage 1/2 transient checks).
         b.directive(".tran 0 100m 0 1u")

@@ -628,10 +628,13 @@ def build(active_analysis="op"):
             b.directive(".meas TRAN mix_cw_dry_lvl   MAX abs(V(mix_dry))  FROM=190m TO=200m")
             b.directive(".meas TRAN mix_cw_dry_attn  PARAM {mix_cw_dry_lvl/mix_cw_mix_node}")
         elif active_analysis == "dwell_max_mix_cw":
-            # Worst-case clip path: Dwell max + Mix full-CW. NB Dwell max grounds
-            # the wiper (min wet drive), so this is the documented worst-case combo
-            # rather than the absolute loudest; the gate is that U2's output never
-            # exceeds the supply and its DC settles back to ~0 (no latch-up).
+            # Worst-case clip path: Dwell max + Mix full-CW. With this (correct)
+            # pot convention Dwell max means RV1b≈0 pulls the wiper to u1_buf =
+            # MAXIMUM wet drive (RV1a is the 10k wiper-to-GND leg, not a short to
+            # ground). So this combines the loudest wet send (Dwell CW) with the
+            # 100%-wet Mix position -- the genuine worst case for U2 headroom. The
+            # gate is that U2's output never exceeds the supply and its DC settles
+            # back to ~0 (no latch-up).
             b.directive(".meas TRAN worst_case_pk     MAX abs(V(u2_out)) FROM=50m TO=200m")
             b.directive(".meas TRAN worst_case_settle AVG V(u2_out)      FROM=190m TO=200m")
 

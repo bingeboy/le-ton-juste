@@ -106,8 +106,8 @@ a.opa("U1", 560, 200, "u1_pos", "u1_out", "+15V", "-15V", "u1_out")  # unity fol
 a.res("R2", "100", 640, 144, "u1_out", "u1_buf")
 
 # === Stage 2: dwell pot divider + C_drive + R_drive ===
-a.res("RV1a", "5k", 760, 60, "u1_buf", "rv1_wiper")
-a.res("RV1b", "5k", 760, 180, "rv1_wiper", "0")
+a.res("RV1a", "5k", 760, 60, "rv1_wiper", "0")
+a.res("RV1b", "5k", 760, 180, "u1_buf", "rv1_wiper")
 a.cap("C_drive", "1u", 880, 144, "rv1_wiper", "drive_a")
 a.res("R_drive", "560", 1000, 144, "drive_a", "tank_in")
 

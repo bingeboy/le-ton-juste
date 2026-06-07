@@ -106,7 +106,8 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | `q1_vce` | `V(q1_c) − V(q1_e)` | > 1 V (≫ Vce(sat) 0.2 V) | Q1 saturated — collector swing flat-tops, send distorts |
 | `q1_vcb` | `V(q1_c) − V(q1_base)` | ≥ 0 V (CBJ reverse-biased) | Collector below base — Q1 in saturation |
 | `d3_pk` | `MAX abs(I(D3))` | < 1 mA | D3 conducting in normal use — clamp engaging wrongly |
-| `drv_pk` | `MAX abs(I(L1))` | within linear swing, no flat-top | Driver clipping the transient |
+| `drv_pk` | `MAX abs(I(L1))` | < 100 mA (within linear swing, no flat-top) | Driver clipping the transient |
+| `drv_rms` | `RMS I(L1)` | < 100 mA (DC-dominated, ≈ quiescent Ic) | Driver over-driven / clipping |
 
 > Before the transformer exists (Stage 2 in isolation), substitute `I(R_drive)` / collector-load current for `I(L1)`.
 
@@ -133,24 +134,37 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 ## Stage 4 — Input protection
 
 ```spice
-; Stage 4 — OP: clamp diodes reverse biased at idle
+; Stage 4 — OP: clamp diodes reverse biased at idle; TVS pair non-conducting;
+;   the jack node vin at 0V DC (no DC path charges it).
 .meas OP clamp_p_i FIND I(Dclamp_p)
 .meas OP clamp_n_i FIND I(Dclamp_n)
+.meas OP tvs_a_i FIND I(DTVS1a)
+.meas OP tvs_b_i FIND I(DTVS1b)
+.meas OP vin_idle FIND V(vin)
 
-; Stage 4 — TRAN: with 20Vpp overload, U1+ node is clamped
-;   (drive V1 = SINE(0 10 1k) for this run = 20Vpp).
+; Stage 4 — TRAN (overload variant): with 20Vpp overload, U1+ node is clamped
+;   AND the clamp diodes MUST conduct on the peaks (proving the clamp engages).
+;   (drive V1 = SINE(0 10 1k) for this run = 20Vpp; .tran 0 5m 0 10u.)
 ;   The input MUST exceed the ~15.7V clamp threshold for this assertion to mean
 ;   anything — a sub-threshold drive passes trivially without testing the clamp.
 ;   On the bench, see builder-guide Stage 5 PRE-CHECK (generator must hit >=19Vpp).
 .meas TRAN u1pos_hi MAX V(u1_pos)
 .meas TRAN u1pos_lo MIN V(u1_pos)
+.meas TRAN clamp_p_pk MAX I(Dclamp_p)
+.meas TRAN clamp_n_pk MIN I(Dclamp_n)
 ```
 
 | Assertion name | Expression | Pass condition | Fail means |
 |---|---|---|---|
 | `clamp_p_i` | `I(Dclamp_p)` | < 1 µA | Clamp leaking/forward at idle — wrong orientation |
+| `clamp_n_i` | `I(Dclamp_n)` | > −1 µA (reverse-biased) | Negative clamp leaking/forward at idle — wrong orientation |
+| `tvs_a_i` | `I(DTVS1a)` | −1 µA – +1 µA (idle, not conducting) | TVS conducting at idle — wrong part/orientation |
+| `tvs_b_i` | `I(DTVS1b)` | −1 µA – +1 µA (idle, not conducting) | TVS conducting at idle — wrong part/orientation |
+| `vin_idle` | `V(vin)` | −10 mV – +10 mV (0 V DC) | Jack node biased off 0 V — DC leak onto the input |
 | `u1pos_hi` | `MAX V(u1_pos)` (20 Vpp in) | ≤ +16 V | Positive overload not clamped — U1 input at risk |
 | `u1pos_lo` | `MIN V(u1_pos)` (20 Vpp in) | ≥ −16 V | Negative overload not clamped |
+| `clamp_p_pk` | `MAX I(Dclamp_p)` (20 Vpp in) | > 0 (clamp conducts) | +clamp never engages — positive overload not absorbed |
+| `clamp_n_pk` | `MIN I(Dclamp_n)` (20 Vpp in) | < 0 (clamp conducts) | −clamp never engages — negative overload not absorbed |
 
 ---
 
@@ -214,7 +228,7 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 ;   Target = CHAIN_GAIN_DB_SIM = 46.59 dB (= simulated recov_gain 213.8x);
 ;   pass window CHAIN_GAIN_DB_WINDOW = 44.6 - 48.6 dB (+/-2 dB).
 .meas AC recov_lvl  FIND V(u2_out) AT=1k
-.meas AC recov_gain_db FIND mag(20*log10(V(u2_out)/V(u2_in_pos))) AT=1k
+.meas AC recov_gain_db FIND 20*log10(V(u2_out)/V(u2_in_pos)) AT=1k
 ```
 
 | Assertion name | Expression | Pass condition | Fail means |

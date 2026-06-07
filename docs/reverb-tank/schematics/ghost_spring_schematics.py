@@ -8,12 +8,22 @@ Generates 4 section PNGs:
   /tmp/ghost_sec4.png  Tone & Mix
 """
 
+import os
+import sys
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt  # noqa: F401  (Agg backend wiring)
 
 import schemdraw
 import schemdraw.elements as elm
+
+# Single source of truth: pull every component value from circuit_params.py so a
+# schematic label can never drift from the netlist constant. (Resolve the stages
+# dir relative to THIS file so it works from any cwd.)
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                '..', 'stages'))
+import circuit_params as cp  # noqa: E402
 
 
 def new_drawing():
@@ -52,13 +62,13 @@ def section1():
     d.add(elm.Ground().at(z2.end))
 
     # Continue right: C_in coupling cap
-    cin = elm.Capacitor().right().at(tvs_node).label('C_in\n1uF', loc='top')
+    cin = elm.Capacitor().right().at(tvs_node).label(f'C_in\n{cp.C_IN}F', loc='top')
     d.add(cin)
     node = cin.end
     d.add(elm.Dot().at(node))
 
     # R1 bias to GND (at the C_in node)
-    r1 = elm.Resistor().down().at(node).label('R1\n1M', loc='right')
+    r1 = elm.Resistor().down().at(node).label(f'R1\n{cp.R1}', loc='right')
     d.add(r1)
     d.add(elm.Ground().at(r1.end))
 
@@ -99,7 +109,7 @@ def section1():
     out_tap = elm.Line().right().at(op.out).length(0.6)
     d.add(out_tap)
     d.add(elm.Dot().at(out_tap.end))
-    r2 = elm.Resistor().right().at(out_tap.end).label('R2\n100', loc='top')
+    r2 = elm.Resistor().right().at(out_tap.end).label(f'R2\n{cp.R2}', loc='top')
     d.add(r2)
     d.add(elm.Dot(open=True).at(r2.end).label('u1_buf', loc='right'))
 
@@ -116,9 +126,9 @@ def section2():
     # Input u1_buf -> RV1 pot (resistor with wiper tap) -> C_drive
     start = elm.Dot(open=True).label('u1_buf', loc='left')
     d.add(start)
-    rv1 = elm.ResistorVar().right().at(start.start).label('RV1\n10k', loc='top').label('rv1_wiper', loc='bottom')
+    rv1 = elm.ResistorVar().right().at(start.start).label(f'RV1\n{cp.RV1_TOTAL}', loc='top').label('rv1_wiper', loc='bottom')
     d.add(rv1)
-    cdrv = elm.Capacitor().right().at(rv1.end).label('C_drive\n1uF', loc='top')
+    cdrv = elm.Capacitor().right().at(rv1.end).label(f'C_drive\n{cp.C_DRIVE}F', loc='top')
     d.add(cdrv)
 
     # wire right to q1_drv
@@ -128,18 +138,18 @@ def section2():
     d.add(elm.Dot().at(q1_drv).label('q1_drv', loc='top'))
 
     # R3 1k from q1_drv to q1_base
-    r3 = elm.Resistor().right().at(q1_drv).label('R3\n1k', loc='top')
+    r3 = elm.Resistor().right().at(q1_drv).label(f'R3\n{cp.R3}', loc='top')
     d.add(r3)
     q1_base = r3.end
     d.add(elm.Dot().at(q1_base).label('q1_base', loc='bottom'))
 
     # R3b 6.8k from +15V down to q1_base
-    r3b = elm.Resistor().up().at(q1_base).label('R3b\n6.8k', loc='right')
+    r3b = elm.Resistor().up().at(q1_base).label(f'R3b\n{cp.R3B}', loc='right')
     d.add(r3b)
     d.add(elm.Vdd().at(r3b.end).label('+15V'))
 
     # R4 1k from q1_base down to GND
-    r4 = elm.Resistor().down().at(q1_base).label('R4\n1k', loc='right')
+    r4 = elm.Resistor().down().at(q1_base).label(f'R4\n{cp.R4}', loc='right')
     d.add(r4)
     d.add(elm.Ground().at(r4.end))
 
@@ -155,7 +165,7 @@ def section2():
 
     # L1 and D3 in parallel between +15V and q1_c
     # L1 100mH from +15V to collector (left branch)
-    l1 = elm.Inductor().up().at(q1_c).length(2.5).label('L1\n100mH', loc='left')
+    l1 = elm.Inductor().up().at(q1_c).length(2.5).label(f'L1\n{cp.L1}H', loc='left')
     d.add(l1)
     rail = l1.end
     d.add(elm.Dot().at(rail))
@@ -164,7 +174,7 @@ def section2():
     d.add(elm.Line().right().at(q1_c).length(1.5))
     branch_bot = d.here
     d.add(elm.Dot().at(branch_bot))
-    d3 = elm.Diode().up().at(branch_bot).length(2.5).label('D3\n1N4148', loc='right')
+    d3 = elm.Diode().up().at(branch_bot).length(2.5).label(f'D3\n{cp.D_1N4148}', loc='right')
     d.add(d3)
     d.add(elm.Line().left().at(d3.end).tox(rail))
     d.add(elm.Dot().at(rail))
@@ -176,11 +186,11 @@ def section2():
     d.add(elm.Dot().at(q1_e).label('q1_e', loc='right'))
 
     # R5 68 from emitter to node, C2 100uF node to GND
-    r5 = elm.Resistor().down().at(q1_e).label('R5\n68', loc='right')
+    r5 = elm.Resistor().down().at(q1_e).label(f'R5\n{cp.R5}', loc='right')
     d.add(r5)
     enode = r5.end
     d.add(elm.Dot().at(enode))
-    c2 = elm.Capacitor2().down().at(enode).label('C2\n100uF', loc='right')
+    c2 = elm.Capacitor2().down().at(enode).label(f'C2\n{cp.C2}F', loc='right')
     d.add(c2)
     d.add(elm.Ground().at(c2.end))
 
@@ -198,13 +208,13 @@ def section3():
     d.add(elm.Dot(open=True).label('from L1 primary (K=0.98)', loc='left'))
     src = d.here
     # L2 secondary winding down into tank_in
-    l2 = elm.Inductor().down().at(src).label('L2\n5mH\n(secondary)', loc='left')
+    l2 = elm.Inductor().down().at(src).label(f'L2\n{cp.L2}H\n(secondary)', loc='left')
     d.add(l2)
     tank_in = l2.end
     d.add(elm.Dot().at(tank_in).label('tank_in', loc='left'))
 
     # R_tank_in 8 from tank_in to GND (branch to the left/down)
-    rti = elm.Resistor().down().at(tank_in).label('R_tank_in\n8', loc='left')
+    rti = elm.Resistor().down().at(tank_in).label(f'R_tank_in\n{cp.R_TANK_IN}', loc='left')
     d.add(rti)
     d.add(elm.Line().down().at(rti.end).length(0.5))
     d.add(elm.Ground())
@@ -213,21 +223,21 @@ def section3():
     d.add(elm.Line().right().at(tank_in).length(2))
     branch = d.here
     d.add(elm.Dot().at(branch))
-    ltank = elm.Inductor().down().at(branch).label('L_tank\n15mH', loc='right')
+    ltank = elm.Inductor().down().at(branch).label(f'L_tank\n{cp.L_TANK}H', loc='right')
     d.add(ltank)
     tank_mid = ltank.end
     d.add(elm.Dot().at(tank_mid).label('tank_mid', loc='left'))
 
     # Mechanical branch from tank_mid: R_tank_mech -> L_tank_mech -> C_tank_mech -> GND
-    rtm = elm.Resistor().down().at(tank_mid).label('R_tank_mech\n200', loc='left')
+    rtm = elm.Resistor().down().at(tank_mid).label(f'R_tank_mech\n{cp.R_TANK_MECH}', loc='left')
     d.add(rtm)
     tk_a = rtm.end
     d.add(elm.Dot().at(tk_a).label('tk_a', loc='left'))
-    ltm = elm.Inductor().down().at(tk_a).label('L_tank_mech\n500mH', loc='left')
+    ltm = elm.Inductor().down().at(tk_a).label(f'L_tank_mech\n{cp.L_TANK_MECH}H', loc='left')
     d.add(ltm)
     tk_b = ltm.end
     d.add(elm.Dot().at(tk_b).label('tk_b', loc='left'))
-    ctm = elm.Capacitor().down().at(tk_b).label('C_tank_mech\n10nF', loc='left')
+    ctm = elm.Capacitor().down().at(tk_b).label(f'C_tank_mech\n{cp.C_TANK_MECH}F', loc='left')
     d.add(ctm)
     d.add(elm.Line().down().at(ctm.end).length(0.5))
     d.add(elm.Ground())
@@ -236,24 +246,24 @@ def section3():
     d.add(elm.Line().right().at(tank_mid).length(2.5))
     obranch = d.here
     d.add(elm.Dot().at(tank_mid))
-    rto = elm.Resistor().right().at(tank_mid).label('R_tank_out\n2550', loc='top')
+    rto = elm.Resistor().right().at(tank_mid).label(f'R_tank_out\n{cp.R_TANK_OUT}', loc='top')
     d.add(rto)
     tank_out = rto.end
     d.add(elm.Dot().at(tank_out).label('tank_out', loc='top'))
-    lto = elm.Inductor().down().at(tank_out).label('L_tank_out\n2H', loc='left')
+    lto = elm.Inductor().down().at(tank_out).label(f'L_tank_out\n{cp.L_TANK_OUT}H', loc='left')
     d.add(lto)
     d.add(elm.Line().down().at(lto.end).length(0.5))
     d.add(elm.Ground())
 
     # --- Recovery amp (right) ---
     # C3 470nF from tank_out to u2_in_pos
-    c3 = elm.Capacitor().right().at(tank_out).label('C3\n470nF', loc='top')
+    c3 = elm.Capacitor().right().at(tank_out).label(f'C3\n{cp.C3}F', loc='top')
     d.add(c3)
     u2_in_pos = c3.end
     d.add(elm.Dot().at(u2_in_pos).label('u2_in_pos', loc='top'))
 
     # Rbias 100k from u2_in_pos to GND
-    rb = elm.Resistor().down().at(u2_in_pos).label('Rbias\n100k', loc='left')
+    rb = elm.Resistor().down().at(u2_in_pos).label(f'Rbias\n{cp.RBIAS}', loc='left')
     d.add(rb)
     d.add(elm.Line().down().at(rb.end).length(0.5))
     d.add(elm.Ground())
@@ -267,7 +277,7 @@ def section3():
     u2_inv = d.here
     d.add(elm.Dot().at(u2_inv).label('u2_inv', loc='left'))
     # Ri 470 from u2_inv to GND
-    ri = elm.Resistor().down().at(u2_inv).label('Ri\n470', loc='left')
+    ri = elm.Resistor().down().at(u2_inv).label(f'Ri\n{cp.RI}', loc='left')
     d.add(ri)
     d.add(elm.Line().down().at(ri.end).length(0.5))
     d.add(elm.Ground())
@@ -280,7 +290,7 @@ def section3():
     # Rf 100k from u2_out back to u2_inv
     d.add(elm.Line().up().at(u2_out).length(2))
     fbtop = d.here
-    rf = elm.Resistor().left().at(fbtop).tox(u2_inv).label('Rf\n100k', loc='top')
+    rf = elm.Resistor().left().at(fbtop).tox(u2_inv).label(f'Rf\n{cp.RF}', loc='top')
     d.add(rf)
     d.add(elm.Line().down().at(rf.end).toy(u2_inv))
 
@@ -293,7 +303,8 @@ def section3():
     # output label + gain note
     d.add(elm.Line().right().at(u2_out).length(0.8))
     d.add(elm.Dot(open=True).label('u2_out', loc='right'))
-    d.add(elm.Label().at((u2_out[0], u2_out[1] - 1.5)).label('gain = 100k/470 = 213x', loc='center'))
+    d.add(elm.Label().at((u2_out[0], u2_out[1] - 1.5)).label(
+        f'gain = 1 + Rf/Ri = {cp.RECOV_GAIN_SIM:g}x', loc='center'))
 
     d.save('/tmp/ghost_sec3.png', dpi=180)
 
@@ -309,20 +320,22 @@ def section4():
     d.add(elm.Dot(open=True).at((0, 0)).label('u2_out (wet)', loc='left'))
     wet_in = d.here
     # C4 100nF -> hpf_out  (HPF fc=312Hz with R6)
-    c4 = elm.Capacitor().right().at(wet_in).label('C4\n100nF', loc='top')
+    c4 = elm.Capacitor().right().at(wet_in).label(f'C4\n{cp.C4}F', loc='top')
     d.add(c4)
     hpf_out = c4.end
     d.add(elm.Dot().at(hpf_out).label('hpf_out', loc='top'))
 
     # R6 5.6k from hpf_out to GND (sets HPF corner)
-    r6 = elm.Resistor().down().at(hpf_out).label('R6\n5.6k', loc='left')
+    r6 = elm.Resistor().down().at(hpf_out).label(f'R6\n{cp.R6}', loc='left')
     d.add(r6)
     d.add(elm.Line().down().at(r6.end).length(0.5))
     d.add(elm.Ground())
-    d.add(elm.Label().at((hpf_out[0] - 0.2, hpf_out[1] + 1.0)).label('HPF fc=312Hz', loc='center'))
+    d.add(elm.Label().at((hpf_out[0] - 0.2, hpf_out[1] + 1.0)).label(
+        f'HPF fc(design)={cp.HPF_CORNER_DESIGN:g}Hz\nfc(loaded sim)={cp.HPF_CORNER_SIM:g}Hz',
+        loc='center'))
 
     # RV3 tone pot 100k: hpf_out through pot to GND, wiper = rv3_wiper
-    rv3 = elm.ResistorVar().right().at(hpf_out).length(3).label('RV3 tone\n100k', loc='top')
+    rv3 = elm.ResistorVar().right().at(hpf_out).length(3).label(f'RV3 tone\n{cp.RV3_TOTAL}', loc='top')
     d.add(rv3)
     d.add(elm.Line().right().at(rv3.end).length(0.6))
     d.add(elm.Ground())
@@ -334,13 +347,13 @@ def section4():
     dry_in = (0, -5.0)
     d.add(elm.Dot(open=True).at(dry_in).label('u1_buf (dry)', loc='left'))
     # Rdry 10k from u1_buf to mix_dry
-    rdry = elm.Resistor().right().at(dry_in).label('Rdry\n10k', loc='top')
+    rdry = elm.Resistor().right().at(dry_in).label(f'Rdry\n{cp.RDRY}', loc='top')
     d.add(rdry)
     mix_dry = rdry.end
     d.add(elm.Dot().at(mix_dry).label('mix_dry', loc='bottom'))
 
     # RV2 mix pot 100k: lug1=mix_dry, wiper=mix_node, lug3=mix_wet
-    rv2 = elm.ResistorVar().right().at(mix_dry).length(3).label('RV2 mix\n100k', loc='top')
+    rv2 = elm.ResistorVar().right().at(mix_dry).length(3).label(f'RV2 mix\n{cp.RV2_TOTAL}', loc='top')
     d.add(rv2)
     mix_wet = rv2.end
     d.add(elm.Dot().at(mix_wet).label('mix_wet', loc='bottom'))
@@ -352,7 +365,7 @@ def section4():
     # C_bright 47pF across the pot (mix_dry to mix_wet), routed well above
     d.add(elm.Line().up().at(mix_dry).length(1.6))
     cbtop_l = d.here
-    cb = elm.Capacitor().right().at(cbtop_l).tox(mix_wet).label('C_bright\n47pF', loc='top')
+    cb = elm.Capacitor().right().at(cbtop_l).tox(mix_wet).label(f'C_bright\n{cp.C_BRIGHT}F', loc='top')
     d.add(cb)
     d.add(elm.Line().down().at(cb.end).toy(mix_wet))
 
@@ -380,12 +393,12 @@ def section4():
     out_tap = elm.Line().right().at(op.out).length(0.6)
     d.add(out_tap)
     d.add(elm.Dot().at(out_tap.end))
-    r7 = elm.Resistor().right().at(out_tap.end).label('R7\n100', loc='top')
+    r7 = elm.Resistor().right().at(out_tap.end).label(f'R7\n{cp.R7}', loc='top')
     d.add(r7)
     vout = r7.end
     d.add(elm.Dot().at(vout))
     # Rload 47k to GND, output v_out
-    rload = elm.Resistor().down().at(vout).label('Rload\n47k', loc='right')
+    rload = elm.Resistor().down().at(vout).label(f'Rload\n{cp.RLOAD}', loc='right')
     d.add(rload)
     d.add(elm.Ground().at(rload.end))
     d.add(elm.Line().right().at(vout).length(0.8))
