@@ -986,6 +986,9 @@ def check_assertions_md():
     # dwell_min_dry: 0.05 – 0.15 V
     expect("dwell_min_dry window",
            "%g – %g V" % (P.DWELL_MIN_DRY_WINDOW[0], P.DWELL_MIN_DRY_WINDOW[1]))
+    # dwell_min_vout: 0.02 – 0.12 V (v_out dry-only at Dwell-CCW/Mix-noon)
+    expect("dwell_min_vout window",
+           "%g – %g V" % (P.DWELL_MIN_VOUT_WINDOW[0], P.DWELL_MIN_VOUT_WINDOW[1]))
     # dwell_max_wiper_pk: 0.03 – 0.15 V
     expect("dwell_max_wiper_pk window",
            "%g – %g V" % (P.DWELL_MAX_WIPER_PK_WINDOW[0], P.DWELL_MAX_WIPER_PK_WINDOW[1]))

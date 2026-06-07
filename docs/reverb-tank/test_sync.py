@@ -242,7 +242,8 @@ def test_stage7_sweep_constants_are_numeric(P):
         "DWELL_MAX_Q1_VE_WINDOW should be replaced by DWELL_MAX_WIPER_PK_WINDOW"
 
     # 2-tuple windows: numeric, lo < hi.
-    for name in ["DWELL_MIN_DRY_WINDOW", "DWELL_MAX_WIPER_PK_WINDOW",
+    for name in ["DWELL_MIN_DRY_WINDOW", "DWELL_MIN_VOUT_WINDOW",
+                 "DWELL_MAX_WIPER_PK_WINDOW",
                  "MIX_CCW_VOUT_WINDOW", "MIX_CCW_WET_ARRIVAL_WINDOW"]:
         win = getattr(P, name)
         assert isinstance(win, tuple) and len(win) == 2, "%s should be a 2-tuple" % name
