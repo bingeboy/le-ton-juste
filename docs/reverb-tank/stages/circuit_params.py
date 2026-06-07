@@ -358,7 +358,13 @@ DWELL_MAX_WIPER_PK_WINDOW = (0.03, 0.15)  # at max drive the wiper sees most of 
                                         # weird amplification (> 0.15)
 DWELL_MAX_U2_PK_MAX    = 13.5           # U2 output must not rail beyond the +/-15V supply
 MIX_CCW_VOUT_WINDOW    = (0.05, 0.15)   # dry signal present at full-CCW (wet muted)
-MIX_CCW_WET_BLEED_WINDOW = (0.90, 1.05)  # mix_node/dry_lvl ratio; at full-CCW wiper ≈ mix_dry so ratio ≈ 1
+MIX_CCW_WET_BLEED_WINDOW = (0.90, 1.05)  # mix_ccw_wet_ratio = V(mix_wet)/V(rv3_wiper);
+                                        # the wet signal must arrive intact at the pot's
+                                        # wet lug (Rwet_wire is a 0R wire from the wet
+                                        # source rv3_wiper), so ratio ≈ 1. Probes the WET
+                                        # path directly instead of the old mix_node/mix_dry
+                                        # ratio, which was ~1 by construction (RV2a=0.001
+                                        # hard-shorts mix_node to mix_dry at full-CCW).
 MIX_CW_VOUT_PK_MIN  = 0.01              # V pk; wet path must deliver some signal at full-CW
 MIX_CW_DRY_ATTN_MAX = 0.50             # dry_lvl/mix_node ratio; dry should be < 50% of wiper at full-CW
 WORST_CASE_SETTLE_MAX  = 0.5            # DC at U2 out settles back to ~0 after any clip
