@@ -954,6 +954,9 @@ def check_assertions_md():
     expect("q1_ic window", "%g – %g mA" % (P.Q1_IC_WINDOW[0] * 1e3, P.Q1_IC_WINDOW[1] * 1e3))
     # q1_ic_err: < 10% (M3 - the cross-check bound that was a silent measurement)
     expect("q1_ic_err max", "< %g%%" % (P.Q1_IC_ERR_MAX * 100))
+    # q1_vb: 1.65 – 2.05 V (loaded base voltage from R3b/R4 divider)
+    expect("q1_vb window",
+           "%g – %g V" % (P.Q1_VB_WINDOW[0], P.Q1_VB_WINDOW[1]))
     # Q1 forward-active (not saturated): Vce > min, Vcb >= 0, Vc window
     expect("q1_vce min", "> %g V" % P.Q1_VCE_MIN)
     expect("q1_vcb min", "≥ %g V" % P.Q1_VCB_MIN)
@@ -1019,6 +1022,9 @@ def check_assertions_md():
 
     # ----- Stage 4 input-protection idle + overload bounds: every measured
     # quantity must carry an enforced numeric bound (no silent .meas).
+    # clamp_p_i: < 1 uA at idle (forward current = wrong orientation)
+    expect("clamp_p_i max",
+           "< %g µA" % (P.CLAMP_IDLE_MAX * 1e6))
     # clamp_n_i: > -1 uA (reverse-biased at idle)
     expect("clamp_n_i min",
            "> %s µA (reverse-biased)" % _g(P.CLAMP_N_IDLE_MIN * 1e6))
