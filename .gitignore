@@ -12,9 +12,15 @@ node_modules/
 *.cir
 
 # LTspice auto-generated schematics (not for repo)
+# .net files are canonical; .asc files are generated graphical copies
 docs/reverb-tank/stages/*_display.asc
 docs/reverb-tank/stages/*_clean.asc
 docs/reverb-tank/stages/*_preview.png
+docs/reverb-tank/stages/stage_05_psu_low_mains.asc
+docs/reverb-tank/stages/stage_06_full_dwell_*.asc
+docs/reverb-tank/stages/stage_06_full_mix_*.asc
+docs/reverb-tank/stages/stage_06_full_lo_beta.asc
+docs/reverb-tank/stages/stage_06_full_vos.asc
 docs/reverb-tank/ghost_spring_*.asc
 
 # Python cache
