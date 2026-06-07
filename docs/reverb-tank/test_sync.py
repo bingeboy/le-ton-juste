@@ -1182,6 +1182,41 @@ def test_hpf_meas_uses_ratio_form():
             raise AssertionError("%s .meas not found in stage_06_full_ac.net" % meas_name)
 
 
+def test_q1_active_region_meas_use_tran_avg_form():
+    """q1_vc and q1_vb (which feed the q1_vce/q1_vcb saturation guards) must use
+    .meas TRAN ... AVG form, not TRAN FIND. A bare TRAN FIND with no AT=/WHEN= is
+    undefined in LTspice — the measurement produces no result, so q1_vce/q1_vcb
+    (which are PARAMs derived from them) are also silently undefined."""
+    text = open(os.path.join(STAGES, "stage_06_full.net")).read()
+    for meas_name in ("q1_vc", "q1_vb"):
+        for line in text.splitlines():
+            if re.search(r"\.meas\s", line, re.I) and re.search(r"\b%s\b" % meas_name, line):
+                assert "TRAN" in line.upper(), \
+                    "%s must use TRAN analysis: %s" % (meas_name, line.strip())
+                assert "AVG" in line.upper(), \
+                    "%s must use AVG form (not bare FIND): %s" % (meas_name, line.strip())
+                break
+        else:
+            raise AssertionError("%s .meas not found in stage_06_full.net" % meas_name)
+
+
+def test_q1_ic_calc_divisor_matches_r5():
+    """q1_ic_calc PARAM uses the literal R5 value as divisor ({q1_ve/<R5>}).
+    The generator interpolates P.R5 at build time; this test confirms the committed
+    netlist divisor still matches circuit_params.R5, so changing R5 in circuit_params
+    without regenerating is caught immediately rather than silently drifting."""
+    P = load_circuit_params()
+    text = open(os.path.join(STAGES, "stage_06_full.net")).read()
+    for line in text.splitlines():
+        if re.search(r"\.meas\s", line, re.I) and "q1_ic_calc" in line:
+            expected = "{q1_ve/%s}" % P.R5
+            assert expected in line, \
+                "q1_ic_calc divisor must be {q1_ve/%s} (circuit_params.R5), got: %s" \
+                % (P.R5, line.strip())
+            return
+    raise AssertionError("q1_ic_calc .meas not found in stage_06_full.net")
+
+
 def test_pot_split_drives_halves_to_rail():
     """The pot-extreme variants must actually move a pot off the 50/50 baseline:
     one half goes to the SPICE-singularity floor (0.001) and the other to the
