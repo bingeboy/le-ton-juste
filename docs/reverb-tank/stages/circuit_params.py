@@ -351,6 +351,11 @@ POT_MIN_OHMS = "0.001"
 # before mix_node, so the dry contribution observed at v_out lands near ~0.1V pk.
 # Window is generous (0.05–0.15) to pass a correct circuit and catch a dead path.
 DWELL_MIN_DRY_WINDOW   = (0.05, 0.15)   # ~0.1V pk dry still passes at min Dwell
+DWELL_MIN_VOUT_WINDOW  = (0.02, 0.12)   # v_out at Dwell-CCW/Mix-noon: dry-only signal
+                                        # (~45mVpk analytical: u1_buf×RV2b/(Rdry+RV2a+RV2b)
+                                        # = 100mV×50k/(10k+50k+50k) = 45.5mVpk). Floor 0.02V
+                                        # catches a dead output; ceiling 0.12V catches gain
+                                        # anomalies without clashing with Mix-noon noon attn.
 DWELL_MAX_WIPER_PK_WINDOW = (0.03, 0.15)  # at max drive the wiper sees most of u1_buf
                                         # (~100mVpk) through near-zero series R; C_drive
                                         # loading brings it to ~40-100mVpk depending on

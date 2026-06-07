@@ -345,7 +345,7 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 | Variant | Pots (Dwell / Mix / Tone) | Assertion | Pass condition | Fail means |
 |---|---|---|---|---|
 | `dwell_min` | 0 % / 50 % / 50 % | `dwell_min_dry` | 0.05 – 0.15 V (≈0.1 V pk) | Dry path dead at min Dwell — Dwell wrongly gates dry |
-| `dwell_min` | 0 % / 50 % / 50 % | `dwell_min_vout` | output present (dry passes) | Whole output dead at min Dwell |
+| `dwell_min` | 0 % / 50 % / 50 % | `dwell_min_vout` | 0.02 – 0.12 V (≈0.045 V pk; dry-only through RV2 noon divider → DWELL_MIN_VOUT_WINDOW) | Whole output dead at min Dwell — Rdry open or RV2 mis-wired |
 | `dwell_max` | 100 % / 50 % / 50 % | `dwell_max_vout_pk` | < 13.5 V (no hard clip at U2) | U2 railing at max Dwell drive |
 | `dwell_max` | 100 % / 50 % / 50 % | `dwell_max_wiper_pk` | 0.03 – 0.15 V (wiper carries the drive) | Wet drive dead at max Dwell — Dwell pot inverted or wiper open |
 | `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_vout_pk` | 0.05 – 0.15 V (dry present) | Dry signal absent at full-CCW |
