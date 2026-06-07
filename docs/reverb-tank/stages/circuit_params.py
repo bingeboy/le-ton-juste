@@ -119,7 +119,7 @@ L_TANK_OUT  = "2"     # tank output inductance (2H)
 # SEMICONDUCTOR MODELS (SPICE .model / subckt bodies)
 # ============================================================================
 BD139_MODEL     = "NPN(Is=1e-14 Bf=100 Vaf=50 Rb=1 Rc=0.1 Re=0.05 Cje=30p Cjc=15p)"
-BZX84C15L_MODEL = "D(BV=15 N=1.6 Rs=2 IBV=5m Cjo=80p Iave=200m)"
+BZX84C15L_MODEL = "D(BV=15 N=1.6 Rs=2 IBV=5m Cjo=80p)"
 DN4007_MODEL    = "D(Is=14.1n N=1.984 Rs=33.9m Ikf=94.8 Cjo=51.7p M=0.333 Vj=0.7 Bv=1000 Ibv=10u)"
 
 # Op-amp (UniversalOpAmp2 level2) parameter strings
@@ -357,6 +357,7 @@ DWELL_MAX_WIPER_PK_WINDOW = (0.03, 0.15)  # at max drive the wiper sees most of 
                                         # drive; window catches a dead path (< 0.03) or
                                         # weird amplification (> 0.15)
 DWELL_MAX_U2_PK_MAX    = 13.5           # U2 output must not rail beyond the +/-15V supply
+WORST_CASE_PK_MAX      = 13.5           # v_out peak at Dwell-max/Mix-CW; U3 must not rail
 MIX_CCW_VOUT_WINDOW    = (0.05, 0.15)   # dry signal present at full-CCW (wet muted)
 MIX_CCW_WET_ARRIVAL_WINDOW = (0.20, 0.65) # mix_ccw_wet_ratio = V(mix_wet)/V(hpf_out);
                                         # spans the real RV3 divider (50k top + 50k||100k
@@ -365,7 +366,8 @@ MIX_CCW_WET_ARRIVAL_WINDOW = (0.20, 0.65) # mix_ccw_wet_ratio = V(mix_wet)/V(hpf
                                         # Rwet_wire, or shorted RV3b all push it outside
                                         # this window. Cannot be 1.0 by construction since
                                         # hpf_out and mix_wet are separated by RV3a=50k.
-MIX_CW_VOUT_PK_MIN  = 0.01              # V pk; wet path must deliver some signal at full-CW
+MIX_CW_VOUT_PK_MIN  = 0.05              # V pk; wet path at full-CW; catches badly-attenuated
+                                        # wet chain, not just a fully-dead output
 MIX_CW_DRY_ATTN_MAX = 0.50             # dry_lvl/mix_node ratio; dry should be < 50% of wiper at full-CW
 WORST_CASE_SETTLE_MAX  = 0.5            # DC at U2 out settles back to ~0 after any clip
 

@@ -59,7 +59,7 @@ Rload v_out 0 47k
 .lib C:\users\crossover\AppData\Local\LTspice\lib\cmp\standard.dio
 * BD139 driver model + BZX84C15L zener model + analysis directives
 .model BD139 NPN(Is=1e-14 Bf=100 Vaf=50 Rb=1 Rc=0.1 Re=0.05 Cje=30p Cjc=15p)
-.model BZX84C15L D(BV=15 N=1.6 Rs=2 IBV=5m Cjo=80p Iave=200m)
+.model BZX84C15L D(BV=15 N=1.6 Rs=2 IBV=5m Cjo=80p)
 .tran 0 5m 0 10u
 .meas TRAN u1pos_hi MAX V(u1_pos)
 .meas TRAN u1pos_lo MIN V(u1_pos)

@@ -991,15 +991,15 @@ def check_assertions_md():
            "%g – %g V" % (P.DWELL_MAX_WIPER_PK_WINDOW[0], P.DWELL_MAX_WIPER_PK_WINDOW[1]))
     # dwell_max_vout_pk: < 13.5 V
     expect("dwell_max_u2_pk max", "< %g V" % P.DWELL_MAX_U2_PK_MAX)
-    # worst_case_pk: ≤ 13.5 V (same physical U2-vs-rail ceiling -> DWELL_MAX_U2_PK_MAX)
-    expect("worst_case_pk max", "≤ %g V" % P.DWELL_MAX_U2_PK_MAX)
+    # worst_case_pk: ≤ 13.5 V (v_out at Dwell-max/Mix-CW; U3 must not rail)
+    expect("worst_case_pk max", "≤ %g V" % P.WORST_CASE_PK_MAX)
     # mix_ccw_vout_pk: 0.05 – 0.15 V
     expect("mix_ccw_vout window",
            "%g – %g V" % (P.MIX_CCW_VOUT_WINDOW[0], P.MIX_CCW_VOUT_WINDOW[1]))
     # mix_ccw_wet_ratio: 0.20 – 0.65 (V(mix_wet)/V(hpf_out) across the real RV3 divider)
     expect("mix_ccw_wet_ratio window",
            "%g – %g" % (P.MIX_CCW_WET_ARRIVAL_WINDOW[0], P.MIX_CCW_WET_ARRIVAL_WINDOW[1]))
-    # mix_cw_vout_pk: > 0.01 V
+    # mix_cw_vout_pk: > 0.05 V
     expect("mix_cw_vout_pk min", "> %g V" % P.MIX_CW_VOUT_PK_MIN)
     # mix_cw_dry_attn: < 0.5
     expect("mix_cw_dry_attn max", "< %g" % P.MIX_CW_DRY_ATTN_MAX)

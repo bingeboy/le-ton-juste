@@ -201,6 +201,8 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | `ripple_pos` | `PP V(+15V)` | < 10 mVpp | Insufficient filtering — ripple into recovery stage |
 | `ripple_neg` | `PP V(-15V)` | < 10 mVpp | Same on negative rail |
 
+> *Note: `rail_pos`/`rail_neg` and `ripple_pos`/`ripple_neg` pass by construction under the behavioural LM78xx/LM79xx model (`min(V(IN,COM)−2, 15)`): as long as the unregulated bus clears 17 V the regulator output is pinned to ±15 V with no ripple, regardless of bulk-cap size or load. The binding indicator here is `unreg_pos`/`unreg_neg` (bus headroom above 17 V) — those are the only rows with real teeth in this sim. Actual rail ripple must be verified on the bench.*
+
 ---
 
 ## Stage 6 — Full integration
@@ -329,10 +331,13 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 .meas TRAN mix_cw_dry_lvl  MAX abs(V(mix_dry))  FROM=190m TO=200m
 .meas TRAN mix_cw_dry_attn PARAM {mix_cw_dry_lvl/mix_cw_mix_node}
 
-; dwell_max_mix_cw — worst-case clip path (Dwell max + Mix full-CW): U2 output
-;   must not exceed the supply and its DC must settle back to ~0 (no latch-up).
-.meas TRAN worst_case_pk     MAX abs(V(u2_out)) FROM=50m TO=200m
-.meas TRAN worst_case_settle AVG V(u2_out)      FROM=190m TO=200m
+; dwell_max_mix_cw — worst-case clip path (Dwell max + Mix full-CW): probes v_out
+;   so the Mix=CW routing is load-bearing. V(u2_out) is upstream of RV3/RV2 and
+;   independent of Mix position — probing there was a redundant copy of dwell_max.
+;   U2 headroom is already gated by dwell_max_vout_pk; this variant uniquely gates
+;   U3/v_out under the combined Dwell-max + 100%-wet Mix stress.
+.meas TRAN worst_case_pk     MAX abs(V(v_out)) FROM=50m TO=200m
+.meas TRAN worst_case_settle AVG V(v_out)      FROM=190m TO=200m
 ```
 
 | Variant | Pots (Dwell / Mix / Tone) | Assertion | Pass condition | Fail means |
@@ -343,10 +348,10 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 | `dwell_max` | 100 % / 50 % / 50 % | `dwell_max_wiper_pk` | 0.03 – 0.15 V (wiper carries the drive) | Wet drive dead at max Dwell — Dwell pot inverted or wiper open |
 | `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_vout_pk` | 0.05 – 0.15 V (dry present) | Dry signal absent at full-CCW |
 | `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_wet_ratio` | 0.2 – 0.65 (`V(mix_wet)/V(hpf_out)` across RV3 divider; ~0.40 at center wiper) | Wet chain broken: open RV3 wiper, shorted RV3b, or open Rwet_wire |
-| `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_vout_pk` | > 0.01 V (wet signal present) | Output dead at full-CW |
+| `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_vout_pk` | > 0.05 V (wet signal present at useful level) | Output dead or badly attenuated at full-CW |
 | `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_dry_attn` | < 0.5 (dry node attenuated vs wiper) | Dry bleeds through at full-CW |
-| `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_pk` | ≤ 13.5 V (U2 within supply → DWELL_MAX_U2_PK_MAX) | U2 rails on the worst-case path |
-| `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_settle` | \|DC\| < 0.5 V (settles after clip) | U2 latched off-zero after a clip |
+| `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_pk` | ≤ 13.5 V (`v_out` at Dwell-max/Mix-CW → WORST_CASE_PK_MAX; gates U3 headroom) | U3 rails on worst-case path |
+| `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_settle` | \|DC\| < 0.5 V (settles after clip) | U3 latched off-zero after a clip |
 
 > **Pass windows** are grounded in the circuit and tabulated in
 > `circuit_params.py` (`DWELL_MIN_DRY_WINDOW`, `DWELL_MAX_WIPER_PK_WINDOW`,

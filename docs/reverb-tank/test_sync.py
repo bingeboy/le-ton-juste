@@ -252,8 +252,8 @@ def test_stage7_sweep_constants_are_numeric(P):
         assert lo < hi, "%s window is not lo<hi: %r" % (name, win)
 
     # Single-bound scalars: numeric.
-    for name in ["DWELL_MAX_U2_PK_MAX", "MIX_CW_VOUT_PK_MIN",
-                 "MIX_CW_DRY_ATTN_MAX", "WORST_CASE_SETTLE_MAX"]:
+    for name in ["DWELL_MAX_U2_PK_MAX", "WORST_CASE_PK_MAX",
+                 "MIX_CW_VOUT_PK_MIN", "MIX_CW_DRY_ATTN_MAX", "WORST_CASE_SETTLE_MAX"]:
         val = getattr(P, name)
         assert isinstance(val, (int, float)), "%s should be numeric, got %r" % (name, val)
 
@@ -1101,8 +1101,9 @@ def test_dwell_max_has_wiper_pk_meas():
 
 
 def test_dwell_max_mix_cw_has_worst_case_meas():
-    """dwell_max_mix_cw (worst-case clip path) carries the worst-case peak and
-    the post-clip DC-settle meas (U2 must not rail and must settle back to ~0)."""
+    """dwell_max_mix_cw (Dwell-max + Mix-CW) carries worst_case_pk and
+    worst_case_settle, both probed at v_out so Mix=CW is load-bearing.
+    U3 (the only amp downstream of Mix) must not rail and must settle to ~0."""
     text = open(os.path.join(STAGES, "stage_06_full_dwell_max_mix_cw.net")).read()
     names = _meas_names(text)
     for needed in ("worst_case_pk", "worst_case_settle"):

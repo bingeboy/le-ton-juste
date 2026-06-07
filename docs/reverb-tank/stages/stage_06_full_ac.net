@@ -59,7 +59,7 @@ Rload v_out 0 47k
 .lib C:\users\crossover\AppData\Local\LTspice\lib\cmp\standard.dio
 * BD139 driver model + zener/rectifier models + analysis directives
 .model BD139 NPN(Is=1e-14 Bf=100 Vaf=50 Rb=1 Rc=0.1 Re=0.05 Cje=30p Cjc=15p)
-.model BZX84C15L D(BV=15 N=1.6 Rs=2 IBV=5m Cjo=80p Iave=200m)
+.model BZX84C15L D(BV=15 N=1.6 Rs=2 IBV=5m Cjo=80p)
 .model DN4007 D(Is=14.1n N=1.984 Rs=33.9m Ikf=94.8 Cjo=51.7p M=0.333 Vj=0.7 Bv=1000 Ibv=10u)
 .ac dec 100 20 20k
 .meas AC u1_buf_gain FIND mag(V(u1_buf)/V(vin)) AT=1k

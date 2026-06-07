@@ -645,15 +645,18 @@ def build(active_analysis="op"):
             b.directive(".meas TRAN mix_cw_dry_lvl   MAX abs(V(mix_dry))  FROM=190m TO=200m")
             b.directive(".meas TRAN mix_cw_dry_attn  PARAM {mix_cw_dry_lvl/mix_cw_mix_node}")
         elif active_analysis == "dwell_max_mix_cw":
-            # Worst-case clip path: Dwell max + Mix full-CW. With this (correct)
-            # pot convention Dwell max means RV1b≈0 pulls the wiper to u1_buf =
-            # MAXIMUM wet drive (RV1a is the 10k wiper-to-GND leg, not a short to
-            # ground). So this combines the loudest wet send (Dwell CW) with the
-            # 100%-wet Mix position -- the genuine worst case for U2 headroom. The
-            # gate is that U2's output never exceeds the supply and its DC settles
-            # back to ~0 (no latch-up).
-            b.directive(".meas TRAN worst_case_pk     MAX abs(V(u2_out)) FROM=50m TO=200m")
-            b.directive(".meas TRAN worst_case_settle AVG V(u2_out)      FROM=190m TO=200m")
+            # Worst-case clip path: Dwell max + Mix full-CW. Dwell CW = max tank
+            # drive (RV1b≈0 pulls wiper to u1_buf); Mix CW = 100% wet (RV2b≈0
+            # ties mix_node to mix_wet). This combination stresses the output
+            # buffer U3, which is the only amplifier downstream of the Mix pot.
+            # U2 headroom under Dwell-max is separately gated by dwell_max_vout_pk.
+            #
+            # Probe at v_out so the Mix=CW routing is load-bearing -- V(u2_out) is
+            # upstream of RV3/RV2 and identical to dwell_max regardless of Mix
+            # position (prior bug: measuring u2_out here was a redundant copy of
+            # dwell_max with the Mix condition having no effect on the result).
+            b.directive(".meas TRAN worst_case_pk     MAX abs(V(v_out)) FROM=50m TO=200m")
+            b.directive(".meas TRAN worst_case_settle AVG V(v_out)      FROM=190m TO=200m")
 
     b.text(16, 1620,
            "Active analysis: ." + active_analysis +
