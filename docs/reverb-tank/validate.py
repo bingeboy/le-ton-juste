@@ -996,9 +996,9 @@ def check_assertions_md():
     # mix_ccw_vout_pk: 0.05 – 0.15 V
     expect("mix_ccw_vout window",
            "%g – %g V" % (P.MIX_CCW_VOUT_WINDOW[0], P.MIX_CCW_VOUT_WINDOW[1]))
-    # mix_ccw_wet_ratio: 0.9 – 1.05 (wet signal arrives intact at the pot wet lug)
+    # mix_ccw_wet_ratio: 0.20 – 0.65 (V(mix_wet)/V(hpf_out) across the real RV3 divider)
     expect("mix_ccw_wet_ratio window",
-           "%g – %g" % (P.MIX_CCW_WET_BLEED_WINDOW[0], P.MIX_CCW_WET_BLEED_WINDOW[1]))
+           "%g – %g" % (P.MIX_CCW_WET_ARRIVAL_WINDOW[0], P.MIX_CCW_WET_ARRIVAL_WINDOW[1]))
     # mix_cw_vout_pk: > 0.01 V
     expect("mix_cw_vout_pk min", "> %g V" % P.MIX_CW_VOUT_PK_MIN)
     # mix_cw_dry_attn: < 0.5

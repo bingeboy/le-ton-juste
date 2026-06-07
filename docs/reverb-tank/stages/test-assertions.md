@@ -309,14 +309,16 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 .meas TRAN dwell_max_vout_pk MAX abs(V(u2_out)) FROM=50m TO=200m
 .meas TRAN dwell_max_wiper_pk MAX abs(V(rv1_wiper)) FROM=190m TO=200m
 
-; mix_ccw — Mix 0% (RV2a≈0, RV2b=100k = full dry): wiper ties to mix_dry. The old
-;   mix_ccw_wet_bleed = mix_node/mix_dry was a tautology — RV2a=0.001 hard-shorts
-;   mix_node to mix_dry at full-CCW, so the ratio is ~1 regardless of the wet path.
-;   Instead probe the WET path directly: the wet signal must arrive INTACT at the
-;   pot's wet lug (mix_wet) from the wet source (rv3_wiper, tied by the 0R
-;   Rwet_wire), so mix_ccw_wet_ratio = V(mix_wet)/V(rv3_wiper) ≈ 1.
+; mix_ccw — Mix 0% (RV2a≈0, RV2b=100k = full dry): wiper ties to mix_dry. Two
+;   prior attempts were tautologies:
+;     v1: V(mix_node)/V(mix_dry) — RV2a=0.001 hard-shorts both to the same node.
+;     v2: V(mix_wet)/V(rv3_wiper) — Rwet_wire=0R makes these the same node.
+;   Correct probe: mix_ccw_wet_ratio = V(mix_wet)/V(hpf_out). hpf_out and mix_wet
+;   are separated by RV3a=50k (series) + RV3b=50k||RV2b=100k (shunt). At center
+;   wiper the ratio is ~0.40. A broken RV3 wiper, open Rwet_wire, or shorted RV3b
+;   all push outside the 0.20–0.65 window. Cannot be 1.0 by construction.
 .meas TRAN mix_ccw_vout_pk   MAX abs(V(v_out))    FROM=190m TO=200m
-.meas TRAN mix_ccw_wet_src   RMS V(rv3_wiper) FROM=190m TO=200m
+.meas TRAN mix_ccw_wet_src   RMS V(hpf_out)   FROM=190m TO=200m
 .meas TRAN mix_ccw_wet_node  RMS V(mix_wet)   FROM=190m TO=200m
 .meas TRAN mix_ccw_wet_ratio PARAM {mix_ccw_wet_node/mix_ccw_wet_src}
 
@@ -340,7 +342,7 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 | `dwell_max` | 100 % / 50 % / 50 % | `dwell_max_vout_pk` | < 13.5 V (no hard clip at U2) | U2 railing at max Dwell drive |
 | `dwell_max` | 100 % / 50 % / 50 % | `dwell_max_wiper_pk` | 0.03 – 0.15 V (wiper carries the drive) | Wet drive dead at max Dwell — Dwell pot inverted or wiper open |
 | `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_vout_pk` | 0.05 – 0.15 V (dry present) | Dry signal absent at full-CCW |
-| `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_wet_ratio` | 0.9 – 1.05 (wet arrives intact at pot wet lug `V(mix_wet)/V(rv3_wiper)` ≈ 1) | Wet path broken/attenuated at full-CCW |
+| `mix_ccw` | 50 % / 0 % / 50 % | `mix_ccw_wet_ratio` | 0.2 – 0.65 (`V(mix_wet)/V(hpf_out)` across RV3 divider; ~0.40 at center wiper) | Wet chain broken: open RV3 wiper, shorted RV3b, or open Rwet_wire |
 | `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_vout_pk` | > 0.01 V (wet signal present) | Output dead at full-CW |
 | `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_dry_attn` | < 0.5 (dry node attenuated vs wiper) | Dry bleeds through at full-CW |
 | `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_pk` | ≤ 13.5 V (U2 within supply → DWELL_MAX_U2_PK_MAX) | U2 rails on the worst-case path |

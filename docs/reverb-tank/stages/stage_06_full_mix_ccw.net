@@ -87,7 +87,7 @@ B1 OUT COM V=max(V(IN,COM)+2, -{Vout})
 .model DN4007 D(Is=14.1n N=1.984 Rs=33.9m Ikf=94.8 Cjo=51.7p M=0.333 Vj=0.7 Bv=1000 Ibv=10u)
 .tran 0 200m 0 5u
 .meas TRAN mix_ccw_vout_pk  MAX abs(V(v_out))   FROM=190m TO=200m
-.meas TRAN mix_ccw_wet_src  RMS V(rv3_wiper) FROM=190m TO=200m
+.meas TRAN mix_ccw_wet_src  RMS V(hpf_out)  FROM=190m TO=200m
 .meas TRAN mix_ccw_wet_node RMS V(mix_wet)   FROM=190m TO=200m
 .meas TRAN mix_ccw_wet_ratio PARAM {mix_ccw_wet_node/mix_ccw_wet_src}
 .lib UniversalOpAmp2.lib
