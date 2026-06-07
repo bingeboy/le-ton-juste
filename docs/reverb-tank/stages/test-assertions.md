@@ -177,11 +177,11 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 ## Stage 5 — Power supply
 
 ```spice
-; Stage 5 — OP: regulated rails within +/-1%
-.meas OP rail_pos FIND V(+15V)
-.meas OP rail_neg FIND V(-15V)
+; Stage 5 — TRAN: regulated rails within +/-1% (steady-state AVG)
+.meas TRAN rail_pos AVG V(+15V) FROM=100m TO=120m
+.meas TRAN rail_neg AVG V(-15V) FROM=100m TO=120m
 
-; Stage 5 — OP: unregulated-bus headroom. The 78xx/79xx need their input
+; Stage 5 — TRAN: unregulated-bus headroom. The 78xx/79xx need their input
 ;   >= Vout + ~2V dropout to stay IN regulation; the bulk caps hold the bus
 ;   near the rectified peak (~19V). If |bus| sags below ~17V the regulator
 ;   drops out and the rail follows the ripple. (Measured but previously ungated.)

@@ -1084,6 +1084,69 @@ def check_q1_vb():
              % (P.Q1_VB_UNLOADED, P.Q1_VB_WINDOW))
 
 
+# ---------------------------------------------------------------------------
+# 1m. FENCE vs NETLIST DRIFT: every .meas line shown in a ```spice fence in
+#     test-assertions.md must have matching analysis type and form in at least
+#     one committed netlist. Catches M1-class bugs where the doc drifts from
+#     the netlists (e.g. fence shows OP FIND but netlist uses TRAN AVG, or
+#     fence shows bare FIND without a time point for a TRAN measurement).
+# ---------------------------------------------------------------------------
+def check_fence_meas_forms():
+    global checks
+    with open(ASSERT_MD) as f:
+        doc = f.read()
+
+    # Collect (analysis, name, form) from all committed .net files.
+    netlist_forms = {}   # name -> set of (analysis, form)
+    for fname in sorted(os.listdir(STAGES)):
+        if not fname.endswith(".net"):
+            continue
+        try:
+            lines = open(os.path.join(STAGES, fname)).read().splitlines()
+        except IOError:
+            continue
+        for line in lines:
+            m = re.match(r"\.meas\s+(\w+)\s+(\w+)\s+(\w+)", line, re.I)
+            if m:
+                analysis = m.group(1).upper()
+                name = m.group(2).lower()
+                form = m.group(3).upper()
+                netlist_forms.setdefault(name, set()).add((analysis, form))
+
+    # Extract .meas lines from ```spice fences.
+    in_fence = False
+    for line in doc.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("```spice"):
+            in_fence = True
+            continue
+        if in_fence and stripped == "```":
+            in_fence = False
+            continue
+        if not in_fence:
+            continue
+        m = re.match(r"\.meas\s+(\w+)\s+(\w+)\s+(\w+)", stripped, re.I)
+        if not m:
+            continue
+        fence_analysis = m.group(1).upper()
+        name = m.group(2).lower()
+        fence_form = m.group(3).upper()
+
+        if name not in netlist_forms:
+            continue  # intermediate PARAM / legacy example not in any netlist
+
+        checks += 1
+        if (fence_analysis, fence_form) not in netlist_forms[name]:
+            actual = sorted(netlist_forms[name])
+            fail(
+                "test-assertions.md fence shows '.meas %s %s %s ...', "
+                "but no committed netlist has (%s, %s) for '%s' — "
+                "actual: %s"
+                % (fence_analysis, name, fence_form,
+                   fence_analysis, fence_form, name, actual)
+            )
+
+
 def main():
     check_netlist()
     check_stage_netlists()
@@ -1100,6 +1163,7 @@ def main():
     check_op_bias_guards()
     check_psu_unreg_meas()
     check_chain_gain_target()
+    check_fence_meas_forms()
     check_params_md()
     check_assertions_md()
 
