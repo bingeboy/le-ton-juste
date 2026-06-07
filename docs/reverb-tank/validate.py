@@ -692,8 +692,11 @@ def check_variant_netlists():
         (NET6_MIX_CW, {"mix_cw_vout_pk", "mix_cw_dry_attn"}),
         (NET6_DWELL_MAX_MIX_CW, {"worst_case_pk", "worst_case_settle"}),
         # Stage 8 stress variants (idealized -> realistic hardware deviations).
-        # 3a low mains: same ripple/rail checks on a 108V secondary.
-        (NET5_LOW_MAINS, {"ripple_pos", "ripple_neg"}),
+        # 3a low mains: same ripple/rail checks on a 108V secondary, plus the
+        # unreg-bus trough (MIN/MAX) so the dropout floor is gated on the
+        # instantaneous trough, not just the average.
+        (NET5_LOW_MAINS,
+         {"ripple_pos", "ripple_neg", "unreg_pos_min", "unreg_neg_min"}),
         # 3b U2 Vos: settled DC at u2_out under a 500uV input offset.
         (NET6_VOS, {"u2_out_dc_vos"}),
         # 3c BD139 low-beta corner: same Q1 bias checks at BF=40.
@@ -962,6 +965,8 @@ def check_assertions_md():
            "%g – %g" % (P.U1_BUF_GAIN_WINDOW[0], P.U1_BUF_GAIN_WINDOW[1]))
     # Unregulated-bus headroom: |bus| > 17 V
     expect("unreg headroom min", "> %g V" % P.UNREG_HEADROOM_MIN)
+    # Unregulated-bus ripple trough (low mains): |bus trough| > 17 V
+    expect("unreg trough min", "> %g V (trough)" % P.UNREG_TROUGH_MIN)
     # recov_gain: 205 - 225
     expect("recov_gain window", "%g – %g" % (P.RECOV_GAIN_WINDOW[0], P.RECOV_GAIN_WINDOW[1]))
     # hpf: 250 - 320 Hz

@@ -9,7 +9,7 @@ C5 +15V 0 100n
 C6 -15V 0 100n
 C7 +15V 0 100n
 C8 -15V 0 100n
-V1 vin 0 SINE(0 10 1k) AC 1
+V1 vin 0 SINE(0 20 1k) AC 1
 DTVS1a vin tvs_mid BZX84C15L
 DTVS1b 0 tvs_mid BZX84C15L
 C_in vin u1_pos 1u

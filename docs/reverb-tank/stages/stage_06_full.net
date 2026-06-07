@@ -96,8 +96,8 @@ B1 OUT COM V=max(V(IN,COM)+2, -{Vout})
 .meas TRAN q1_vce PARAM {q1_vc - q1_ve}
 .meas TRAN q1_vcb PARAM {q1_vc - q1_vb}
 .meas TRAN q1_ic_calc PARAM {q1_ve/68}
-.meas TRAN q1_ic AVG I(R5) FROM=190m TO=200m
-.meas TRAN q1_ic_err PARAM {abs(q1_ic_calc - q1_ic) / q1_ic}
+.meas TRAN q1_ic AVG Ic(Q1) FROM=190m TO=200m
+.meas TRAN q1_ic_err PARAM {abs(q1_ic - q1_ic_calc) / q1_ic_calc}
 .meas TRAN rail_pos AVG V(+15V) FROM=190m TO=200m
 .meas TRAN rail_neg AVG V(-15V) FROM=190m TO=200m
 .lib UniversalOpAmp2.lib

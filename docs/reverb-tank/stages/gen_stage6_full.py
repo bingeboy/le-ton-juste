@@ -498,18 +498,22 @@ def build(active_analysis="op"):
         b.directive(".meas TRAN q1_vb AVG V(q1_base) FROM=190m TO=200m")
         b.directive(".meas TRAN q1_vce PARAM {q1_vc - q1_ve}")
         b.directive(".meas TRAN q1_vcb PARAM {q1_vc - q1_vb}")
-        # Cross-check: Ic implied by the emitter voltage across R5 (Ic ~= Ve/R5,
-        # Ie ~= Ic for Bf=100). Compare to the current actually flowing through R5
-        # (I(R5) = Ie = Ic in the bias network) so q1_ic_calc has a real target.
-        # The divisor tracks circuit_params.R5 (not a hardcoded 68) so the formula
-        # never silently drifts if R5 changes. q1_ve is a 190-200ms AVG, so q1_ic
-        # MUST also be an AVG over the SAME 190-200ms window -- comparing the
-        # windowed-average Ve against a single instantaneous I(R5) point would mix
-        # two different sampling modes and inflate q1_ic_err on any residual ripple.
+        # Cross-check: the emitter-implied collector current (q1_ic_calc = Ve/R5,
+        # which is really Ie/Ic via R5) against the collector current measured
+        # DIRECTLY through the BJT (q1_ic = Ic(Q1)). These are independent reads:
+        # I(R5) is identically V(q1_e)/R5, so the old q1_ic = AVG I(R5) made the
+        # cross-check a tautology (q1_ic_err ~= 0 regardless of circuit health).
+        # Ic(Q1) goes through the transistor model and differs from Ie by the base
+        # current (~1% at Bf=100), so q1_ic_err is a real ~1% read, well inside the
+        # 10% tolerance. The divisor tracks circuit_params.R5 (not a hardcoded 68)
+        # so the formula never silently drifts if R5 changes. q1_ve is a 190-200ms
+        # AVG, so q1_ic MUST also be an AVG over the SAME 190-200ms window --
+        # comparing the windowed-average Ve against a single instantaneous Ic(Q1)
+        # point would mix two sampling modes and inflate q1_ic_err on any ripple.
         b.directive(f".meas TRAN q1_ic_calc PARAM {{q1_ve/{P.R5}}}")
-        b.directive(".meas TRAN q1_ic AVG I(R5) FROM=190m TO=200m")
-        # Flag disagreement: |q1_ic_calc - q1_ic| / q1_ic must stay under 10%.
-        b.directive(".meas TRAN q1_ic_err PARAM {abs(q1_ic_calc - q1_ic) / q1_ic}")
+        b.directive(".meas TRAN q1_ic AVG Ic(Q1) FROM=190m TO=200m")
+        # Flag disagreement: |q1_ic - q1_ic_calc| / q1_ic_calc must stay under 10%.
+        b.directive(".meas TRAN q1_ic_err PARAM {abs(q1_ic - q1_ic_calc) / q1_ic_calc}")
         # Settled rail sanity (the bias points depend on them).
         b.directive(".meas TRAN rail_pos AVG V(+15V) FROM=190m TO=200m")
         b.directive(".meas TRAN rail_neg AVG V(-15V) FROM=190m TO=200m")

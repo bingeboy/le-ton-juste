@@ -96,6 +96,8 @@ B1 OUT COM V=max(V(IN,COM)+2, -{Vout})
 .meas TRAN rail_neg AVG V(-15V) FROM=100m TO=120m
 .meas TRAN unreg_pos AVG V(pos_rect) FROM=100m TO=120m
 .meas TRAN unreg_neg AVG V(neg_rect) FROM=100m TO=120m
+.meas TRAN unreg_pos_min MIN V(pos_rect) FROM=50m TO=100m
+.meas TRAN unreg_neg_min MAX V(neg_rect) FROM=50m TO=100m
 .lib UniversalOpAmp2.lib
 .backanno
 .end

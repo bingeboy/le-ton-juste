@@ -454,6 +454,12 @@ def build(active_analysis="op"):
             b.directive(".meas TRAN rail_neg AVG V(-15V) FROM=100m TO=120m")
             b.directive(".meas TRAN unreg_pos AVG V(pos_rect) FROM=100m TO=120m")
             b.directive(".meas TRAN unreg_neg AVG V(neg_rect) FROM=100m TO=120m")
+            # AVG alone can pass while the rippling bus TROUGH dips below dropout.
+            # Gate the instantaneous minimum (the trough) too: the +bus MIN and the
+            # -bus MAX (least-negative = the -bus trough) must both clear the same
+            # UNREG_TROUGH_MIN dropout floor (17V) by magnitude.
+            b.directive(".meas TRAN unreg_pos_min MIN V(pos_rect) FROM=50m TO=100m")
+            b.directive(".meas TRAN unreg_neg_min MAX V(neg_rect) FROM=50m TO=100m")
 
     b.text(16, 1620,
            "Active analysis: ." + active_analysis +
