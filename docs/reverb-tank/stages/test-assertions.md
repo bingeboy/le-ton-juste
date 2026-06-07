@@ -107,6 +107,7 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | `q1_ic_calc` | `q1_ve/68` (Ve across R5; R5=68Ω, interpolated by generator) | compared to `q1_ic` below | Ve-implied Ic and the BJT collector current disagree — wrong R5 or mis-probed emitter |
 | `q1_ic` | `Ic(Q1)` (collector current through the BJT) | 10 – 26 mA | the independent comparison target for `q1_ic_calc` |
 | `q1_ic_err` | `\|q1_ic − q1_ic_calc\| / q1_ic_calc` | < 10% | Ve-implied Ic and the measured collector current disagree by > 10% |
+| `q1_vb` | `V(q1_base)` | 1.65 – 2.05 V (unloaded 1.92 V from R3b/R4 divider; base current loads it slightly lower → Q1_VB_WINDOW) | Base bias wrong — R3b or R4 value off, or divider open |
 | `q1_vc` | `V(q1_c)` (collector DC) | 3 – 15.2 V (sim ≈14.6 V) | Collector pinned low — Q1 saturated or transformer/D3 short |
 | `q1_vce` | `V(q1_c) − V(q1_e)` | > 1 V (≫ Vce(sat) 0.2 V) | Q1 saturated — collector swing flat-tops, send distorts |
 | `q1_vcb` | `V(q1_c) − V(q1_base)` | ≥ 0 V (CBJ reverse-biased) | Collector below base — Q1 in saturation |
@@ -250,6 +251,7 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | `u2_inpos_bias` | `V(u2_in_pos)` | \|val\| ≤ 10 mV | Rbias open / rail leak — U2 + input floats, 214× clips |
 | `u1_buf_gain` | `\|V(u1_buf)/V(vin)\|` @1k | 0.9 – 1.05 | U1 buffer dead/mis-wired — front-end not passing signal |
 | `recov_gain_db` | `20log10(V(u2_out)/V(u2_in_pos))` @1k | 44.6 – 48.6 dB (target 46.59 dB ±2 dB) | Recovery-stage gain drifted out of spec |
+| `recov_lvl` | `V(u2_out)` @1k | *decorative — no gated window* | Context probe: raw U2 output level; the gated quantity is `recov_gain_db` |
 
 ---
 
@@ -354,6 +356,8 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 | `mix_cw` | 50 % / 100 % / 50 % | `mix_cw_dry_attn` | < 0.5 (dry node attenuated vs wiper) | Dry bleeds through at full-CW |
 | `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_pk` | ≤ 6 V (`v_out` at Dwell-max/Mix-CW → WORST_CASE_PK_MAX; analytical ceiling 0.4 × 13.5 V = 5.4 V) | U3 rails on worst-case path |
 | `dwell_max_mix_cw` | 100 % / 100 % / 50 % | `worst_case_settle` | \|DC\| < 0.5 V (settles after clip) | U3 latched off-zero after a clip |
+
+> *Note: `worst_case_settle` (AVG V(v_out) over 190–200 ms) passes by construction under the ideal `Vos=0` op-amp model — the AVG of a 1 kHz sine over exactly 10 cycles is ≈ 0 regardless of amplitude, so the < 0.5 V gate is trivially satisfied without any latch-up present. The check only acquires teeth under realistic conditions: a non-zero Vos (Stage 8b), an asymmetric clip, or a genuine DC latch-up. The binding worst-case assertion on this variant is `worst_case_pk` (≤ 6 V → WORST_CASE_PK_MAX).*
 
 > **Pass windows** are grounded in the circuit and tabulated in
 > `circuit_params.py` (`DWELL_MIN_DRY_WINDOW`, `DWELL_MAX_WIPER_PK_WINDOW`,

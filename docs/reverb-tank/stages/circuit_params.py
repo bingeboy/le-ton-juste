@@ -379,7 +379,12 @@ MIX_CW_VOUT_PK_MIN  = 0.20              # V pk; wet path at full-CW. Baseline si
                                         # shows vout_pk=1.16V; Mix-CW (wet-only) is comparable.
                                         # 0.20V catches a badly-attenuated wet chain.
 MIX_CW_DRY_ATTN_MAX = 0.50             # dry_lvl/mix_node ratio; dry should be < 50% of wiper at full-CW
-WORST_CASE_SETTLE_MAX  = 0.5            # DC at U2 out settles back to ~0 after any clip
+WORST_CASE_SETTLE_MAX  = 0.5            # v_out DC settles back to ~0 after any clip (AVG
+                                        # 190-200ms). Passes by construction under ideal Vos=0:
+                                        # AVG of 1kHz sine over exactly 10 cycles = 0 regardless
+                                        # of amplitude. Only acquires teeth under realistic Vos
+                                        # (Stage 8b) or genuine DC latch-up. The binding gate on
+                                        # this variant is worst_case_pk (≤ WORST_CASE_PK_MAX).
 
 # ============================================================================
 # STAGE 8 — REALISTIC HARDWARE STRESS VARIANTS
