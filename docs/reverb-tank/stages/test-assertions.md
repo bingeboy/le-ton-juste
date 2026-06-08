@@ -36,8 +36,8 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 .meas AC hpf_ref  FIND mag(V(hpf_out)/V(u2_out)) AT=5k
 .meas AC hpf_m3db WHEN mag(V(hpf_out)/V(u2_out))=hpf_ref*0.7079 RISE=1
 
-; Stage 1 — TRAN: output not clipping (settled window, skips power-up surge)
-.meas TRAN vout_pk MAX abs(V(v_out)) FROM=50m TO=100m
+; Stage 1 — TRAN: output not clipping (bare MAX; LTSpice 26 ignores FROM/TO on MAX)
+.meas TRAN vout_pk MAX abs(V(v_out))
 
 ; Stage 1 — TRAN: no oscillation — RMS late window vs early window
 .meas TRAN rms_early RMS V(v_out) FROM=40m   TO=50m
@@ -52,8 +52,17 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 | `off_u3` | `V(v_out)` | \|val\| ≤ 10 mV | Output offset — DC to the MC100 |
 | `recov_gain` | `V(u2_out)/V(u2_in_pos)` @1k | 205 – 225 | Wrong Rf/Ri ratio — recovery gain off |
 | `hpf_m3db` | freq where wet = 0.7079×ref | 250 – 320 Hz | HPF corner wrong — R6/C4 value error |
-| `vout_pk` | `MAX abs(V(v_out))` | < 14 V | Output clipping into the rails |
+| `vout_pk` | `MAX abs(V(v_out))` | < 14 V | Output clipping into the rails — see note below for startup-surge vs. real-clip diagnosis |
 | `osc_ratio` | RMS_late / RMS_early | < 1.05 | Signal growing — oscillation/instability |
+
+> **`vout_pk` measures the full 0–100 ms run, including the power-up transient.** LTSpice 26 silently ignores `FROM=`/`TO=` qualifiers on `MAX` `.meas` statements (they work correctly for `RMS`/`AVG` but not for `MAX`), so the window cannot be restricted to the settled region — the bare `MAX` is deliberate, not an omission. The full-run simulated peak is **1.16 V** (from the reference simulation log — no startup surge exceeded this value in this 100 mVpk standard-drive mode), well inside the < 14 V limit.
+>
+> If `vout_pk` fails there are two distinct causes with different fixes:
+>
+> - **Startup surge (0–40 ms):** bulk capacitors charging and the spring-tank inductors ringing up produce a brief transient spike at power-on. In the waveform viewer, `V(v_out)` will spike early and then settle well below 14 V by ~40 ms. The circuit is functionally correct — this is a simulation artefact of an ideal step-start, not real clipping. No component change is needed.
+> - **Real steady-state clipping (40–100 ms):** the output is genuinely hitting the ±15 V rails. `V(v_out)` will be flat-topped at roughly ±13–14 V throughout the settled window. Check drive level, Q1 bias (`q1_ve`, `q1_ic`), and recovery gain (`recov_gain`).
+>
+> **Diagnosis:** open `stage_06_full_tran.raw` in the LTSpice waveform viewer, plot `V(v_out)`, and zoom into 0–40 ms (startup transient) versus 40–100 ms (settled region). A spike that appears only before ~40 ms and then disappears is a startup surge. A flat-topped or rail-clipped waveform persisting into the 40–100 ms window is real clipping.
 
 > **`off_u2` is a *simulation* window, not a bench expectation.** The SPICE op-amp model uses `Vos=0`, so the simulated `off_u2` settles near 0 V and the ±10 mV window is meaningful in sim. A **real OPA2134** has an input offset (Vos up to ~500 µV) that the 214× recovery gain multiplies to a steady **20–150 mV DC at U2's output** — this is *normal*, and C4 blocks it before the output. **Do not apply the ±10 mV `off_u2` window to the bench measurement at U2's output.** The bench pass/fail for U2 output DC is in [`builder-guide.md`](./builder-guide.md) Stage 2 (20–150 mV typical, normal for OPA2134 at 214× gain; blocked by C4). The ±10 mV bench window *does* still apply at U1's output (`off_u1`) and at the final output after C4 (`off_u3`, < 5 mV at J2).
 
@@ -305,18 +314,30 @@ SPICE). Pot totals (from the netlist): Dwell `RV1 = 10k`, Mix `RV2 = 100k`, Tone
 `validate.py check_variant_netlists()` + the `test_sync.py` meta-guard.
 
 **Level vs DC reads.** A clean sine's raw `AVG` over whole cycles is ~0, so the
-`.meas` directives that gate a **signal level** use `MAX abs()` over a settled
-tail (`190 m–200 m`); `AVG` is reserved for the **DC-bias** reads (the bypassed
-Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
+`.meas` directives that gate a **signal level** use `MAX abs()`; `AVG` is reserved
+for the **DC-bias** reads (the bypassed Q1 emitter `q1_e`, and the post-clip
+DC-settle at `u2_out`). **Important:** LTSpice 26 silently ignores `FROM=`/`TO=`
+on `MAX` — the qualifiers shown in the fences below are present for documentation
+intent but are no-ops; every `MAX` runs over the full 0–200 ms simulation. `AVG`,
+`RMS`, and `PP` correctly honour their `FROM=`/`TO=` windows. `MIN` is also
+suspected to ignore `FROM=`/`TO=` (unconfirmed — see Stage 5 `psu_low_mains`
+CAUTION note for the full implication). The tight ceilings on
+low-drive variants (`dwell_min_vout` ≤0.12 V, `mix_ccw_vout_pk` ≤0.15 V) remain
+valid despite the no-op: those operating points produce inherently low signal levels
+(< 0.1 V pk), so no full-run surge in those circuit conditions can breach the ceiling.
 
 ```spice
 ; dwell_min — Dwell 0% (CCW): RV1a≈0 shunts the wiper to GND = MINIMUM wet drive.
 ;   The DRY path (u1_buf->Rdry->mix_dry) is independent of Dwell and must still pass.
+;   NOTE: FROM=190m on MAX is a no-op (LTSpice 26); full 0–200ms run is measured.
+;   Tight ceilings (0.12/0.15 V) are valid: this operating point is dry-path only
+;   (~45 mVpk analytical), so no full-run surge in this condition exceeds them.
 .meas TRAN dwell_min_vout MAX abs(V(v_out))  FROM=190m TO=200m
 .meas TRAN dwell_min_dry  MAX abs(V(mix_dry)) FROM=190m TO=200m
 
 ; dwell_max — Dwell 100% (CW): RV1b≈0 pulls the wiper to u1_buf = MAXIMUM wet
 ;   drive. U2 output must not hard-clip and the wiper must carry the drive signal.
+;   NOTE: FROM=50m on dwell_max_u2_pk MAX is a no-op (LTSpice 26); full 0–200ms.
 .meas TRAN dwell_max_u2_pk MAX abs(V(u2_out)) FROM=50m TO=200m
 .meas TRAN dwell_max_wiper_pk MAX abs(V(rv1_wiper)) FROM=190m TO=200m
 
@@ -328,6 +349,8 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 ;   are separated by RV3a=50k (series) + RV3b=50k||RV2b=100k (shunt). At center
 ;   wiper the ratio is ~0.40. A broken RV3 wiper, open Rwet_wire, or shorted RV3b
 ;   all push outside the 0.20–0.65 window. Cannot be 1.0 by construction.
+;   NOTE: FROM=190m on mix_ccw_vout_pk MAX is a no-op (LTSpice 26); full 0–200ms.
+;   Tight ceiling (0.15 V) valid: Mix=CCW is dry-path only (~100 mVpk at v_out).
 .meas TRAN mix_ccw_vout_pk   MAX abs(V(v_out))    FROM=190m TO=200m
 .meas TRAN mix_ccw_wet_src   RMS V(hpf_out)   FROM=190m TO=200m
 .meas TRAN mix_ccw_wet_node  RMS V(mix_wet)   FROM=190m TO=200m
@@ -335,6 +358,7 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 
 ; mix_cw — Mix 100% (RV2a=100k, RV2b≈0 = full wet): wiper ties to mix_wet (Tone
 ;   output); the dry node sees little of the wiper (dry_attn small).
+;   NOTE: FROM=50m on mix_cw_vout_pk MAX is a no-op (LTSpice 26); full 0–200ms.
 .meas TRAN mix_cw_vout_pk  MAX abs(V(v_out))    FROM=50m TO=200m
 .meas TRAN mix_cw_mix_node MAX abs(V(mix_node)) FROM=190m TO=200m
 .meas TRAN mix_cw_dry_lvl  MAX abs(V(mix_dry))  FROM=190m TO=200m
@@ -343,6 +367,11 @@ Q1 emitter `q1_e`, and the post-clip DC-settle at `u2_out`).
 ; dwell_max_mix_cw — worst-case clip path (Dwell max + Mix full-CW): v_out
 ;   (downstream of U3) must not exceed WORST_CASE_PK_MAX and its DC must settle
 ;   back to ~0 (no latch-up).
+;   NOTE: FROM=50m on worst_case_pk MAX is a no-op (LTSpice 26); full 0–200ms.
+;   Tight gate (6.0 V vs ~5.4 V analytical): unlike the standard-drive tran mode
+;   (1.16 V pk, 12× headroom), full Dwell+Mix-CW amplifies the power-up surge
+;   much more — a surge here could false-trip the 6.0 V ceiling.
+;   If so, open .raw and confirm V(v_out) settles below 6.0 V by ~40 ms.
 .meas TRAN worst_case_pk     MAX abs(V(v_out)) FROM=50m TO=200m
 .meas TRAN worst_case_settle AVG V(v_out)      FROM=190m TO=200m
 ```
@@ -410,7 +439,12 @@ floor `UNREG_TROUGH_MIN` (> 17 V (trough)).
 .meas TRAN rail_neg AVG V(-15V) FROM=100m TO=120m
 .meas TRAN unreg_pos AVG V(pos_rect) FROM=100m TO=120m
 .meas TRAN unreg_neg AVG V(neg_rect) FROM=100m TO=120m
-; trough (instantaneous) — must clear dropout, not just the average
+; trough (instantaneous) — must clear dropout, not just the average.
+;   CAUTION: LTSpice 26 silently ignores FROM/TO on MAX (confirmed from Stage 6
+;   simulation log). MIN is likely affected too (unverified independently). If
+;   FROM=50m is a no-op here, both measures run from t=0: capacitors start
+;   uncharged (V≈0), so MIN≈0 and MAX≈0 → both > 17 V gates fail on a correct
+;   circuit. See builder note below. These are manual-inspection measures only.
 .meas TRAN unreg_pos_min MIN V(pos_rect) FROM=50m TO=100m
 .meas TRAN unreg_neg_min MAX V(neg_rect) FROM=50m TO=100m
 ```
@@ -422,7 +456,7 @@ floor `UNREG_TROUGH_MIN` (> 17 V (trough)).
 | `psu_low_mains` (0.90×) | `unreg_pos` / `unreg_neg` | > 17 V | Bus below dropout — rail unregulates |
 | `psu_low_mains` (0.90×) | `unreg_pos_min` / `\|unreg_neg_min\|` | > 17 V (trough) | Ripple trough dips below dropout — rail unregulates at the bottom of each cycle |
 
-> *Note: the `rail_pos`/`rail_neg` and `ripple_pos`/`ripple_neg` rows pass by construction under the behavioural LM78xx/LM79xx model (`min(V(IN,COM)−2, 15)`): as long as the bus trough clears 17 V the regulator output is pinned to ±15 V with no ripple. The binding constraint on this variant is `unreg_pos_min`/`unreg_neg_min` (trough ≥ 17 V) — that is the only row with real teeth here.*
+> *Note: the `rail_pos`/`rail_neg` and `ripple_pos`/`ripple_neg` rows pass by construction under the behavioural LM78xx/LM79xx model (`min(V(IN,COM)−2, 15)`): as long as the bus trough clears 17 V the regulator output is pinned to ±15 V with no ripple. The intended binding constraint is `unreg_pos_min`/`unreg_neg_min` (trough ≥ 17 V), **but see the CAUTION above**: if LTSpice 26 ignores FROM/TO on MIN/MAX here (as confirmed for MAX in Stage 6), both measures capture the t=0 cold-start state (V≈0) and fail on a correct circuit. These measures are not in MEAS_SPEC and are not validated by CI — they require manual waveform inspection in LTSpice. The CI-validated binding assertion is `unreg_pos`/`unreg_neg` (AVG ≥ 17 V; FROM/TO works correctly for AVG).*
 
 ### 8b — U2 input offset injection (Vos stress)
 

@@ -1197,11 +1197,11 @@ MEAS_SPEC = [
     ("stage_06_full.net",  "u2_inpos_bias",  ["TRAN", "AVG", "V(u2_in_pos)", "FROM=190m"]),
 
     # ---- stage_06_full_tran.net (oscillation + clip guard) ----
-    # vout_pk must include FROM=50m to skip the power-up surge (bulk caps +
-    # coupling caps charging); a bare MAX over 0–100ms can spuriously trip on
-    # the transient while hiding a real steady-state clip just under 14V.
-    # rms_early FROM=40m locks in the post-settle window (not the transient).
-    ("stage_06_full_tran.net", "vout_pk",   ["TRAN", "MAX", "V(v_out)", "FROM=50m"]),
+    # vout_pk uses bare MAX: LTSpice 26 silently ignores FROM/TO on MAX .meas,
+    # so a windowed form would be a no-op. The < 14V gate captures the full
+    # 0–100ms run including any startup surge. See test-assertions.md for
+    # how to distinguish a surge false-positive from real steady-state clipping.
+    ("stage_06_full_tran.net", "vout_pk",   ["TRAN", "MAX", "V(v_out)"]),
     ("stage_06_full_tran.net", "rms_early", ["TRAN", "RMS", "V(v_out)", "FROM=40m"]),
     ("stage_06_full_tran.net", "rms_late",  ["TRAN", "RMS", "V(v_out)", "FROM=90m"]),
     ("stage_06_full_tran.net", "osc_ratio", ["TRAN", "PARAM", "rms_late/rms_early"]),
@@ -1218,22 +1218,33 @@ MEAS_SPEC = [
     # ---- stage_06_full_dwell_max.net ----
     # Probes V(u2_out) — NOT V(v_out). v_out at Dwell-max/Mix-noon is ungated
     # here; it is separately gated by worst_case_pk in the mix_cw variant.
-    # dwell_max_u2_pk: FROM=50m (startup skip); wiper: FROM=190m (settled tail).
+    # FROM= on MAX is a no-op in LTSpice 26; full 0–200ms run is measured.
+    # dwell_max_wiper_pk level is bounded by u1_buf (~100 mVpk); ceiling valid.
     ("stage_06_full_dwell_max.net",     "dwell_max_u2_pk",   ["TRAN", "MAX", "V(u2_out)",     "FROM=50m"]),
     ("stage_06_full_dwell_max.net",     "dwell_max_wiper_pk",["TRAN", "MAX", "V(rv1_wiper)",  "FROM=190m"]),
 
     # ---- stage_06_full_dwell_max_mix_cw.net ----
     # Probes V(v_out) — NOT V(u2_out). u2_out is upstream of the Mix pot and
     # is invariant to Mix position; probing it made the Mix=CW condition inert.
-    # worst_case_pk: FROM=50m (startup skip); settle: FROM=190m (post-clip tail).
+    # worst_case_pk FROM=50m on MAX is a no-op (LTSpice 26); full 0–200ms run.
+    # Tight gate: 6.0 V ceiling vs ~5.4 V analytical. Unlike the standard tran
+    # mode (1.16 V pk, 12× headroom), full Dwell+Mix-CW drive amplifies the
+    # power-up surge much more — a surge here could false-trip the ceiling.
+    # If so, open .raw and confirm V(v_out) settles below 6.0 V by ~40 ms.
+    # worst_case_settle FROM=190m is on AVG — windowing works correctly for AVG.
     ("stage_06_full_dwell_max_mix_cw.net", "worst_case_pk",     ["TRAN", "MAX", "V(v_out)", "FROM=50m"]),
     ("stage_06_full_dwell_max_mix_cw.net", "worst_case_settle", ["TRAN", "AVG", "V(v_out)", "FROM=190m"]),
 
     # ---- stage_06_full_dwell_min.net ----
+    # FROM=190m on MAX is a no-op (LTSpice 26); full 0–200ms run is measured.
+    # Tight ceilings (0.12/0.15 V) are valid: Dwell=min is dry-path only
+    # (~45 mVpk analytical), so no full-run surge in this mode exceeds them.
     ("stage_06_full_dwell_min.net", "dwell_min_vout", ["TRAN", "MAX", "V(v_out)",   "FROM=190m"]),
     ("stage_06_full_dwell_min.net", "dwell_min_dry",  ["TRAN", "MAX", "V(mix_dry)", "FROM=190m"]),
 
     # ---- stage_06_full_mix_ccw.net ----
+    # FROM=190m on MAX is a no-op (LTSpice 26); full 0–200ms run is measured.
+    # Tight ceiling (0.15 V) valid: Mix=CCW is dry-path only (~100 mVpk at v_out).
     ("stage_06_full_mix_ccw.net", "mix_ccw_vout_pk",   ["TRAN", "MAX",   "V(v_out)",  "FROM=190m"]),
     # Wet-chain ratio across the real RV3 divider — cannot be tautological
     # (hpf_out and mix_wet are separated by RV3a=50k). PARAM form has no FROM=.
@@ -1241,8 +1252,10 @@ MEAS_SPEC = [
                                                          "mix_ccw_wet_node/mix_ccw_wet_src"]),
 
     # ---- stage_06_full_mix_cw.net ----
-    # mix_cw_vout_pk: FROM=50m (startup skip); dry_attn is PARAM, no FROM=.
-    ("stage_06_full_mix_cw.net", "mix_cw_vout_pk",  ["TRAN", "MAX",   "V(v_out)",                  "FROM=50m"]),
+    # mix_cw_vout_pk FROM=50m on MAX is a no-op (LTSpice 26); full 0–200ms run.
+    # TO=200m is kept as a structural canary (unlike vout_pk in the tran net, which
+    # dropped FROM/TO entirely as the canonical no-op example). dry_attn is PARAM.
+    ("stage_06_full_mix_cw.net", "mix_cw_vout_pk",  ["TRAN", "MAX",   "V(v_out)",                  "FROM=50m", "TO=200m"]),
     ("stage_06_full_mix_cw.net", "mix_cw_dry_attn", ["TRAN", "PARAM", "mix_cw_dry_lvl/mix_cw_mix_node"]),
 
     # ---- stage_04_input_protect.net (OP analysis — legitimately uses FIND) ----

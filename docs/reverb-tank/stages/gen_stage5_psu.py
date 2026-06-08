@@ -461,6 +461,12 @@ def build(active_analysis="op"):
             # Gate the instantaneous minimum (the trough) too: the +bus MIN and the
             # -bus MAX (least-negative = the -bus trough) must both clear the same
             # UNREG_TROUGH_MIN dropout floor (17V) by magnitude.
+            # CAUTION: LTSpice 26 silently ignores FROM/TO on MAX (confirmed from
+            # Stage 6 simulation log). MIN is also likely affected (unverified).
+            # If FROM=50m is a no-op, caps start at V≈0 at t=0 → MIN≈0, MAX≈0
+            # → both > 17V gates fail on a correct circuit. These are manual-
+            # inspection measures only (NOT in MEAS_SPEC). CI-validated binding
+            # assertion: unreg_pos/unreg_neg (AVG — FROM/TO works correctly).
             b.directive(".meas TRAN unreg_pos_min MIN V(pos_rect) FROM=50m TO=100m")
             b.directive(".meas TRAN unreg_neg_min MAX V(neg_rect) FROM=50m TO=100m")
 
