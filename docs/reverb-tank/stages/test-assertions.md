@@ -132,7 +132,7 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 
 | Assertion name | Expression | Pass condition | Fail means |
 |---|---|---|---|
-| `tank_pk_f` | freq of max `V(tank_in)` | 1 – 5 kHz (≈2–3 kHz → TANK_PKF_MIN/TANK_PKF_MAX) | No "drip" — transformer L or K1 coupling wrong |
+| `tank_pk_f` | freq of max `V(tank_in)` | 1 – 5 kHz (≈2–3 kHz → TANK_PEAK_WINDOW) | No "drip" — transformer L or K1 coupling wrong |
 | `tank_drive_db` | `20log10(V(tank_in)/V(rv1_wiper))` @2k | > −60 dB (→ TANK_DRIVE_DB_MIN) | No signal reaching tank — winding/K1 error |
 
 ---
