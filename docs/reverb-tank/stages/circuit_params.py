@@ -191,7 +191,7 @@ Q1_VCB_MIN       = 0.0            # min Vcb = V(q1_c)-V(q1_base); >=0 keeps CBJ 
 # Op-amp output DC offsets (all share the same window)
 OFFSET_WINDOW    = (-10e-3, 10e-3)  # +/-10 mV
 OFF_U1_SIM       = 0.0            # ~0 V (+0.8 fV)
-OFF_U2_SIM       = 0.47e-3        # +0.47 mV (settles from ~72mV @20ms)
+OFF_U2_SIM       = 0.47e-3        # +0.47 mV (settles from ~72mV transient; sampled @190-200ms)
 OFF_U3_SIM       = -0.35e-6       # -0.35 uV
 
 # U2 non-inverting input DC bias. The recovery + input (u2_in_pos) is held to 0V
