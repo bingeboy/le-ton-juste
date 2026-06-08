@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Ghost Spring Tank — full circuit schematics and staged build guide.">
+  <meta name="robots" content="noindex">
+  <title>Ghost Spring Tank — Builder's Reference</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg:      #0e0c08;
+      --surface: #16130d;
+      --border:  #2a2318;
+      --tan:     #d4a96a;
+      --warm:    #e8c88a;
+      --text:    #e8dfd0;
+      --muted:   #8a7a6a;
+      --code-bg: #120f0a;
+      --red:     #c0392b;
+      --warn-bg: #1a1008;
+      --warn-border: #5a3a10;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @keyframes bg-breathe {
+      0%   { background-color: #0e0c08; }
+      25%  { background-color: #100c06; }
+      50%  { background-color: #0c0e08; }
+      75%  { background-color: #0e0a06; }
+      100% { background-color: #0e0c08; }
+    }
+
+    @keyframes vignette-pulse {
+      0%, 100% { opacity: 0.7; }
+      50%       { opacity: 0.9; }
+    }
+
+    @keyframes scanline-drift {
+      from { background-position: 0 0; }
+      to   { background-position: 0 100vh; }
+    }
+
+    @keyframes flicker {
+      0%,18%,20%,22%,53%,55%,100% { opacity: 1; }
+      19%,21%,54% { opacity: 0.6; }
+    }
+
+    @keyframes ghost-glow {
+      0%,100% { text-shadow: 0 0 20px rgba(212,169,106,0.6), 0 0 60px rgba(212,169,106,0.2), 0 0 120px rgba(212,169,106,0.05); }
+      25%     { text-shadow: 0 0 30px rgba(232,200,138,0.7), 0 0 80px rgba(212,169,106,0.3); }
+      50%     { text-shadow: 0 0 15px rgba(212,169,106,0.4), 0 0 40px rgba(212,169,106,0.1); }
+      75%     { text-shadow: 0 0 35px rgba(232,200,138,0.8), 0 0 100px rgba(212,169,106,0.3); }
+    }
+
+    @keyframes logo-drift {
+      0%,100% { transform: translate(0, 0) skewX(0deg); }
+      15%     { transform: translate(-1px, 1px) skewX(-0.3deg); }
+      30%     { transform: translate(1px, -1px) skewX(0.2deg); }
+      50%     { transform: translate(0, 2px) skewX(0deg); }
+      70%     { transform: translate(1px, 0) skewX(0.3deg); }
+      85%     { transform: translate(-1px, 1px) skewX(-0.15deg); }
+    }
+
+    @keyframes border-seep {
+      0%,100% { border-color: #2a2318; }
+      33%     { border-color: #2a1e18; }
+      66%     { border-color: #222a18; }
+    }
+
+    body {
+      background-color: var(--bg);
+      animation: bg-breathe 24s ease-in-out infinite;
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px);
+      pointer-events: none;
+      z-index: 9998;
+      animation: scanline-drift 12s linear infinite;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.75) 100%);
+      pointer-events: none;
+      z-index: 9997;
+      animation: vignette-pulse 18s ease-in-out infinite;
+    }
+
+    a { color: var(--tan); text-decoration: none; }
+    a:hover { color: var(--warm); }
+
+    /* ── Header ── */
+    header {
+      padding: 4.5rem 0 3rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      animation: border-seep 20s ease-in-out infinite;
+    }
+
+    .header-icons {
+      display: block;
+      font-size: clamp(2.5rem, 10vw, 5rem);
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+      animation: ghost-glow 6s ease-in-out infinite, flicker 14s infinite, logo-drift 19s ease-in-out infinite;
+    }
+
+    .logo {
+      display: block;
+      font-size: clamp(1.4rem, 5vw, 2.6rem);
+      font-weight: 700;
+      color: var(--tan);
+      letter-spacing: 0.06em;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      animation: ghost-glow 6s ease-in-out infinite, flicker 14s infinite;
+    }
+
+    .logo-sub {
+      display: block;
+      font-size: 0.95rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    header > p {
+      color: var(--muted);
+      font-size: 1rem;
+      max-width: 540px;
+      margin: 0 auto 2rem;
+    }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1.5rem;
+      font-size: 0.82rem;
+    }
+
+    nav a { color: var(--muted); }
+    nav a:hover { color: var(--tan); }
+    nav span { color: var(--border); }
+
+    /* ── Sections ── */
+    section {
+      padding: 3.5rem 0;
+      border-bottom: 1px solid var(--border);
+      animation: border-seep 20s ease-in-out infinite;
+    }
+
+    section:last-of-type { border-bottom: none; }
+
+    .section-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      margin-bottom: 1rem;
+    }
+
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+
+    h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 2rem 0 0.5rem;
+      color: var(--text);
+    }
+
+    h4 {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--tan);
+      margin: 1.5rem 0 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    p { color: var(--muted); margin-bottom: 1rem; max-width: 640px; }
+
+    ul, ol {
+      color: var(--muted);
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+      max-width: 640px;
+    }
+
+    li { margin-bottom: 0.3rem; }
+
+    /* ── Notice boxes ── */
+    .notice {
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-border);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.875rem;
+      color: var(--text);
+      max-width: 680px;
+    }
+
+    .notice-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--tan);
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .notice.stale { border-color: #3a2808; }
+    .notice.stale .notice-label { color: #c08030; }
+    .notice.info { border-color: var(--border); }
+    .notice.info .notice-label { color: var(--muted); }
+
+    /* ── Code ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.83rem;
+      line-height: 1.7;
+      margin-bottom: 1.5rem;
+      animation: border-seep 20s ease-in-out infinite;
+    }
+
+    code {
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+      background: var(--code-bg);
+      border-radius: 3px;
+      color: var(--tan);
+      font-size: 0.82em;
+      padding: 0.1rem 0.35rem;
+    }
+
+    pre code { background: none; padding: 0; color: var(--text); font-size: inherit; }
+
+    .hi { color: var(--tan); }
+    .dim { color: var(--muted); }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; margin-bottom: 1.5rem; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+
+    th {
+      text-align: left;
+      padding: 0.55rem 1rem;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    td:first-child { color: var(--tan); font-family: monospace; font-size: 0.85rem; }
+
+    /* ── Images ── */
+    .img-frame {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 0.75rem;
+      animation: border-seep 20s ease-in-out infinite;
+    }
+
+    .img-frame img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .img-caption {
+      font-size: 0.78rem;
+      color: var(--muted);
+      padding: 0.6rem 1rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .img-caption a { font-size: 0.75rem; }
+
+    .schematics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .schematics-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Source file list ── */
+    .file-list { list-style: none; padding: 0; margin-bottom: 1.5rem; max-width: none; }
+
+    .file-list li {
+      border-bottom: 1px solid var(--border);
+      padding: 0.7rem 0;
+      display: flex;
+      gap: 1rem;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+
+    .file-list li:last-child { border-bottom: none; }
+
+    .file-path {
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.82rem;
+      color: var(--tan);
+      flex: 0 0 auto;
+    }
+
+    .file-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      flex: 1;
+    }
+
+    .file-links {
+      font-size: 0.78rem;
+      flex: 0 0 auto;
+      display: flex;
+      gap: 0.6rem;
+    }
+
+    /* ── Toolchain cards ── */
+    .tool-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      animation: border-seep 20s ease-in-out infinite;
+    }
+
+    .tool-name {
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.9rem;
+      color: var(--tan);
+      margin-bottom: 0.35rem;
+    }
+
+    .tool-desc { font-size: 0.88rem; color: var(--muted); max-width: none; margin: 0; }
+
+    /* ── Rendered markdown overrides ── */
+    #guide-content { margin-top: 1rem; }
+
+    #guide-content h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 2.5rem 0 0.6rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    #guide-content h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 2rem 0 0.5rem;
+      letter-spacing: normal;
+      text-transform: none;
+    }
+
+    #guide-content h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--tan);
+      margin: 1.5rem 0 0.4rem;
+      text-transform: none;
+    }
+
+    #guide-content h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin: 1.25rem 0 0.35rem;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    #guide-content p {
+      max-width: none;
+      color: var(--text);
+      margin-bottom: 0.9rem;
+      font-size: 0.93rem;
+    }
+
+    #guide-content ul, #guide-content ol {
+      max-width: none;
+      color: var(--text);
+      font-size: 0.93rem;
+      margin-bottom: 0.9rem;
+    }
+
+    #guide-content li { margin-bottom: 0.4rem; }
+
+    #guide-content strong { color: var(--warm); }
+
+    #guide-content em { color: var(--muted); font-style: italic; }
+
+    #guide-content code {
+      font-size: 0.82em;
+      color: var(--tan);
+      background: var(--code-bg);
+    }
+
+    #guide-content pre {
+      font-size: 0.82rem;
+      margin: 1rem 0 1.25rem;
+    }
+
+    #guide-content pre code { color: var(--text); background: none; font-size: inherit; }
+
+    #guide-content blockquote {
+      border-left: 3px solid var(--tan);
+      margin: 1rem 0;
+      padding: 0.5rem 1rem;
+      background: var(--surface);
+      border-radius: 0 4px 4px 0;
+    }
+
+    #guide-content blockquote p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    #guide-content table {
+      margin: 1rem 0 1.5rem;
+      font-size: 0.83rem;
+    }
+
+    #guide-content th { font-size: 0.65rem; }
+
+    #guide-content td { font-size: 0.83rem; }
+
+    #guide-content td:first-child { color: var(--text); font-family: inherit; font-size: 0.83rem; }
+
+    #guide-content hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2.5rem 0;
+    }
+
+    #guide-content a { color: var(--tan); }
+    #guide-content a:hover { color: var(--warm); }
+
+    .loading {
+      color: var(--muted);
+      font-size: 0.88rem;
+      padding: 1.5rem 0;
+      animation: flicker 2s infinite;
+    }
+
+    /* ── Footer ── */
+    footer {
+      padding: 2.5rem 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--tan); }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="header-icons">👻 ⚙️</span>
+  <span class="logo">Ghost Spring Tank</span>
+  <span class="logo-sub">Builder's Reference</span>
+  <p>Full circuit schematics, staged build instructions, simulation results, and toolchain documentation.</p>
+  <nav>
+    <a href="#signal-path">Signal Path</a>
+    <span>·</span>
+    <a href="#schematics">Schematics</a>
+    <span>·</span>
+    <a href="#build-guide">Build Guide</a>
+    <span>·</span>
+    <a href="#toolchain">Toolchain</a>
+    <span>·</span>
+    <a href="#source">Source Files</a>
+    <span>·</span>
+    <a href="https://github.com/bingeboy/le-ton-juste" target="_blank">GitHub ↗</a>
+  </nav>
+</header>
+
+
+<!-- ── SIGNAL PATH ── -->
+<section id="signal-path">
+  <div class="section-label">Overview</div>
+  <h2>Signal Path</h2>
+  <p>Block-level signal-flow diagram showing every stage from input jack to output jack. Use this as a navigation map when cross-referencing the component schematics below.</p>
+
+  <div class="notice stale">
+    <span class="notice-label">⚠ Image may be stale</span>
+    This diagram was generated by <code>schematic.py</code> (matplotlib). It predates the RV1 pot wiring correction
+    — the pot topology is correct in all other documents and in the component schematics below, but this
+    block diagram may not yet reflect that change.
+    Regenerate: <code>python docs/reverb-tank/schematic.py</code>
+  </div>
+
+  <div class="img-frame">
+    <img
+      src="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/schematic.png"
+      alt="Ghost Spring signal path block diagram"
+      loading="lazy"
+      onerror="this.closest('.img-frame').style.display='none'; this.closest('.img-frame').nextElementSibling.style.display='block';"
+    >
+    <div class="img-caption">
+      <span>Signal-flow block diagram — generated by <code>schematic.py</code></span>
+      <span>
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/schematic.png" target="_blank">View on GitHub ↗</a>
+        &nbsp;·&nbsp;
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/schematic.py" target="_blank">Generator source ↗</a>
+      </span>
+    </div>
+  </div>
+  <p class="img-load-err" style="display:none;">Could not load image — <a href="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/schematic.png" target="_blank">view directly</a>.</p>
+
+  <h4>Stage-by-Stage Summary</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Stage</th><th>Circuit</th><th>Key Part</th><th>Function</th></tr>
+      <tr><td>1</td><td>Input & Buffer</td><td>U1 (OPA2134)</td><td>1MΩ input impedance, TVS clamp, unity-gain buffer feeding Dwell pot</td></tr>
+      <tr><td>2</td><td>Dwell Driver</td><td>Q1 (BD139)</td><td>Class-A transistor driver → REB3S transformer → 9AB3C1B spring tank</td></tr>
+      <tr><td>3</td><td>Tank Model</td><td>L/R/C network</td><td>Electromechanical spring model; 2H output inductance represents tank output coil</td></tr>
+      <tr><td>4</td><td>Recovery Amp</td><td>U2 (OPA2134)</td><td>214× gain (46.6 dB) on the tank's 2550Ω output; AC-coupled via C3/C4</td></tr>
+      <tr><td>5</td><td>PSU</td><td>LM7815 / LM7915</td><td>±15V regulated rails from toroidal transformer; bridge rectifier + filter caps</td></tr>
+      <tr><td>6</td><td>Tone & Mix</td><td>U3 (OPA2134), RV2, RV3</td><td>300Hz HPF on wet path, tone shelf, 3-terminal blend mix pot, output buffer</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<!-- ── SCHEMATICS ── -->
+<section id="schematics">
+  <div class="section-label">Circuit Diagrams</div>
+  <h2>Schematics</h2>
+  <p>Component-level schematics generated by <code>ghost_spring_schematics.py</code> using <a href="https://schemdraw.readthedocs.io/" target="_blank">schemdraw</a>. All part values are drawn directly from <code>circuit_params.py</code> — the single source of truth for every component constant.</p>
+
+  <div class="notice info">
+    <span class="notice-label">Note — image freshness</span>
+    <strong>ghost_sec2.png (Dwell Driver)</strong> has not been regenerated since its initial commit.
+    <strong>All other sections</strong> are current.
+    To regenerate all four sections: <code>python docs/reverb-tank/schematics/ghost_spring_schematics.py</code>
+    (outputs to <code>/tmp/ghost_sec*.png</code> — copy to <code>docs/reverb-tank/schematics/</code> to commit).
+  </div>
+
+  <h3>Full Schematic</h3>
+  <div class="img-frame">
+    <img
+      src="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/schematics/ghost_full.png"
+      alt="Ghost Spring full circuit schematic"
+      loading="lazy"
+    >
+    <div class="img-caption">
+      <span>Full circuit — all stages combined</span>
+      <span>
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/schematics/ghost_full.png" target="_blank">View on GitHub ↗</a>
+        &nbsp;·&nbsp;
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/schematics/ghost_spring_schematics.py" target="_blank">Generator source ↗</a>
+      </span>
+    </div>
+  </div>
+
+  <h3>Section Schematics</h3>
+
+  <div class="schematics-grid">
+
+    <div>
+      <div class="img-frame">
+        <img
+          src="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/schematics/ghost_sec1.png"
+          alt="Section 1 — Input and Buffer"
+          loading="lazy"
+        >
+        <div class="img-caption">
+          <span>Sec 1 — Input &amp; Buffer</span>
+          <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/schematics/ghost_sec1.png" target="_blank">↗</a>
+        </div>
+      </div>
+      <p style="font-size:0.82rem; margin-top:0.25rem;">
+        V1 signal source → TVS clamp (DTVS1a/b) → C_in coupling cap → R1 shunt → OPA2134 buffer (U1) → R2 isolation → u1_buf node feeding Dwell pot.
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/stages/gen_stage1_input.py" target="_blank">gen_stage1_input.py ↗</a>
+      </p>
+    </div>
+
+    <div>
+      <div class="img-frame">
+        <img
+          src="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/schematics/ghost_sec2.png"
+          alt="Section 2 — Dwell Driver"
+          loading="lazy"
+        >
+        <div class="img-caption">
+          <span>Sec 2 — Dwell Driver <span style="color:#c08030; font-size:0.72rem;">may be stale</span></span>
+          <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/schematics/ghost_sec2.png" target="_blank">↗</a>
+        </div>
+      </div>
+      <p style="font-size:0.82rem; margin-top:0.25rem;">
+        RV1 Dwell pot (3-terminal divider, 10kΩ lin) → C_drive → BD139 Class-A driver (Q1) biased by R3b/R4 divider. Collector drives L1 primary of REB3S transformer. R5 emitter degeneration, C2 bypass, D3 flyback clamp.
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/stages/gen_stage2_driver.py" target="_blank">gen_stage2_driver.py ↗</a>
+      </p>
+    </div>
+
+    <div>
+      <div class="img-frame">
+        <img
+          src="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/schematics/ghost_sec3.png"
+          alt="Section 3 — Tank Model and Recovery Amp"
+          loading="lazy"
+        >
+        <div class="img-caption">
+          <span>Sec 3 — Tank Model &amp; Recovery Amp</span>
+          <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/schematics/ghost_sec3.png" target="_blank">↗</a>
+        </div>
+      </div>
+      <p style="font-size:0.82rem; margin-top:0.25rem;">
+        L2 secondary (8Ω) → tank input coil model (R/L/C) → 2H output inductance (L_tank_out) → C3 coupling → Rbias → OPA2134 recovery amp (U2), gain set by Ri (470Ω) / Rf (100kΩ) = 213.8× (@1kHz). C4+R6 set HPF corner at ~312Hz.
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/stages/gen_stage4_recovery.py" target="_blank">gen_stage4_recovery.py ↗</a>
+      </p>
+    </div>
+
+    <div>
+      <div class="img-frame">
+        <img
+          src="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/schematics/ghost_sec4.png"
+          alt="Section 4 — Tone and Mix"
+          loading="lazy"
+        >
+        <div class="img-caption">
+          <span>Sec 4 — Tone &amp; Mix</span>
+          <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/schematics/ghost_sec4.png" target="_blank">↗</a>
+        </div>
+      </div>
+      <p style="font-size:0.82rem; margin-top:0.25rem;">
+        Tone pot (RV3, 100kΩ audio) after C4 HPF → Rdry (10kΩ) bridges dry path into Mix pot (RV2, 100kΩ audio). C_bright (47pF) across lug 1↔3 for high-frequency compensation. U3 output buffer → R7 → v_out.
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/stages/gen_stage6_full.py" target="_blank">gen_stage6_full.py ↗</a>
+      </p>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ── BUILD GUIDE ── -->
+<section id="build-guide">
+  <div class="section-label">Instructions</div>
+  <h2>Staged Build Guide</h2>
+  <p>
+    The full build sequence below is fetched live from
+    <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/stages/builder-guide.md" target="_blank"><code>docs/reverb-tank/stages/builder-guide.md</code> ↗</a>
+    — any updates to that file are reflected here automatically.
+  </p>
+
+  <div class="notice info">
+    <span class="notice-label">Sequence</span>
+    Build in stage order: Stage 1 (PSU) → 2 (Driver) → 3 (Input buffer) → 4 (Recovery) → 5 (PSU rails check) → 6 (Full integration) → 7 (Final calibration).
+    <strong>Never skip the bulb limiter for first power-on.</strong> Backwards electrolytics on a 20V bus vent immediately.
+  </div>
+
+  <div id="guide-content">
+    <p class="loading">Loading build guide from GitHub…</p>
+  </div>
+</section>
+
+
+<!-- ── TOOLCHAIN ── -->
+<section id="toolchain">
+  <div class="section-label">Process</div>
+  <h2>Design Toolchain &amp; Process</h2>
+  <p>This unit was designed and validated before any physical build. Here's the full toolchain — every file linked below is publicly readable in the GitHub repo.</p>
+
+  <div class="notice info">
+    <span class="notice-label">Transparency note</span>
+    Simulation results, test assertions, and documentation were all reviewed by AI (Claude) as part of a multi-round audit process. The audit logs and any known limitations are documented inline in the source files. The repo is public — you can read every gen file, every test, and every simulation directive.
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-name">circuit_params.py</div>
+    <div class="tool-desc">Single source of truth for every component value. All generator scripts import from here — changing one resistor value propagates automatically to all netlists and schematics on the next regeneration run.</div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-name">gen_stage*.py — Netlist generators</div>
+    <div class="tool-desc">Python scripts that write LTSpice-compatible netlists (<code>.net</code> files) programmatically. Each stage has its own generator. Parameters come from <code>circuit_params.py</code>; analysis directives, model bindings, and <code>.meas</code> statements are written inline. The stage 6 full-chain generator (<code>gen_stage6_full.py</code>) covers DC bias, AC frequency response, and transient analysis in three separate netlist variants.</div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-name">ghost_spring_schematics.py — Schematic generator</div>
+    <div class="tool-desc">Uses the <code>schemdraw</code> library to draw component-level schematics. Part values are pulled directly from <code>circuit_params.py</code>, so the schematic cannot drift from the netlist. Outputs to <code>/tmp/ghost_sec*.png</code>.</div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-name">validate.py — 386 structural checks</div>
+    <div class="tool-desc">Validates every generated netlist for correct component references, net connectivity, model bindings, and directive syntax before any simulation run. A netlist that fails <code>validate.py</code> is not used.</div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-name">test_sync.py — 97 simulation assertions (pytest)</div>
+    <div class="tool-desc">Runs against actual LTSpice simulation output. Checks that every <code>.meas</code> result falls within its documented pass band. The <code>MEAS_SPEC</code> dictionary defines the expected directive form for each measurement; the test fails if the netlist diverges from the spec. See <code>test-assertions.md</code> for the full pass-band table and methodology.</div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-name">LTSpice 26.0.2 — Simulation</div>
+    <div class="tool-desc">
+      Three analysis variants for the full-chain Stage 6 netlist:
+      <strong>op</strong> (DC bias, 200ms transient with signal killed),
+      <strong>ac</strong> (gain + HPF corner, powered from ideal ±15V bench rails),
+      <strong>tran</strong> (100mVpk 1kHz stimulus, peak + stability check).
+      <br><br>
+      <strong>Known limitation:</strong> LTSpice 26 silently ignores <code>FROM=</code> / <code>TO=</code> qualifiers on <code>MAX</code> <code>.meas</code> directives — the measurement runs over the full simulation window regardless. This is confirmed from the simulation log and documented throughout the codebase. The canonical no-op case is the bare <code>MAX abs(V(v_out))</code> in <code>stage_06_full_tran.net</code>. All tight ceilings for low-drive variants (Dwell=min, Mix=CCW) remain valid because those operating points produce inherently low levels bounded by circuit conditions, not the measurement window. See <code>test-assertions.md</code> for the full analysis.
+    </div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-name">AI audit (Claude) — Documentation review</div>
+    <div class="tool-desc">Multiple independent audit passes were run on the simulation toolchain, test assertions, and inline documentation using Claude (Anthropic). Audits were treated as adversarial — the AI was tasked with finding contradictions, silent assumptions, and missing documentation. Findings drove several documentation passes before the final PR was merged. The audit process is described in the git history.</div>
+  </div>
+
+  <h4>Regeneration Workflow</h4>
+  <pre><span class="dim"># Regenerate a specific stage netlist</span>
+python docs/reverb-tank/stages/gen_stage6_full.py tran
+
+<span class="dim"># Validate all netlists</span>
+python docs/reverb-tank/validate.py
+
+<span class="dim"># Run simulation assertions (requires LTSpice sim outputs)</span>
+pytest docs/reverb-tank/test_sync.py -v
+
+<span class="dim"># Regenerate component schematics</span>
+python docs/reverb-tank/schematics/ghost_spring_schematics.py
+<span class="dim"># Then copy from /tmp/ghost_sec*.png to docs/reverb-tank/schematics/</span></pre>
+</section>
+
+
+<!-- ── SOURCE FILES ── -->
+<section id="source">
+  <div class="section-label">GitHub</div>
+  <h2>Source Files</h2>
+  <p>Every file listed here is public on GitHub. Raw links open the file content directly — useful for downloading or copy-pasting individual sections.</p>
+
+  <h4>Documentation</h4>
+  <ul class="file-list">
+    <li>
+      <span class="file-path">builder-guide.md</span>
+      <span class="file-desc">Staged build instructions (the guide rendered above)</span>
+      <span class="file-links">
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/stages/builder-guide.md" target="_blank">View ↗</a>
+        <a href="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/stages/builder-guide.md" target="_blank">Raw ↗</a>
+      </span>
+    </li>
+    <li>
+      <span class="file-path">test-assertions.md</span>
+      <span class="file-desc">All simulation pass bands, measurement methodology, LTSpice limitations</span>
+      <span class="file-links">
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/stages/test-assertions.md" target="_blank">View ↗</a>
+        <a href="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/stages/test-assertions.md" target="_blank">Raw ↗</a>
+      </span>
+    </li>
+    <li>
+      <span class="file-path">parts-list.md</span>
+      <span class="file-desc">Full BOM with supplier cross-references and build notes</span>
+      <span class="file-links">
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/stages/parts-list.md" target="_blank">View ↗</a>
+        <a href="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/stages/parts-list.md" target="_blank">Raw ↗</a>
+      </span>
+    </li>
+  </ul>
+
+  <h4>Netlists (LTSpice)</h4>
+  <ul class="file-list">
+    <li>
+      <span class="file-path">stage_06_full_tran.net</span>
+      <span class="file-desc">Full-chain transient — 100mVpk 1kHz, peak + stability</span>
+      <span class="file-links">
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/stages/stage_06_full_tran.net" target="_blank">View ↗</a>
+        <a href="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/stages/stage_06_full_tran.net" target="_blank">Raw ↗</a>
+      </span>
+    </li>
+    <li>
+      <span class="file-path">stage_06_full_ac.net</span>
+      <span class="file-desc">Full-chain AC — gain, HPF corner (ideal ±15V rails)</span>
+      <span class="file-links">
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/stages/stage_06_full_ac.net" target="_blank">View ↗</a>
+        <a href="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/stages/stage_06_full_ac.net" target="_blank">Raw ↗</a>
+      </span>
+    </li>
+    <li>
+      <span class="file-path">stage_06_full.net</span>
+      <span class="file-desc">Full-chain DC operating point (200ms transient, signal killed)</span>
+      <span class="file-links">
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/stages/stage_06_full.net" target="_blank">View ↗</a>
+        <a href="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/stages/stage_06_full.net" target="_blank">Raw ↗</a>
+      </span>
+    </li>
+  </ul>
+
+  <h4>Generator Scripts</h4>
+  <ul class="file-list">
+    <li>
+      <span class="file-path">circuit_params.py</span>
+      <span class="file-desc">All component values — single source of truth</span>
+      <span class="file-links">
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/stages/circuit_params.py" target="_blank">View ↗</a>
+        <a href="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/stages/circuit_params.py" target="_blank">Raw ↗</a>
+      </span>
+    </li>
+    <li>
+      <span class="file-path">gen_stage6_full.py</span>
+      <span class="file-desc">Full-chain netlist generator (op / ac / tran + pot-sweep modes)</span>
+      <span class="file-links">
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/stages/gen_stage6_full.py" target="_blank">View ↗</a>
+        <a href="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/stages/gen_stage6_full.py" target="_blank">Raw ↗</a>
+      </span>
+    </li>
+    <li>
+      <span class="file-path">ghost_spring_schematics.py</span>
+      <span class="file-desc">schemdraw component schematic generator (all 4 sections + full)</span>
+      <span class="file-links">
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/schematics/ghost_spring_schematics.py" target="_blank">View ↗</a>
+        <a href="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/schematics/ghost_spring_schematics.py" target="_blank">Raw ↗</a>
+      </span>
+    </li>
+  </ul>
+
+  <h4>Simulation Assertions</h4>
+  <ul class="file-list">
+    <li>
+      <span class="file-path">test_sync.py</span>
+      <span class="file-desc">97 pytest assertions on LTSpice measurement output (MEAS_SPEC definitions)</span>
+      <span class="file-links">
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/test_sync.py" target="_blank">View ↗</a>
+        <a href="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/test_sync.py" target="_blank">Raw ↗</a>
+      </span>
+    </li>
+    <li>
+      <span class="file-path">validate.py</span>
+      <span class="file-desc">386 structural netlist checks run before simulation</span>
+      <span class="file-links">
+        <a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/validate.py" target="_blank">View ↗</a>
+        <a href="https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/validate.py" target="_blank">Raw ↗</a>
+      </span>
+    </li>
+  </ul>
+</section>
+
+
+<footer>
+  <p>Ghost Spring Tank · <a href="https://github.com/bingeboy/le-ton-juste" target="_blank">le-ton-juste on GitHub</a> · <a href="/">Project overview ↗</a></p>
+</footer>
+
+
+<script>
+  // Load and render builder-guide.md from GitHub raw
+  (function () {
+    const RAW = 'https://raw.githubusercontent.com/bingeboy/le-ton-juste/master/docs/reverb-tank/stages/builder-guide.md';
+    const target = document.getElementById('guide-content');
+
+    marked.use({
+      gfm: true,
+      breaks: false,
+      mangle: false,
+      headerIds: true
+    });
+
+    fetch(RAW)
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      })
+      .then(function (md) {
+        target.innerHTML = marked.parse(md);
+      })
+      .catch(function (err) {
+        target.innerHTML =
+          '<div class="notice">' +
+          '<span class="notice-label">Could not load guide</span>' +
+          'Failed to fetch from GitHub. ' +
+          '<a href="' + RAW + '" target="_blank">Open raw file ↗</a> or ' +
+          '<a href="https://github.com/bingeboy/le-ton-juste/blob/master/docs/reverb-tank/stages/builder-guide.md" target="_blank">view on GitHub ↗</a>.' +
+          '</div>';
+      });
+  })();
+</script>
+
+</body>
+</html>
