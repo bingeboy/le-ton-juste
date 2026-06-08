@@ -24,54 +24,8 @@
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    @keyframes bg-breathe {
-      0%   { background-color: #0e0c08; }
-      25%  { background-color: #100c06; }
-      50%  { background-color: #0c0e08; }
-      75%  { background-color: #0e0a06; }
-      100% { background-color: #0e0c08; }
-    }
-
-    @keyframes vignette-pulse {
-      0%, 100% { opacity: 0.7; }
-      50%       { opacity: 0.9; }
-    }
-
-    @keyframes scanline-drift {
-      from { background-position: 0 0; }
-      to   { background-position: 0 100vh; }
-    }
-
-    @keyframes flicker {
-      0%,18%,20%,22%,53%,55%,100% { opacity: 1; }
-      19%,21%,54% { opacity: 0.6; }
-    }
-
-    @keyframes ghost-glow {
-      0%,100% { text-shadow: 0 0 20px rgba(212,169,106,0.6), 0 0 60px rgba(212,169,106,0.2), 0 0 120px rgba(212,169,106,0.05); }
-      25%     { text-shadow: 0 0 30px rgba(232,200,138,0.7), 0 0 80px rgba(212,169,106,0.3); }
-      50%     { text-shadow: 0 0 15px rgba(212,169,106,0.4), 0 0 40px rgba(212,169,106,0.1); }
-      75%     { text-shadow: 0 0 35px rgba(232,200,138,0.8), 0 0 100px rgba(212,169,106,0.3); }
-    }
-
-    @keyframes logo-drift {
-      0%,100% { transform: translate(0, 0) skewX(0deg); }
-      15%     { transform: translate(-1px, 1px) skewX(-0.3deg); }
-      30%     { transform: translate(1px, -1px) skewX(0.2deg); }
-      50%     { transform: translate(0, 2px) skewX(0deg); }
-      70%     { transform: translate(1px, 0) skewX(0.3deg); }
-      85%     { transform: translate(-1px, 1px) skewX(-0.15deg); }
-    }
-
-    @keyframes border-seep {
-      0%,100% { border-color: #2a2318; }
-      33%     { border-color: #2a1e18; }
-      66%     { border-color: #222a18; }
-    }
-
     body {
       background-color: var(--bg);
-      animation: bg-breathe 24s ease-in-out infinite;
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       font-size: 16px;
@@ -90,7 +44,6 @@
       padding: 4.5rem 0 3rem;
       text-align: center;
       border-bottom: 1px solid var(--border);
-      animation: border-seep 20s ease-in-out infinite;
     }
 
     .header-icons {
@@ -98,7 +51,6 @@
       font-size: clamp(2.5rem, 10vw, 5rem);
       line-height: 1.2;
       margin-bottom: 0.5rem;
-      animation: ghost-glow 6s ease-in-out infinite, flicker 14s infinite, logo-drift 19s ease-in-out infinite;
     }
 
     .logo {
@@ -109,7 +61,6 @@
       letter-spacing: 0.06em;
       margin-bottom: 0.5rem;
       text-transform: uppercase;
-      animation: ghost-glow 6s ease-in-out infinite, flicker 14s infinite;
     }
 
     .logo-sub {
@@ -145,7 +96,6 @@
     section {
       padding: 3.5rem 0;
       border-bottom: 1px solid var(--border);
-      animation: border-seep 20s ease-in-out infinite;
     }
 
     section:last-of-type { border-bottom: none; }
@@ -232,7 +182,6 @@
       font-size: 0.83rem;
       line-height: 1.7;
       margin-bottom: 1.5rem;
-      animation: border-seep 20s ease-in-out infinite;
     }
 
     code {
@@ -283,7 +232,6 @@
       border-radius: 8px;
       overflow: hidden;
       margin-bottom: 0.75rem;
-      animation: border-seep 20s ease-in-out infinite;
     }
 
     .img-frame img {
@@ -358,7 +306,6 @@
       border-radius: 8px;
       padding: 1.25rem 1.5rem;
       margin-bottom: 1rem;
-      animation: border-seep 20s ease-in-out infinite;
     }
 
     .tool-name {
@@ -479,7 +426,6 @@
       color: var(--muted);
       font-size: 0.88rem;
       padding: 1.5rem 0;
-      animation: flicker 2s infinite;
     }
 
     /* ── Footer ── */
