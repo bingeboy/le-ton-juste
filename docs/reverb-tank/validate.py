@@ -47,6 +47,7 @@ NET6_MIX_CW = os.path.join(STAGES, "stage_06_full_mix_cw.net")
 NET6_DWELL_MAX_MIX_CW = os.path.join(STAGES, "stage_06_full_dwell_max_mix_cw.net")
 # Dynamic / overload variants whose .meas live in NO other netlist.
 NET2_TRAN = os.path.join(STAGES, "stage_02_driver_tran.net")
+NET4 = os.path.join(STAGES, "stage_04_input_protect.net")
 NET4_OVERLOAD = os.path.join(STAGES, "stage_04_input_protect_overload.net")
 # Stage 8 realistic hardware stress variants.
 NET5_LOW_MAINS = os.path.join(STAGES, "stage_05_psu_low_mains.net")
@@ -679,6 +680,9 @@ def check_variant_netlists():
         (NET3, {"tank_pk_f", "tank_pk_lvl", "tank_drive_db"}),
         # Stage 2 dynamic driver: D3 idle + driver no-clip live only here.
         (NET2_TRAN, {"d3_pk", "drv_pk", "drv_rms"}),
+        # Stage 4 op: idle clamp + TVS + Vin DC — all five live only here.
+        (NET4,
+         {"clamp_p_i", "clamp_n_i", "tvs_a_i", "tvs_b_i", "vin_idle"}),
         # Stage 4 overload: clamp-window + clamp-conduction live only here.
         (NET4_OVERLOAD,
          {"u1pos_hi", "u1pos_lo", "clamp_p_pk", "clamp_n_pk"}),

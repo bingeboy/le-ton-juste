@@ -1248,6 +1248,9 @@ MEAS_SPEC = [
     # ---- stage_04_input_protect.net (OP analysis — legitimately uses FIND) ----
     ("stage_04_input_protect.net", "clamp_p_i", ["OP", "FIND", "I(Dclamp_p)"]),
     ("stage_04_input_protect.net", "clamp_n_i", ["OP", "FIND", "I(Dclamp_n)"]),
+    ("stage_04_input_protect.net", "tvs_a_i",   ["OP", "FIND", "I(DTVS1a)"]),
+    ("stage_04_input_protect.net", "tvs_b_i",   ["OP", "FIND", "I(DTVS1b)"]),
+    ("stage_04_input_protect.net", "vin_idle",  ["OP", "FIND", "V(vin)"]),
 
     # ---- stage_05_psu.net ----
     # All Stage 5 windows use FROM=100m TO=120m (steady-state after bulk cap charge).
