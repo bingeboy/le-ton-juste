@@ -29,6 +29,11 @@ Reference and design tool for a clean, hi-fi Jerry Garcia / Bob Weir guitar sign
 - No large binary files — PDFs in `manuals/` and `parts/` are exceptions.
 - Never commit secrets, API keys, or personal info.
 
+#### Pull Requests
+
+- Do not add "🤖 Generated with Claude Code" or any AI attribution line to PR bodies.
+- PR bodies: summary bullets + test plan only. No tool signatures.
+
 #### Branching (hard rules)
 
 - **Never commit to `master` directly.** All work happens on feature branches.
