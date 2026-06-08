@@ -963,6 +963,8 @@ def check_assertions_md():
     expect("q1_ve window", "%s – %s V" % (_g1(P.Q1_VE_WINDOW[0]), _g(P.Q1_VE_WINDOW[1])))
     # q1_ic: 10 - 26 mA
     expect("q1_ic window", "%g – %g mA" % (P.Q1_IC_WINDOW[0] * 1e3, P.Q1_IC_WINDOW[1] * 1e3))
+    # q1_ic_calc divisor: prose table must reference q1_ve/R5 so it stays in sync if R5 changes
+    expect("q1_ic_calc divisor", "q1_ve/%s" % P.R5)
     # q1_ic_err: < 10% (M3 - the cross-check bound that was a silent measurement)
     expect("q1_ic_err max", "< %g%%" % (P.Q1_IC_ERR_MAX * 100))
     # q1_vb: 1.65 – 2.05 V (loaded base voltage from R3b/R4 divider)
