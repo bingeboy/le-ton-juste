@@ -53,7 +53,7 @@ Analysis variants (ONE active at a time):
             hpf_m3db   = freq where V(hpf_out) = 0.7079*ref(@5k)  in 250..320Hz
   tran  : output peak + no-oscillation. 100ms run, 100mVpk 1kHz signal:
             vout_pk   = MAX abs(V(v_out))                     < 14V
-            osc_ratio = RMS(90m..100m)/RMS(0..10m) of V(v_out)  < 1.05
+            osc_ratio = RMS(90m..100m)/RMS(40m..50m) of V(v_out)  < 1.05
 
 Connectivity strategy identical to gen_stage5_psu.py: every pin gets a FLAG at its
 exact coordinate so nets join by name; the script emits BOTH the .asc schematic and
