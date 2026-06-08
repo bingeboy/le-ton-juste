@@ -146,7 +146,7 @@ LM79XX_SUBCKT = [
 # POWER SUPPLY (transformer / rails)
 # ============================================================================
 VSEC_PEAK   = "21.2"            # T1 secondary peak = 15Vrms * sqrt(2)
-VSEC_SINE   = "SINE(0 21.2 60)"  # one half of the 15-0-15 secondary (0V offset, 21.2Vpk, 60Hz mains)
+VSEC_SINE   = "SINE(0 %s 60)" % VSEC_PEAK  # derived from VSEC_PEAK — do not hardcode
 RAIL_POS    = 15.0            # nominal +15V regulated rail
 RAIL_NEG    = -15.0           # nominal -15V regulated rail
 UNREG_BUS   = 20.4           # nominal unregulated bus (avg, ~peak - 2 Vf)
