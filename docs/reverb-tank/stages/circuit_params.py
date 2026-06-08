@@ -340,9 +340,14 @@ POT_MIN_OHMS = "0.001"
 # --- Pot sweep pass windows -------------------------------------------------
 # Grounded in the actual circuit and verified against the LTspice 26 sim of the
 # pot-extreme variants (200ms tran, 100mVpk 1kHz stimulus). The "level" windows
-# are measured as MAX abs() over a settled tail (a sine's raw AVG is ~0, so the
-# .meas directives that gate a SIGNAL LEVEL use MAX abs(); AVG is reserved for
-# the DC-bias reads q1_e, where the bypassed emitter has no AC content).
+# use MAX abs() (a sine's raw AVG over whole cycles is ~0, so the .meas
+# directives that gate a SIGNAL LEVEL use MAX abs(); AVG is reserved for the
+# DC-bias reads q1_e, where the bypassed emitter has no AC content).
+# NOTE: LTSpice 26 silently ignores FROM/TO on MAX, so all MAX abs() measures
+# run over the full 200ms simulation, not a settled tail. The tight ceilings for
+# low-drive variants (dwell_min, mix_ccw) remain valid: those operating points
+# produce inherently low levels (< 0.1 V pk) bounded by circuit conditions, not
+# the measurement window.
 #
 # Dry-path level: u1_buf carries the 100mVpk input through the unity U1 buffer
 # (+R2 100Ω). At Mix noon the dry signal is divided by the pot/Rdry network

@@ -602,7 +602,9 @@ def build(active_analysis="op"):
         # settle: early=40..50ms, late=90..100ms. (Probed to 400ms: v_out RMS is
         # flat-to-slightly-decreasing 0.4381 -> 0.4377, i.e. no growth.)
         b.directive(".tran 0 100m 0 5u")
-        b.directive(".meas TRAN vout_pk  MAX abs(V(v_out)) FROM=50m TO=100m")
+        # LTSpice 26 silently ignores FROM/TO on MAX .meas; bare MAX is used
+        # deliberately (FROM/TO qualifiers would be a no-op and misleading).
+        b.directive(".meas TRAN vout_pk  MAX abs(V(v_out))")
         b.directive(".meas TRAN rms_early RMS V(v_out) FROM=40m TO=50m")
         b.directive(".meas TRAN rms_late  RMS V(v_out) FROM=90m TO=100m")
         b.directive(".meas TRAN osc_ratio PARAM rms_late/rms_early")
@@ -612,9 +614,10 @@ def build(active_analysis="op"):
         # real-PSU start-up transient time to settle before the 190-200ms tail
         # windows. Each variant gates the failure mode its pot extreme exposes.
         #
-        # Level measures use MAX abs() over the settled tail: a clean sine's raw
-        # AVG over whole cycles is ~0, so AVG is reserved for DC-bias reads (the
-        # bypassed Q1 emitter, q1_e) and the post-clip DC-settle check.
+        # Level measures use MAX abs(). NOTE: LTSpice 26 silently ignores FROM/TO
+        # on MAX, so the FROM=/TO= qualifiers below do not window the measurement —
+        # the full 0–200ms run is always captured. AVG is used for DC-bias reads
+        # where FROM/TO windowing works correctly.
         b.directive(".tran 0 200m 0 5u")
         if active_analysis == "dwell_min":
             # Dwell at 0% (CCW) -> RV1a≈0 (wiper shunted to GND) = MINIMUM wet
