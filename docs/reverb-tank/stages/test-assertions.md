@@ -36,8 +36,8 @@ LTspice prints `.meas` results to the SPICE Error Log (Ctrl+L). A measurement th
 .meas AC hpf_ref  FIND mag(V(hpf_out)/V(u2_out)) AT=5k
 .meas AC hpf_m3db WHEN mag(V(hpf_out)/V(u2_out))=hpf_ref*0.7079 RISE=1
 
-; Stage 1 — TRAN: output not clipping
-.meas TRAN vout_pk MAX abs(V(v_out))
+; Stage 1 — TRAN: output not clipping (settled window, skips power-up surge)
+.meas TRAN vout_pk MAX abs(V(v_out)) FROM=50m TO=100m
 
 ; Stage 1 — TRAN: no oscillation — RMS late window vs early window
 .meas TRAN rms_early RMS V(v_out) FROM=40m   TO=50m

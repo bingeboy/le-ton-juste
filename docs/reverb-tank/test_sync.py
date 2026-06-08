@@ -1176,6 +1176,16 @@ MEAS_SPEC = [
     ("stage_06_full.net",  "q1_vb",          ["TRAN", "AVG", "V(q1_base)"]),   # saturation guard
     ("stage_06_full.net",  "u2_inpos_bias",  ["TRAN", "AVG", "V(u2_in_pos)"]),
 
+    # ---- stage_06_full_tran.net (oscillation + clip guard) ----
+    # vout_pk must include FROM=50m to skip the power-up surge (bulk caps +
+    # coupling caps charging); a bare MAX over 0–100ms can spuriously trip on
+    # the transient while hiding a real steady-state clip just under 14V.
+    # rms_early FROM=40m locks in the post-settle window (not the transient).
+    ("stage_06_full_tran.net", "vout_pk",   ["TRAN", "MAX", "V(v_out)", "FROM=50m"]),
+    ("stage_06_full_tran.net", "rms_early", ["TRAN", "RMS", "V(v_out)", "FROM=40m"]),
+    ("stage_06_full_tran.net", "rms_late",  ["TRAN", "RMS", "V(v_out)", "FROM=90m"]),
+    ("stage_06_full_tran.net", "osc_ratio", ["TRAN", "PARAM", "rms_late/rms_early"]),
+
     # ---- stage_06_full_ac.net ----
     # HPF corner must use transfer-ratio form (bare V(hpf_out) shifts corner
     # when U2 itself rolls off — masks a real R6/C4 value error)
