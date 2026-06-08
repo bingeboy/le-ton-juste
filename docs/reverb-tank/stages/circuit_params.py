@@ -231,15 +231,12 @@ U1_BUF_GAIN_SIM    = 1.0           # V/V @1kHz (unity follower through R2)
 U1_BUF_GAIN_WINDOW = (0.90, 1.05)  # V/V pass band for the U1 buffer
 
 RECOV_GAIN_SIM     = 213.8         # V/V @1kHz (= 1 + RF/RI = 1 + 100000/470 = 213.766..., nearest tenth)
-RECOV_GAIN_DB_SIM  = 46.59         # dB
 RECOV_GAIN_WINDOW  = (205.0, 225.0)  # V/V pass band (1% Rf/Ri worst-case ~208-219, +meas error)
 # recov_gain_db (Stage 6 ac): the recovery stage gain measured END-TO-END across
 # U2 in dB, i.e. 20*log10(V(u2_out)/V(u2_in_pos)). This is the SAME quantity as
-# RECOV_GAIN_DB_SIM above, just the pass target + window used by the .meas
-# recov_gain_db directive. It is NOT the full vin->v_out chain gain (that is only
-# ~15-21 dB: the dry path attenuates and the wet path is tank/HPF-shaped), so the
-# .meas measures U2 directly. Window is +/-2 dB about the 46.59 dB sim result.
+# CHAIN_GAIN_DB_SIM; derive rather than duplicate to keep them in sync.
 CHAIN_GAIN_DB_SIM    = 46.59       # dB, recovery stage gain end-to-end (= recov_gain 213.8x)
+RECOV_GAIN_DB_SIM    = CHAIN_GAIN_DB_SIM  # same quantity — derived, not duplicated
 CHAIN_GAIN_DB_WINDOW = (44.6, 48.6)  # +/-2dB about CHAIN_GAIN_DB_SIM
 HPF_CORNER_SIM     = 312.0         # Hz (measured R6/C4 transfer)
 HPF_CORNER_DESIGN  = 284.0         # Hz = 1/(2*pi*R6*C4)

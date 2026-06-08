@@ -80,6 +80,9 @@ Analysis variants (ONE active at a time):
           #3/#4)
             ripple_pos = PP V(+15V) < 10mVpp
             ripple_neg = PP V(-15V) < 10mVpp
+  psu_low_mains : Stage 8a stress variant — secondary scaled to 0.90x
+          (108V on 120V nominal mains); same rail/ripple checks + unreg-bus
+          trough (MIN/MAX) to gate instantaneous dropout floor.
 
 Connectivity strategy is identical to gen_stage4_asc.py: every component pin
 gets a FLAG (net label) at its exact pin coordinate, so nets connect by name.
