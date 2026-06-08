@@ -35,6 +35,7 @@ sys.path.insert(0, STAGES)
 import circuit_params as P  # noqa: E402
 
 NET = os.path.join(STAGES, "stage_06_full.net")
+NET3 = os.path.join(STAGES, "stage_03_transformer.net")
 NET6_AC = os.path.join(STAGES, "stage_06_full_ac.net")
 NET6_TRAN = os.path.join(STAGES, "stage_06_full_tran.net")
 NET5_TRAN = os.path.join(STAGES, "stage_05_psu_tran.net")
@@ -675,6 +676,8 @@ def _netlist_meas_names(path):
 def check_variant_netlists():
     global checks
     for path, expected in (
+        # Stage 3 transformer AC: tank resonance + drive level live only here.
+        (NET3, {"tank_pk_f", "tank_pk_lvl", "tank_drive_db"}),
         # Stage 2 dynamic driver: D3 idle + driver no-clip live only here.
         (NET2_TRAN, {"d3_pk", "drv_pk", "drv_rms"}),
         # Stage 4 overload: clamp-window + clamp-conduction live only here.
