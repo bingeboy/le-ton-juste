@@ -311,8 +311,8 @@ DRV_RMS_MAX   = 0.040             # < 40 mA RMS I(L1) (~2.5x quiescent)
 Q1_VB_UNLOADED = round(15 * 1000 / (6800 + 1000), 4)   # 1.923V (15*R4/(R3b+R4))
 Q1_VB_WINDOW   = (1.65, 2.05)     # loaded V(q1_base), with base current
 
-# Bench noise floor (Stage 7)
-NOISE_FLOOR_MAX_VRMS = 1e-3        # < 1 mVrms at J2
+# Bench noise floor (Stage 7) — bench-only, no SPICE .meas
+NOISE_FLOOR_MAX_VRMS = 1e-3        # < 1 mVrms at J2; documented in test-assertions.md
 
 # ============================================================================
 # POT POSITION SWEEP (Stage 7 — pot-extreme coverage, GitHub issue #43)

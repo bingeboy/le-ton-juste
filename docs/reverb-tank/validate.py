@@ -1071,6 +1071,11 @@ def check_assertions_md():
     # 3c BD139 low-beta corner: BF forced to the datasheet hFE minimum (40).
     expect("bd139 low-beta BF", "BF=%g" % P.BD139_LO_BETA_BF)
 
+    # ----- Bench-only measurements: no SPICE .meas, but the numeric bound must
+    # appear in test-assertions.md so a change to circuit_params.py propagates.
+    # noise_floor: < 1 mVrms at J2
+    expect("noise_floor max", "< %g mVrms" % (P.NOISE_FLOOR_MAX_VRMS * 1e3))
+
 
 # ---------------------------------------------------------------------------
 # 1l. Q1 BASE BIAS constants (FIX 5): Q1_VB_WINDOW must exist and the unloaded

@@ -473,6 +473,20 @@ defect.
 
 ---
 
+## Bench-only measurements
+
+These pass criteria have no SPICE `.meas` equivalent — they can only be verified
+with test equipment on the built unit. CI does not enforce them; they are
+documented here so the build record is complete and the builder knows what to
+measure. The numeric bounds are sourced from `circuit_params.py` and checked by
+`validate.py` so that a value change in the source propagates here.
+
+| Assertion name | Expression | Pass condition | Fail means |
+|---|---|---|---|
+| `noise_floor` | output noise at J2 (input muted, unit powered) | < 1 mVrms — bench-only, no SPICE `.meas` | Oscillation, ground loop, or PSU noise coupling |
+
+---
+
 ## Running the suites
 
 - One analysis directive active at a time (`.op` **or** `.ac` **or** `.tran`). Comment the others.
