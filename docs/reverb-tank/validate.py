@@ -569,16 +569,15 @@ def check_d3_flyback():
 #     diverges from the builder guide. Check EVERY netlist that contains an RV1a
 #     or RV1b card so a single mis-wired stage cannot ship.
 # ---------------------------------------------------------------------------
-# mvp_reverb.net is the pre-Stage-2 prototype (not part of the sync cascade and
-# carried frozen as a historical artifact), so it is excluded from the maintained-
-# stage Dwell-pot topology check.
-RV1_TOPOLOGY_SKIP = {"mvp_reverb.net"}
+# Legacy artifacts frozen outside the sync cascade. Excluded from all topology
+# and fence-form checks so their stale .meas names cannot satisfy a fence row.
+LEGACY_NETS = {"mvp_reverb.net", "minimal_test.net"}
 
 
 def check_rv1_topology():
     global checks
     for fname in sorted(os.listdir(STAGES)):
-        if not fname.endswith(".net") or fname in RV1_TOPOLOGY_SKIP:
+        if not fname.endswith(".net") or fname in LEGACY_NETS:
             continue
         path = os.path.join(STAGES, fname)
         rv1a = _net_card(path, "RV1a")
@@ -1127,7 +1126,7 @@ def check_fence_meas_forms():
     # probe_expr is everything after the form keyword, normalized.
     netlist_meas = {}   # name -> set of (analysis, form, probe_expr)
     for fname in sorted(os.listdir(STAGES)):
-        if not fname.endswith(".net"):
+        if not fname.endswith(".net") or fname in LEGACY_NETS:
             continue
         try:
             lines = open(os.path.join(STAGES, fname)).read().splitlines()
