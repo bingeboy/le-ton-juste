@@ -901,6 +901,7 @@ def check_params_md():
     expect("rail_neg", "≈%s V" % _g1(P.RAIL_NEG))
     # Rail pass windows
     expect("rail_pos window", "%g – %g V" % (P.RAIL_POS_WINDOW[0], P.RAIL_POS_WINDOW[1]))
+    expect("rail_neg window", "%s – %s V" % (_g(P.RAIL_NEG_WINDOW[0]), _g(P.RAIL_NEG_WINDOW[1])))
 
     # --- Per-row component check: EVERY R/C row value must match its constant ---
     # Parse "| <ref> | <value> | ..." rows out of the md tables and compare the
@@ -988,8 +989,9 @@ def check_assertions_md():
     expect("vout_pk max", "< %g V" % P.VOUT_PK_MAX)
     # osc_ratio: < 1.05
     expect("osc_ratio max", "< %g" % P.OSC_RATIO_MAX)
-    # rails: 14.85 - 15.15 V
+    # rails: 14.85 - 15.15 V / -15.15 - -14.85 V
     expect("rail_pos window", "%g – %g V" % (P.RAIL_POS_WINDOW[0], P.RAIL_POS_WINDOW[1]))
+    expect("rail_neg window", "%s – %s V" % (_g(P.RAIL_NEG_WINDOW[0]), _g(P.RAIL_NEG_WINDOW[1])))
     # ripple: < 10 mVpp
     expect("ripple max", "< %g mVpp" % (P.RIPPLE_MAX_PP * 1e3))
 
@@ -1196,7 +1198,6 @@ def main():
     check_op_bias_guards()
     check_psu_unreg_meas()
     check_chain_gain_target()
-    check_fence_meas_forms()
     check_params_md()
     check_assertions_md()
     check_fence_meas_forms()
