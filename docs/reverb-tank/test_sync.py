@@ -218,7 +218,8 @@ def test_all_caps_defined(P, name):
 def test_operating_point_targets_are_floats(P):
     """Operating-point targets / tolerances are numeric (so checks can compare)."""
     # Single-value targets.
-    for name in ["Q1_VE_SIM", "Q1_IC_SIM", "RAIL_POS", "RAIL_NEG", "RIPPLE_MAX_PP"]:
+    for name in ["Q1_VE_SIM", "Q1_IC_SIM", "RAIL_POS", "RAIL_NEG", "RIPPLE_MAX_PP",
+                 "U2_INPOS_BIAS_SIM", "U1_BUF_GAIN_SIM"]:
         val = getattr(P, name)
         assert isinstance(val, (int, float)), "%s should be numeric, got %r" % (name, val)
 
@@ -257,6 +258,24 @@ def test_stage7_sweep_constants_are_numeric(P):
                  "MIX_CW_DRY_ATTN_MAX", "WORST_CASE_SETTLE_MAX"]:
         val = getattr(P, name)
         assert isinstance(val, (int, float)), "%s should be numeric, got %r" % (name, val)
+
+
+def test_sim_values_within_their_windows(P):
+    """SIM constants must sit inside their enforced windows (consistency guard).
+
+    If a SIM value drifts outside its window, the .meas would fail in
+    simulation, which means the window is wrong or the SIM value is stale.
+    Catches the case where window is tightened but the SIM annotation is not
+    updated (or vice versa)."""
+    lo, hi = P.U2_INPOS_BIAS_WINDOW
+    assert lo <= P.U2_INPOS_BIAS_SIM <= hi, \
+        "U2_INPOS_BIAS_SIM %g outside U2_INPOS_BIAS_WINDOW %r" \
+        % (P.U2_INPOS_BIAS_SIM, P.U2_INPOS_BIAS_WINDOW)
+
+    lo, hi = P.U1_BUF_GAIN_WINDOW
+    assert lo <= P.U1_BUF_GAIN_SIM <= hi, \
+        "U1_BUF_GAIN_SIM %g outside U1_BUF_GAIN_WINDOW %r" \
+        % (P.U1_BUF_GAIN_SIM, P.U1_BUF_GAIN_WINDOW)
 
 
 # ===========================================================================
