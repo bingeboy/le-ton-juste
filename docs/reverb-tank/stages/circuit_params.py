@@ -248,8 +248,6 @@ TANK_PEAK_WINDOW   = (1e3, 5e3)    # Hz "drip" resonance band (~2-3kHz)
 # Stage 3 tank-interface AC bounds (the "drip"). tank_pk_f is the frequency of the
 # mechanical-resonance peak at tank_in; tank_drive_db is the signal level reaching
 # the tank input relative to the Dwell wiper at 2kHz.
-TANK_PKF_MIN = 1000   # Hz — mechanical resonance must be in audible range
-TANK_PKF_MAX = 5000   # Hz
 TANK_DRIVE_DB_MIN = -60.0  # dB — tank must pass some signal
 VOUT_PK_SIM        = 1.16          # V, 100mVpk in
 VOUT_PK_MAX        = 14.0          # V clipping limit

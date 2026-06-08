@@ -1028,7 +1028,7 @@ def check_assertions_md():
     # band + tank_drive_db level. These were documented but previously unenforced.
     # tank_pk_f: 1 – 5 kHz
     expect("tank_pk_f window",
-           "%g – %g kHz" % (P.TANK_PKF_MIN / 1e3, P.TANK_PKF_MAX / 1e3))
+           "%g – %g kHz" % (P.TANK_PEAK_WINDOW[0] / 1e3, P.TANK_PEAK_WINDOW[1] / 1e3))
     # tank_drive_db: > −60 dB
     expect("tank_drive_db min", "> %s dB" % _g(P.TANK_DRIVE_DB_MIN))
 
