@@ -319,7 +319,9 @@ for the **DC-bias** reads (the bypassed Q1 emitter `q1_e`, and the post-clip
 DC-settle at `u2_out`). **Important:** LTSpice 26 silently ignores `FROM=`/`TO=`
 on `MAX` — the qualifiers shown in the fences below are present for documentation
 intent but are no-ops; every `MAX` runs over the full 0–200 ms simulation. `AVG`,
-`RMS`, and `PP` correctly honour their `FROM=`/`TO=` windows. The tight ceilings on
+`RMS`, and `PP` correctly honour their `FROM=`/`TO=` windows. `MIN` is also
+suspected to ignore `FROM=`/`TO=` (unconfirmed — see Stage 5 `psu_low_mains`
+CAUTION note for the full implication). The tight ceilings on
 low-drive variants (`dwell_min_vout` ≤0.12 V, `mix_ccw_vout_pk` ≤0.15 V) remain
 valid despite the no-op: those operating points produce inherently low signal levels
 (< 0.1 V pk), so no full-run surge in those circuit conditions can breach the ceiling.
@@ -437,7 +439,12 @@ floor `UNREG_TROUGH_MIN` (> 17 V (trough)).
 .meas TRAN rail_neg AVG V(-15V) FROM=100m TO=120m
 .meas TRAN unreg_pos AVG V(pos_rect) FROM=100m TO=120m
 .meas TRAN unreg_neg AVG V(neg_rect) FROM=100m TO=120m
-; trough (instantaneous) — must clear dropout, not just the average
+; trough (instantaneous) — must clear dropout, not just the average.
+;   CAUTION: LTSpice 26 silently ignores FROM/TO on MAX (confirmed from Stage 6
+;   simulation log). MIN is likely affected too (unverified independently). If
+;   FROM=50m is a no-op here, both measures run from t=0: capacitors start
+;   uncharged (V≈0), so MIN≈0 and MAX≈0 → both > 17 V gates fail on a correct
+;   circuit. See builder note below. These are manual-inspection measures only.
 .meas TRAN unreg_pos_min MIN V(pos_rect) FROM=50m TO=100m
 .meas TRAN unreg_neg_min MAX V(neg_rect) FROM=50m TO=100m
 ```
@@ -449,7 +456,7 @@ floor `UNREG_TROUGH_MIN` (> 17 V (trough)).
 | `psu_low_mains` (0.90×) | `unreg_pos` / `unreg_neg` | > 17 V | Bus below dropout — rail unregulates |
 | `psu_low_mains` (0.90×) | `unreg_pos_min` / `\|unreg_neg_min\|` | > 17 V (trough) | Ripple trough dips below dropout — rail unregulates at the bottom of each cycle |
 
-> *Note: the `rail_pos`/`rail_neg` and `ripple_pos`/`ripple_neg` rows pass by construction under the behavioural LM78xx/LM79xx model (`min(V(IN,COM)−2, 15)`): as long as the bus trough clears 17 V the regulator output is pinned to ±15 V with no ripple. The binding constraint on this variant is `unreg_pos_min`/`unreg_neg_min` (trough ≥ 17 V) — that is the only row with real teeth here.*
+> *Note: the `rail_pos`/`rail_neg` and `ripple_pos`/`ripple_neg` rows pass by construction under the behavioural LM78xx/LM79xx model (`min(V(IN,COM)−2, 15)`): as long as the bus trough clears 17 V the regulator output is pinned to ±15 V with no ripple. The intended binding constraint is `unreg_pos_min`/`unreg_neg_min` (trough ≥ 17 V), **but see the CAUTION above**: if LTSpice 26 ignores FROM/TO on MIN/MAX here (as confirmed for MAX in Stage 6), both measures capture the t=0 cold-start state (V≈0) and fail on a correct circuit. These measures are not in MEAS_SPEC and are not validated by CI — they require manual waveform inspection in LTSpice. The CI-validated binding assertion is `unreg_pos`/`unreg_neg` (AVG ≥ 17 V; FROM/TO works correctly for AVG).*
 
 ### 8b — U2 input offset injection (Vos stress)
 
