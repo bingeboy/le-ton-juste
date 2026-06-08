@@ -925,7 +925,7 @@ def test_op_netlist_has_bias_guard_meas():
 # Stage 4 input-overload variant (FIX 1): the 20Vpp clamp-window run carries the
 # overload .meas that exist in NO other netlist, and drives V1 at 20Vpp.
 # ---------------------------------------------------------------------------
-def test_stage4_overload_variant_exists_and_meas():
+def test_stage4_overload_variant_exists_and_meas(P):
     """stage_04_input_protect_overload.net exists, drives V1 with the 20Vpp
     overload stimulus, runs a tran, and carries the clamp-window + clamp-
     conduction measurements."""
@@ -934,8 +934,8 @@ def test_stage4_overload_variant_exists_and_meas():
         "stage_04_input_protect_overload.net missing -- run sync.py"
     text = open(path).read()
     assert ".tran" in text, "overload variant must carry a .tran analysis"
-    assert net_line(text, "V1").endswith("SINE(0 20 1k) AC 1"), \
-        "overload variant must drive V1 with the 40Vpp SINE(0 20 1k) stimulus"
+    assert net_line(text, "V1").endswith("%s AC 1" % P.V1_SINE_OVERLOAD), \
+        "overload variant must drive V1 with the %s stimulus" % P.V1_SINE_OVERLOAD
     names = _meas_names(text)
     for needed in ("u1pos_hi", "u1pos_lo", "clamp_p_pk", "clamp_n_pk"):
         assert needed in names, \
@@ -946,7 +946,7 @@ def test_stage4_overload_variant_exists_and_meas():
 # Stage 2 dynamic driver variant (FIX 6): the driver-current/flyback .meas exist
 # only in this tran variant, driven at the normal 100mVpk 1kHz level.
 # ---------------------------------------------------------------------------
-def test_stage2_driver_tran_variant_exists_and_meas():
+def test_stage2_driver_tran_variant_exists_and_meas(P):
     """stage_02_driver_tran.net exists, drives V1 at 100mVpk 1kHz, runs a tran,
     and carries the D3-idle / driver-no-clip measurements."""
     path = os.path.join(STAGES, "stage_02_driver_tran.net")
@@ -954,8 +954,8 @@ def test_stage2_driver_tran_variant_exists_and_meas():
         "stage_02_driver_tran.net missing -- run sync.py"
     text = open(path).read()
     assert ".tran" in text, "stage2 tran variant must carry a .tran analysis"
-    assert net_line(text, "V1").endswith("SINE(0 100m 1k) AC 1"), \
-        "stage2 tran variant must drive V1 with the 100mVpk 1kHz stimulus"
+    assert net_line(text, "V1").endswith("%s AC 1" % P.V1_SINE_NORMAL), \
+        "stage2 tran variant must drive V1 with the %s stimulus" % P.V1_SINE_NORMAL
     names = _meas_names(text)
     for needed in ("d3_pk", "drv_pk", "drv_rms"):
         assert needed in names, \
@@ -1079,7 +1079,7 @@ def _meas_names(netlist_text):
 
 
 @pytest.mark.parametrize("variant, net_name", sorted(POT_SWEEP_NETS.items()))
-def test_pot_sweep_variant_exists(variant, net_name):
+def test_pot_sweep_variant_exists(variant, net_name, P):
     """Every pot-position sweep variant netlist exists and carries a tran
     analysis with the 100mVpk 1kHz stimulus (the pot extremes are exercised
     under signal, not as a bare DC op)."""
@@ -1089,8 +1089,8 @@ def test_pot_sweep_variant_exists(variant, net_name):
     text = open(path).read()
     assert ".tran" in text, "%s must carry a .tran analysis" % net_name
     # 100mVpk 1kHz stimulus, identical to the baseline tran variant.
-    assert net_line(text, "V1").endswith("SINE(0 100m 1k) AC 1"), \
-        "%s must drive V1 with the 100mVpk 1kHz stimulus" % net_name
+    assert net_line(text, "V1").endswith("%s AC 1" % P.V1_SINE_NORMAL), \
+        "%s must drive V1 with the %s stimulus" % (net_name, P.V1_SINE_NORMAL)
 
 
 def test_mix_ccw_has_wet_ratio_meas():
