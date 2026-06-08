@@ -32,7 +32,7 @@ Stage 1 assertion suite (test-assertions.md), now re-run on the FULL circuit:
   | recov_gain | V(u2_out)/V(u2_in_pos) @1kHz        | 205..225x      |
   | hpf_m3db   | -3dB corner of wet (hpf_out)        | 250..320Hz     |
   | vout_pk    | MAX abs(V(v_out))                   | < 14V          |
-  | osc_ratio  | RMS(last 10ms)/RMS(first 10ms) vout | < 1.05         |
+  | osc_ratio  | RMS(90m..100ms)/RMS(40m..50ms) vout | < 1.05         |
 
 Analysis variants (ONE active at a time):
   op    : DC operating point. A true .op is DEGENERATE for the PSU - the SINE
@@ -54,6 +54,18 @@ Analysis variants (ONE active at a time):
   tran  : output peak + no-oscillation. 100ms run, 100mVpk 1kHz signal:
             vout_pk   = MAX abs(V(v_out))                     < 14V
             osc_ratio = RMS(90m..100m)/RMS(40m..50m) of V(v_out)  < 1.05
+
+  Pot-position sweep variants (Stage 7, GitHub #43) — one pot to a travel
+  extreme, others at noon; each is a 200ms tran:
+    dwell_min        : Dwell fully CCW (min drive to tank)
+    dwell_max        : Dwell fully CW  (max drive to tank)
+    mix_ccw          : Mix fully CCW   (dry-only path)
+    mix_cw           : Mix fully CW    (wet-only path)
+    dwell_max_mix_cw : Dwell CW + Mix CW (worst-case clip / settle)
+
+  Stage 8 realistic hardware stress variants:
+    stage6_vos : U2 Vos stress — 500uV DC source at U2 non-inverting input
+    lo_beta    : BD139 low-beta corner — BF forced to datasheet hFE minimum
 
 Connectivity strategy identical to gen_stage5_psu.py: every pin gets a FLAG at its
 exact coordinate so nets join by name; the script emits BOTH the .asc schematic and
@@ -657,7 +669,7 @@ def build(active_analysis="op"):
 
     b.text(16, 1620,
            "Active analysis: ." + active_analysis +
-           ". Regenerate with gen_stage6_full.py {op|ac|tran|stage6_vos|lo_beta} -- ONE analysis at a time.", 2)
+           ". Regenerate: gen_stage6_full.py {op|ac|tran|dwell_min|dwell_max|mix_ccw|mix_cw|dwell_max_mix_cw|stage6_vos|lo_beta}", 2)
 
     return b
 
