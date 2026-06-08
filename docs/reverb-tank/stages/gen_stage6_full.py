@@ -590,7 +590,7 @@ def build(active_analysis="op"):
         # settle: early=40..50ms, late=90..100ms. (Probed to 400ms: v_out RMS is
         # flat-to-slightly-decreasing 0.4381 -> 0.4377, i.e. no growth.)
         b.directive(".tran 0 100m 0 5u")
-        b.directive(".meas TRAN vout_pk  MAX abs(V(v_out))")
+        b.directive(".meas TRAN vout_pk  MAX abs(V(v_out)) FROM=50m TO=100m")
         b.directive(".meas TRAN rms_early RMS V(v_out) FROM=40m TO=50m")
         b.directive(".meas TRAN rms_late  RMS V(v_out) FROM=90m TO=100m")
         b.directive(".meas TRAN osc_ratio PARAM rms_late/rms_early")
