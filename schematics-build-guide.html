@@ -41,9 +41,6 @@
       from { background-position: 0 0; }
       to   { background-position: 0 100vh; }
     }
-
-    @keyframes flicker {
-      0%,18%,20%,22%,53%,55%,100% { opacity: 1; }
       19%,21%,54% { opacity: 0.6; }
     }
 
@@ -71,7 +68,6 @@
 
     body {
       background-color: var(--bg);
-      animation: bg-breathe 24s ease-in-out infinite;
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       font-size: 16px;
@@ -79,26 +75,6 @@
       max-width: 900px;
       margin: 0 auto;
       padding: 0 1.5rem;
-    }
-
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px);
-      pointer-events: none;
-      z-index: 9998;
-      animation: scanline-drift 12s linear infinite;
-    }
-
-    body::after {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.75) 100%);
-      pointer-events: none;
-      z-index: 9997;
-      animation: vignette-pulse 18s ease-in-out infinite;
     }
 
     a { color: var(--tan); text-decoration: none; }
@@ -109,7 +85,6 @@
       padding: 4.5rem 0 3rem;
       text-align: center;
       border-bottom: 1px solid var(--border);
-      animation: border-seep 20s ease-in-out infinite;
     }
 
     .header-icons {
@@ -117,7 +92,6 @@
       font-size: clamp(2.5rem, 10vw, 5rem);
       line-height: 1.2;
       margin-bottom: 0.5rem;
-      animation: ghost-glow 6s ease-in-out infinite, flicker 14s infinite, logo-drift 19s ease-in-out infinite;
     }
 
     .logo {
@@ -128,7 +102,6 @@
       letter-spacing: 0.06em;
       margin-bottom: 0.5rem;
       text-transform: uppercase;
-      animation: ghost-glow 6s ease-in-out infinite, flicker 14s infinite;
     }
 
     .logo-sub {
@@ -164,7 +137,6 @@
     section {
       padding: 3.5rem 0;
       border-bottom: 1px solid var(--border);
-      animation: border-seep 20s ease-in-out infinite;
     }
 
     section:last-of-type { border-bottom: none; }
@@ -251,7 +223,6 @@
       font-size: 0.83rem;
       line-height: 1.7;
       margin-bottom: 1.5rem;
-      animation: border-seep 20s ease-in-out infinite;
     }
 
     code {
@@ -297,12 +268,11 @@
 
     /* ── Images ── */
     .img-frame {
-      background: var(--surface);
+      background: #f8f6f2;
       border: 1px solid var(--border);
       border-radius: 8px;
       overflow: hidden;
       margin-bottom: 0.75rem;
-      animation: border-seep 20s ease-in-out infinite;
     }
 
     .img-frame img {
@@ -377,7 +347,6 @@
       border-radius: 8px;
       padding: 1.25rem 1.5rem;
       margin-bottom: 1rem;
-      animation: border-seep 20s ease-in-out infinite;
     }
 
     .tool-name {
@@ -498,7 +467,6 @@
       color: var(--muted);
       font-size: 0.88rem;
       padding: 1.5rem 0;
-      animation: flicker 2s infinite;
     }
 
     /* ── Footer ── */
