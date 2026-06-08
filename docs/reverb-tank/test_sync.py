@@ -1123,7 +1123,7 @@ def test_dwell_max_u2_pk_probes_u2_out():
 
 def test_dwell_max_mix_cw_has_worst_case_meas():
     """dwell_max_mix_cw (worst-case clip path) carries the worst-case peak and
-    the post-clip DC-settle meas (U2 must not rail and must settle back to ~0)."""
+    the post-clip DC-settle meas (U3 / V(v_out) must not rail and must settle back to ~0)."""
     text = open(os.path.join(STAGES, "stage_06_full_dwell_max_mix_cw.net")).read()
     names = _meas_names(text)
     for needed in ("worst_case_pk", "worst_case_settle"):
