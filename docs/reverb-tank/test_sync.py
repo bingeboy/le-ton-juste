@@ -1413,14 +1413,14 @@ def test_psu_low_mains_variant_scales_secondary(P):
     # The secondary peak must be the nominal 21.2Vpk scaled by 0.90 = 19.08.
     vsec = net_line(text, "Vsec_p")
     assert vsec is not None, "Vsec_p missing from low-mains netlist"
-    nominal_pk = 21.2  # P.VSEC_SINE peak
+    nominal_pk = float(P.VSEC_PEAK)
     expected_pk = nominal_pk * P.PSU_LOW_MAINS_VFACTOR
     assert ("%g" % expected_pk) in vsec, \
         "low-mains Vsec_p must carry the %gV-scaled peak %g, got %r" \
         % (P.PSU_LOW_MAINS_VFACTOR, expected_pk, vsec)
-    # And must NOT be the nominal 21.2 peak.
-    assert "21.2" not in vsec, \
-        "low-mains variant still drives the NOMINAL 21.2Vpk secondary"
+    # And must NOT still use the nominal (unscaled) peak.
+    assert P.VSEC_PEAK not in vsec, \
+        "low-mains variant still drives the NOMINAL %sVpk secondary" % P.VSEC_PEAK
 
 
 def test_vos_variant_injects_offset_at_u2(P):
