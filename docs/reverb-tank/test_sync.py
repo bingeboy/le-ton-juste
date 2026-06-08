@@ -1167,14 +1167,15 @@ def test_worst_case_pk_probes_v_out():
 # ---------------------------------------------------------------------------
 MEAS_SPEC = [
     # ---- stage_06_full.net (baseline TRAN run) ----
-    ("stage_06_full.net",  "off_u1",         ["TRAN", "AVG", "V(u1_out)"]),
-    ("stage_06_full.net",  "off_u2",         ["TRAN", "AVG", "V(u2_out)"]),
-    ("stage_06_full.net",  "off_u3",         ["TRAN", "AVG", "V(v_out)"]),
-    ("stage_06_full.net",  "q1_ve",          ["TRAN", "AVG", "V(q1_e)"]),
-    ("stage_06_full.net",  "q1_ic",          ["TRAN", "AVG", "Ic(Q1)"]),
-    ("stage_06_full.net",  "q1_vc",          ["TRAN", "AVG", "V(q1_c)"]),      # saturation guard
-    ("stage_06_full.net",  "q1_vb",          ["TRAN", "AVG", "V(q1_base)"]),   # saturation guard
-    ("stage_06_full.net",  "u2_inpos_bias",  ["TRAN", "AVG", "V(u2_in_pos)"]),
+    # All AVG windows use FROM=190m (post-settle tail of 200ms run).
+    ("stage_06_full.net",  "off_u1",         ["TRAN", "AVG", "V(u1_out)",    "FROM=190m"]),
+    ("stage_06_full.net",  "off_u2",         ["TRAN", "AVG", "V(u2_out)",    "FROM=190m"]),
+    ("stage_06_full.net",  "off_u3",         ["TRAN", "AVG", "V(v_out)",     "FROM=190m"]),
+    ("stage_06_full.net",  "q1_ve",          ["TRAN", "AVG", "V(q1_e)",      "FROM=190m"]),
+    ("stage_06_full.net",  "q1_ic",          ["TRAN", "AVG", "Ic(Q1)",       "FROM=190m"]),
+    ("stage_06_full.net",  "q1_vc",          ["TRAN", "AVG", "V(q1_c)",      "FROM=190m"]),
+    ("stage_06_full.net",  "q1_vb",          ["TRAN", "AVG", "V(q1_base)",   "FROM=190m"]),
+    ("stage_06_full.net",  "u2_inpos_bias",  ["TRAN", "AVG", "V(u2_in_pos)", "FROM=190m"]),
 
     # ---- stage_06_full_tran.net (oscillation + clip guard) ----
     # vout_pk must include FROM=50m to skip the power-up surge (bulk caps +
@@ -1198,28 +1199,31 @@ MEAS_SPEC = [
     # ---- stage_06_full_dwell_max.net ----
     # Probes V(u2_out) — NOT V(v_out). v_out at Dwell-max/Mix-noon is ungated
     # here; it is separately gated by worst_case_pk in the mix_cw variant.
-    ("stage_06_full_dwell_max.net",     "dwell_max_u2_pk",   ["TRAN", "MAX", "V(u2_out)"]),
-    ("stage_06_full_dwell_max.net",     "dwell_max_wiper_pk",["TRAN", "MAX", "V(rv1_wiper)"]),
+    # dwell_max_u2_pk: FROM=50m (startup skip); wiper: FROM=190m (settled tail).
+    ("stage_06_full_dwell_max.net",     "dwell_max_u2_pk",   ["TRAN", "MAX", "V(u2_out)",     "FROM=50m"]),
+    ("stage_06_full_dwell_max.net",     "dwell_max_wiper_pk",["TRAN", "MAX", "V(rv1_wiper)",  "FROM=190m"]),
 
     # ---- stage_06_full_dwell_max_mix_cw.net ----
     # Probes V(v_out) — NOT V(u2_out). u2_out is upstream of the Mix pot and
     # is invariant to Mix position; probing it made the Mix=CW condition inert.
-    ("stage_06_full_dwell_max_mix_cw.net", "worst_case_pk",     ["TRAN", "MAX", "V(v_out)"]),
-    ("stage_06_full_dwell_max_mix_cw.net", "worst_case_settle", ["TRAN", "AVG", "V(v_out)"]),
+    # worst_case_pk: FROM=50m (startup skip); settle: FROM=190m (post-clip tail).
+    ("stage_06_full_dwell_max_mix_cw.net", "worst_case_pk",     ["TRAN", "MAX", "V(v_out)", "FROM=50m"]),
+    ("stage_06_full_dwell_max_mix_cw.net", "worst_case_settle", ["TRAN", "AVG", "V(v_out)", "FROM=190m"]),
 
     # ---- stage_06_full_dwell_min.net ----
-    ("stage_06_full_dwell_min.net", "dwell_min_vout", ["TRAN", "MAX", "V(v_out)"]),
-    ("stage_06_full_dwell_min.net", "dwell_min_dry",  ["TRAN", "MAX", "V(mix_dry)"]),
+    ("stage_06_full_dwell_min.net", "dwell_min_vout", ["TRAN", "MAX", "V(v_out)",   "FROM=190m"]),
+    ("stage_06_full_dwell_min.net", "dwell_min_dry",  ["TRAN", "MAX", "V(mix_dry)", "FROM=190m"]),
 
     # ---- stage_06_full_mix_ccw.net ----
-    ("stage_06_full_mix_ccw.net", "mix_ccw_vout_pk",   ["TRAN", "MAX", "V(v_out)"]),
+    ("stage_06_full_mix_ccw.net", "mix_ccw_vout_pk",   ["TRAN", "MAX",   "V(v_out)",  "FROM=190m"]),
     # Wet-chain ratio across the real RV3 divider — cannot be tautological
-    # (hpf_out and mix_wet are separated by RV3a=50k)
+    # (hpf_out and mix_wet are separated by RV3a=50k). PARAM form has no FROM=.
     ("stage_06_full_mix_ccw.net", "mix_ccw_wet_ratio", ["TRAN", "PARAM",
                                                          "mix_ccw_wet_node/mix_ccw_wet_src"]),
 
     # ---- stage_06_full_mix_cw.net ----
-    ("stage_06_full_mix_cw.net", "mix_cw_vout_pk",  ["TRAN", "MAX",   "V(v_out)"]),
+    # mix_cw_vout_pk: FROM=50m (startup skip); dry_attn is PARAM, no FROM=.
+    ("stage_06_full_mix_cw.net", "mix_cw_vout_pk",  ["TRAN", "MAX",   "V(v_out)",                  "FROM=50m"]),
     ("stage_06_full_mix_cw.net", "mix_cw_dry_attn", ["TRAN", "PARAM", "mix_cw_dry_lvl/mix_cw_mix_node"]),
 
     # ---- stage_04_input_protect.net (OP analysis — legitimately uses FIND) ----
@@ -1227,14 +1231,15 @@ MEAS_SPEC = [
     ("stage_04_input_protect.net", "clamp_n_i", ["OP", "FIND", "I(Dclamp_n)"]),
 
     # ---- stage_05_psu.net ----
-    ("stage_05_psu.net", "rail_pos",  ["TRAN", "AVG", "V(+15V)"]),
-    ("stage_05_psu.net", "rail_neg",  ["TRAN", "AVG", "V(-15V)"]),
-    ("stage_05_psu.net", "unreg_pos", ["TRAN", "AVG", "V(pos_rect)"]),
-    ("stage_05_psu.net", "unreg_neg", ["TRAN", "AVG", "V(neg_rect)"]),
+    # All Stage 5 windows use FROM=100m TO=120m (steady-state after bulk cap charge).
+    ("stage_05_psu.net", "rail_pos",  ["TRAN", "AVG", "V(+15V)",     "FROM=100m"]),
+    ("stage_05_psu.net", "rail_neg",  ["TRAN", "AVG", "V(-15V)",     "FROM=100m"]),
+    ("stage_05_psu.net", "unreg_pos", ["TRAN", "AVG", "V(pos_rect)", "FROM=100m"]),
+    ("stage_05_psu.net", "unreg_neg", ["TRAN", "AVG", "V(neg_rect)", "FROM=100m"]),
 
     # ---- stage_05_psu_tran.net ----
-    ("stage_05_psu_tran.net", "ripple_pos", ["TRAN", "PP", "V(+15V)"]),
-    ("stage_05_psu_tran.net", "ripple_neg", ["TRAN", "PP", "V(-15V)"]),
+    ("stage_05_psu_tran.net", "ripple_pos", ["TRAN", "PP", "V(+15V)", "FROM=100m"]),
+    ("stage_05_psu_tran.net", "ripple_neg", ["TRAN", "PP", "V(-15V)", "FROM=100m"]),
 ]
 
 
