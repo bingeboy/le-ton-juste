@@ -442,6 +442,7 @@ def build(active_analysis="op"):
     b.opa("U2", 2060, 200, "u2_in_pos", "u2_inv", "+15V", "-15V", "u2_out")
     b.res("Ri", P.RI, 2000, 360, "u2_inv", "0")
     b.res("Rf", P.RF, 2120, 360, "u2_out", "u2_inv")
+    b.cap("Cf", P.CF, 2200, 360, "u2_out", "u2_inv")
 
     # Post-recovery HPF.
     b.cap("C4", P.C4, 2240, 144, "u2_out", "hpf_out")

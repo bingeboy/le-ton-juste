@@ -100,7 +100,7 @@ NET_VALUE_MAP = {
     "RV3a": P.RV3A, "RV3b": P.RV3B,
     # capacitors
     "C_in": P.C_IN, "C_drive": P.C_DRIVE, "C2": P.C2, "C3": P.C3, "C4": P.C4,
-    "C_bright": P.C_BRIGHT, "C5": P.C5, "C6": P.C6, "C7": P.C7, "C8": P.C8,
+    "C_bright": P.C_BRIGHT, "Cf": P.CF, "C5": P.C5, "C6": P.C6, "C7": P.C7, "C8": P.C8,
     "C11": P.C11, "C12": P.C12, "C13": P.C13, "C14": P.C14, "C15": P.C15,
     "C16": P.C16, "C17": P.C17, "C18": P.C18, "C_tank_mech": P.C_TANK_MECH,
     # inductors (netlist appends " Rser=0"; we compare the value token only)
@@ -476,6 +476,15 @@ def check_opamp_feedback():
     elif set(rf[1:3]) != {"u2_out", "u2_inv"}:
         fail("opamp feedback: Rf must connect u2_out<->u2_inv (feedback), got %s"
              % set(rf[1:3]))
+
+    checks += 1
+    cf = cards.get("Cf")
+    if cf is None or len(cf) < 4:
+        fail("opamp feedback: Cf (U2 feedback compensation cap) missing/malformed "
+             "-- required BOM part, not optional")
+    elif set(cf[1:3]) != {"u2_out", "u2_inv"}:
+        fail("opamp feedback: Cf must connect u2_out<->u2_inv (parallel with Rf), "
+             "got %s" % set(cf[1:3]))
 
     # Gain formula: 1 + Rf/Ri within RECOV_GAIN_WINDOW.
     checks += 1

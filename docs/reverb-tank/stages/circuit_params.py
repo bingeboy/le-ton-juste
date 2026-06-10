@@ -80,6 +80,7 @@ C2       = "100u"  # Q1 emitter bypass (across R5)
 C3       = "470n"  # tank output -> U2 input DC block
 C4       = "100n"  # wet HPF cap (with R6)
 C_BRIGHT = "47p"   # bright cap across Mix pot
+CF       = "22p"   # U2 feedback compensation cap (C0G/NP0 across Rf); ~72kHz corner with 100kΩ Rf
 C_DRIVE_OUT = "1u"  # Stage-2-only collector->tank DC block (removed once REB3S transformer is added in Stage 3; not a final BOM part)
 
 # Op-amp supply decoupling. All four are the same HF bypass value; DECOUPLE_VAL

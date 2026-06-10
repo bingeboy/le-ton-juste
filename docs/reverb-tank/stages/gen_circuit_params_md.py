@@ -96,6 +96,7 @@ CAPACITORS = [
     ("C3", farad(P.C3) + " / 63V", "Tank output → U2 input DC block (~3Hz corner w/ Rbias)", "`tank_out` → `u2_in_pos`"),
     ("C4", farad(P.C4) + " / 63V", "Wet HPF cap (with R6)", "`u2_out` → `hpf_out`"),
     ("C_bright", farad(P.C_BRIGHT), "Bright cap across full Mix pot (HF presence as pot approaches full-wet)", "`mix_dry` → `mix_wet`"),
+    ("Cf", farad(P.CF), "U2 feedback compensation — rolls off the 214× loop to ~72kHz corner; mandatory on perfboard (C0G/NP0)", "`u2_out` → `u2_inv`"),
     ("C5", farad(P.C5) + " / 63V", "U1/U2 +15V supply decoupling", "`+15V` → `0`"),
     ("C6", farad(P.C6) + " / 63V", "U1/U2 −15V supply decoupling", "`-15V` → `0`"),
     ("C7", farad(P.C7) + " / 63V", "U3 +15V supply decoupling", "`+15V` → `0`"),
