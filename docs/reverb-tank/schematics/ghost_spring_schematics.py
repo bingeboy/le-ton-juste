@@ -299,16 +299,26 @@ def section3():
     d.add(elm.Line().down().at(ri.end).length(0.5))
     d.add(elm.Ground())
 
-    # Output and Rf feedback
+    # Output and Rf+Cf feedback (Cf 22pF in parallel with Rf 100k)
     out_tap = elm.Line().right().at(op.out).length(0.8)
     d.add(out_tap)
     d.add(elm.Dot().at(out_tap.end))
     u2_out = out_tap.end
-    # Rf 100k from u2_out back to u2_inv
+    # Go up to Rf level, continue to Cf level
     d.add(elm.Line().up().at(u2_out).length(2))
     fbtop = d.here
+    d.add(elm.Dot())  # T-junction: Rf taps off here
+    d.add(elm.Line().up().at(fbtop).length(1.5))
+    cftop = d.here
+    # Rf 100k (lower feedback element)
     rf = elm.Resistor().left().at(fbtop).tox(u2_inv).label(f'Rf\n{cp.RF}', loc='top')
     d.add(rf)
+    # Cf 22pF (upper feedback element, parallel with Rf)
+    cf = elm.Capacitor().left().at(cftop).tox(u2_inv).label(f'Cf\n{cp.CF}', loc='top')
+    d.add(cf)
+    # Right side: wire from Cf level down to Rf level (T-junction), then down to u2_inv
+    d.add(elm.Line().down().at(cf.end).toy(rf.end))
+    d.add(elm.Dot().at(rf.end))  # T-junction
     d.add(elm.Line().down().at(rf.end).toy(u2_inv))
 
     # supply rails
