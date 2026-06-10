@@ -89,11 +89,11 @@ def section1():
     d.add(elm.Line().right().at(clamp).length(1.5))
     opin = d.here
 
-    # U1 opamp, non-inv from node, unity gain
-    op = elm.Opamp(leads=True).right().at(opin).anchor('in1').label('U1', loc='center', ofst=(0, 0))
+    # U1 opamp: signal at in2 (+, non-inverting), unity gain
+    op = elm.Opamp(leads=True).right().at(opin).anchor('in2').label('U1', loc='center', ofst=(0, 0))
     d.add(op)
-    # tie inverting input to output (unity gain)
-    d.add(elm.Line().down().at(op.in2).length(1))
+    # tie inverting input (-) = in1 to output (unity gain, negative feedback)
+    d.add(elm.Line().down().at(op.in1).length(3.5))
     fbk = d.here
     d.add(elm.Line().right().tox(op.out))
     d.add(elm.Dot().at(op.out))
@@ -202,12 +202,16 @@ def section2():
     q1_e = ewire.end
     d.add(elm.Dot().at(q1_e).label('q1_e', loc='right'))
 
-    # R5 68 from emitter to node, C2 100uF node to GND
-    r5 = elm.Resistor().down().at(q1_e).label(f'R5\n{cp.R5}', loc='right')
+    # R5 68Ω and C2 100µF in PARALLEL from q1_e to GND
+    # R5 left branch: emitter degeneration
+    r5 = elm.Resistor().down().at(q1_e).label(f'R5\n{cp.R5}', loc='left')
     d.add(r5)
-    enode = r5.end
-    d.add(elm.Dot().at(enode))
-    c2 = elm.Capacitor2().down().at(enode).label(f'C2\n{cp.C2}F', loc='right')
+    d.add(elm.Ground().at(r5.end))
+    # C2 right branch: emitter bypass cap (parallel with R5)
+    d.add(elm.Line().right().at(q1_e).length(1.5))
+    c2_top = d.here
+    d.add(elm.Dot())
+    c2 = elm.Capacitor2().down().at(c2_top).label(f'C2\n{cp.C2}F', loc='right')
     d.add(c2)
     d.add(elm.Ground().at(c2.end))
 
@@ -285,12 +289,12 @@ def section3():
     d.add(elm.Line().down().at(rb.end).length(0.5))
     d.add(elm.Ground())
 
-    # U2 opamp
-    op = elm.Opamp(leads=True).right().at(u2_in_pos).anchor('in1').label('U2', loc='center')
+    # U2 opamp: signal at in2 (+, non-inverting)
+    op = elm.Opamp(leads=True).right().at(u2_in_pos).anchor('in2').label('U2', loc='center')
     d.add(op)
 
-    # Inverting input node u2_inv
-    d.add(elm.Line().down().at(op.in2).length(1.2))
+    # Inverting input (-) node u2_inv — in1 is the inverting input
+    d.add(elm.Line().down().at(op.in1).length(3.7))
     u2_inv = d.here
     d.add(elm.Dot().at(u2_inv).label('u2_inv', loc='left'))
     # Ri 470 from u2_inv to GND
@@ -401,11 +405,11 @@ def section4():
     d.add(elm.Dot(open=True).color('blue').label('from rv3_wiper (0R)', loc='right'))
 
     # --- Output ---
-    # U3 opamp non-inv = mix_node, unity gain
-    op = elm.Opamp(leads=True).right().at(mix_node).anchor('in1').label('U3', loc='center')
+    # U3 opamp: signal at in2 (+, non-inverting), unity gain
+    op = elm.Opamp(leads=True).right().at(mix_node).anchor('in2').label('U3', loc='center')
     d.add(op)
-    # unity gain: out -> in2
-    d.add(elm.Line().down().at(op.in2).length(1))
+    # unity gain: out -> in1 (-), negative feedback
+    d.add(elm.Line().down().at(op.in1).length(3.5))
     d.add(elm.Line().right().tox(op.out))
     d.add(elm.Dot().at(op.out))
     d.add(elm.Line().up().toy(op.out))
