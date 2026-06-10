@@ -62,6 +62,7 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 | 470nF/63V film | MKS2C034700K00KSSD | 1 | ~$0.35 |
 | 100nF/63V film (HPF + op-amp decoupling + reg bypass + ground-lift) | MKS2C031001A00KSSD | 10 | ~$0.25 each = $2.50 |
 | 47pF silver mica (bright cap) | CD15ED470JO3F | 1 | ~$0.40 |
+| 22pF C0G/NP0 ceramic (Cf — U2 feedback compensation, across Rf) | C320C220J1G5TA | 1 | ~$0.10 |
 
 ### Capacitors — Electrolytic (Nichicon)
 
@@ -140,7 +141,7 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 | TE ring terminal 22-16AWG #8 stud insulated (chassis earth bond) | 34112 | 2 | ~$0.50 each = $1.00 |
 | Green/yellow 18AWG stranded hookup wire — 250mm for IEC earth-to-chassis bond | — | 1 | ~$1 (hardware store) |
 
-**Mouser Subtotal: ~$193–219**
+**Mouser Subtotal: ~$193–220**
 
 ---
 
@@ -187,11 +188,11 @@ Design a custom 2U aluminum panel with:
 | Supplier | Est. Cost |
 |---|---|
 | Amplified Parts | ~$53 |
-| Mouser | ~$193–219 |
+| Mouser | ~$193–220 |
 | Hammond (chassis) | ~$50 |
 | Front Panel Express | ~$35 |
 | Sorbothane grommets | ~$12 |
 | Knobs | ~$15 |
-| **Total** | **~$357–382** |
+| **Total** | **~$358–383** |
 
 > OPA2134PA price confirmed at $7.64 (Mouser, June 2026). All other prices are estimates — verify in the Mouser BOM tool before ordering. Upgraded total reflects full reliability/protection package.
