@@ -76,6 +76,7 @@ Signal-path caps: film (WIMA MKS2/MKP). C2/C13–C16 electrolytic; C11/C12 bulk 
 | C3 | 470nF / 63V | Tank output → U2 input DC block (~3Hz corner w/ Rbias) | `tank_out` → `u2_in_pos` |
 | C4 | 100nF / 63V | Wet HPF cap (with R6) | `u2_out` → `hpf_out` |
 | C_bright | 47pF | Bright cap across full Mix pot (HF presence as pot approaches full-wet) | `mix_dry` → `mix_wet` |
+| Cf | 22pF | U2 feedback compensation — rolls off the 214× loop to ~72kHz corner; mandatory on perfboard (C0G/NP0) | `u2_out` → `u2_inv` |
 | C5 | 100nF / 63V | U1/U2 +15V supply decoupling | `+15V` → `0` |
 | C6 | 100nF / 63V | U1/U2 −15V supply decoupling | `-15V` → `0` |
 | C7 | 100nF / 63V | U3 +15V supply decoupling | `+15V` → `0` |

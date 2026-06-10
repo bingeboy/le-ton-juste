@@ -65,7 +65,7 @@ Connect the ±15V bench supply. No input signal. Corresponds to the SPICE **Stag
 
 > If any op-amp output sits at or near a rail (±~13V) instead of near 0V, that stage's input has no DC reference or the op-amp is in backwards. On a FET-input part with no DC return the output slams to a rail — for U1 that almost always means R1 is missing or wired in series.
 
-> **Strongly recommended on perfboard — feedback compensation cap (Cf) across Rf.** Fit a small **10–22pF** capacitor across **Rf** (the 100kΩ U2 feedback resistor, `u2_out` → `u2_inv`). On point-to-point / perfboard construction the stray wiring capacitance at U2's inverting input forms a pole with Rf that can cause HF gain peaking (a few dB bump near the top of the audio band) or, worst case, ringing/oscillation in the 214× recovery stage. Cf rolls the loop off cleanly: with 100kΩ, 22pF sets a ~72kHz corner (above the audio band, no audible high-end loss). It is **not a BOM line** — it is a cheap (~$0.10), optional ceramic/film cap added at build time — but on perfboard it is strongly recommended insurance against layout-dependent instability. If U2's gain measures high or it oscillates (see the recovery-gain fail action in Stage 7), fit Cf first.
+> **Required — fit Cf (22pF C0G/NP0) across Rf before powering up.** Cf is in the BOM. Place it across **Rf** (the 100kΩ U2 feedback resistor, `u2_out` → `u2_inv`). At 214× gain, stray wiring capacitance at U2's inverting input forms a pole with Rf that causes HF gain peaking or oscillation on perfboard. Cf rolls the loop off cleanly: 100kΩ + 22pF → ~72kHz corner, above the audio band, no audible high-end loss. Use C0G/NP0 ceramic only — not X7R or Y5V. Do not skip this part.
 
 ---
 
