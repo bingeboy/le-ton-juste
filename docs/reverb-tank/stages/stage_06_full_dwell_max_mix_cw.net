@@ -68,7 +68,7 @@ Rdry u1_buf mix_dry 10k
 RV2a mix_dry mix_node 100k
 RV2b mix_node mix_wet 0.001
 C_bright mix_dry mix_wet 47p
-Rwet_wire rv3_wiper mix_wet 0
+Rwet_wire rv3_wiper mix_wet 1m
 X§U3 mix_node u3_out +15V -15V u3_out level2 Avol=1Meg GBW=8Meg Slew=20Meg Ilimit=25m Rail=0 Rinc=1T Vos=0 En=0 Enk=0 In=0 Ink=0 Rin=500Meg
 R7 u3_out v_out 100
 Rload v_out 0 47k

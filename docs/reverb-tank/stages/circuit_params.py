@@ -71,6 +71,12 @@ RV2B = "50k"  # Mix lower half
 RV3A = "50k"  # Tone upper half    (RV3 = 100k audio total)
 RV3B = "50k"  # Tone lower half
 
+# Wet-path "wire" (Tone wiper -> RV2 CW end). Not a BOM part — it models the
+# direct hookup wire between the two pots. LTspice 26 hard-errors on R=0
+# ("Resistance must not be zero"), so it must be a small nonzero value. 1mΩ is
+# 7 orders below the surrounding 50k network: electrically identical to a wire.
+RWET_WIRE = "1m"
+
 # ============================================================================
 # CAPACITORS (SPICE-formatted strings)
 # ============================================================================

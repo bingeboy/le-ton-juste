@@ -43,7 +43,7 @@ All signal-path resistors: metal film, 1% tolerance, 250mW. (R_bleed1/2 are 1W f
 | R6 | 5.6k | Wet HPF resistor (with C4) | `hpf_out` → `0` |
 | Rbias | 100k | U2 non-inv (+) input bias / recovery input impedance | `u2_in_pos` → `0` |
 | Rdry | 10k | Dry-path series R: U1 buffer → RV2 CCW end (dry end of Mix pot) | `u1_buf` → `mix_dry` |
-| Rwet_wire | 0Ω | Wet-path direct wire: Tone wiper → RV2 CW end (wet end of Mix pot; 0Ω wire model) | `rv3_wiper` → `mix_wet` |
+| Rwet_wire | 1mΩ | Wet-path direct hookup wire: Tone wiper → RV2 CW end (wet end of Mix pot; modelled 1mΩ — LTspice rejects R=0) | `rv3_wiper` → `mix_wet` |
 | R7 | 100 | U3 output isolation (series to output jack / MC100) | `u3_out` → `v_out` |
 | Rload | 47k | MC100 RCA input load (model of downstream device, not a fitted part) | `v_out` → `0` |
 | R_tank_in | 8 | Tank input impedance (8Ω side, lumped tank model) | `tank_in` → `0` |

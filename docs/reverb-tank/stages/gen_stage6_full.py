@@ -465,7 +465,7 @@ def build(active_analysis="op"):
     b.res("RV2b", rv2b, 2300, 880, "mix_node", "mix_wet")   # CW half of pot
     b.cap("C_bright", P.C_BRIGHT, 2420, 760, "mix_dry", "mix_wet")  # bright cap across full pot
     # Wet (Tone wiper) connects directly to the CW end of the pot.
-    b.res("Rwet_wire", "0", 2300, 600, "rv3_wiper", "mix_wet")  # direct wire, modelled 0 ohm
+    b.res("Rwet_wire", P.RWET_WIRE, 2300, 600, "rv3_wiper", "mix_wet")  # direct hookup wire, modelled 1mΩ (LTspice rejects R=0)
     b.opa("U3", 2560, 900, "mix_node", "u3_out", "+15V", "-15V", "u3_out")
     b.res("R7", P.R7, 2640, 844, "u3_out", "v_out")
     b.res("Rload", P.RLOAD, 2760, 844, "v_out", "0")
@@ -646,7 +646,7 @@ def build(active_analysis="op"):
             #
             # Previous attempts were tautologies:
             #   v1: V(mix_node)/V(mix_dry) -- RV2a=0.001 hard-shorts both nodes.
-            #   v2: V(mix_wet)/V(rv3_wiper) -- Rwet_wire=0R makes them the same node.
+            #   v2: V(mix_wet)/V(rv3_wiper) -- Rwet_wire=1mR makes them the same node (to within nV).
             b.directive(".meas TRAN mix_ccw_vout_pk  MAX abs(V(v_out))   FROM=190m TO=200m")
             b.directive(".meas TRAN mix_ccw_wet_src  RMS V(hpf_out)  FROM=190m TO=200m")
             b.directive(".meas TRAN mix_ccw_wet_node RMS V(mix_wet)   FROM=190m TO=200m")
@@ -681,7 +681,7 @@ def build(active_analysis="op"):
 if __name__ == "__main__":
     import sys
     analysis = sys.argv[1] if len(sys.argv) > 1 else "op"
-    base = "/Users/bubblegum/projects/le-ton-juste/docs/reverb-tank/stages"
+    base = os.path.dirname(os.path.abspath(__file__))
     b = build(analysis)
     asc = f"{base}/stage_06_full.asc"
     net = f"{base}/stage_06_full.net"
