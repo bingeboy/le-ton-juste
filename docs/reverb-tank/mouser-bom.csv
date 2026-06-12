@@ -14,8 +14,9 @@ Quantity,Manufacturer Part Number,Description,Customer Reference
 10,MKS2C031001A00KSSD,WIMA 100nF 63V film capacitor,C4 HPF + C5-C8 op-amp decoupling (4 caps) + C17/C18 reg bypass + ground-lift RC (qty 10 = 8 used + 2 spare)
 1,CD15ED470JO3F,47pF silver mica capacitor,C_bright mix pot bright cap
 1,C320C220J1G5TA,Kemet 22pF 100V C0G/NP0 ceramic radial (verify PN — substitute any 22pF C0G/NP0 ≥25V),Cf U2 feedback compensation (across Rf)
-2,UKW1H222MHD,Nichicon UKW 2200uF 50V low-ESR electrolytic,C11 C12 main PSU filter
-3,UKW1E101MED,Nichicon UKW 100uF 25V audio grade electrolytic,C2 emitter bypass + C13 C14 reg output
+2,UKW1H102MPD,Nichicon UKW 1000uF 50V low-ESR electrolytic (verify current PN),C11 C12 main PSU filter
+1,UKW1E101MED,Nichicon UKW 100uF 25V audio grade electrolytic,C2 emitter bypass
+6,OFF-BOM-TO-SOURCE,25uF >=25V electrolytic - off standard BOM, sourced separately (3x parallel per rail),C13 C14 reg output
 2,UKW1E100MDD,Nichicon UKW 10uF 25V electrolytic,C15 C16 bulk rail decoupling
 5,MFR-25FBF52-1M,Yageo 1M metal film resistor 1% 250mW,R1 input impedance
 5,MFR-25FBF52-100K,Yageo 100k metal film resistor 1% 250mW,Rf gain network + Rbias input impedance

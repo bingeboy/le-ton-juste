@@ -68,8 +68,9 @@ Organized by supplier. Mouser items have a ready-to-upload BOM CSV at `mouser-bo
 
 | Item | Mfr Part # | Qty | Est. Price |
 |---|---|---|---|
-| 2200µF/**50V** low-ESR (main PSU filter) *(upgraded from 35V)* | UKW1H222MHD | 2 | ~$1.50 each = $3.00 |
-| 100µF/25V audio grade (reg output + emitter bypass) | UKW1E101MED | 3 | ~$0.35 each = $1.05 |
+| 1000µF/**50V** low-ESR (main PSU filter) *(downsized from 2200µF, #95)* | UKW1H102MPD (verify current P/N) | 2 | ~$1.00 each = $2.00 |
+| 100µF/25V audio grade (C2 emitter bypass only) | UKW1E101MED | 1 | ~$0.35 |
+| 25µF/≥25V (C13/C14 reg outputs, 3× parallel per rail, #94) | off-BOM — to source | 6 | TBD |
 | 10µF/25V (bulk rail decoupling) | UKW1E100MDD | 2 | ~$0.25 each = $0.50 |
 
 ### Resistors (Yageo MFR 1% 250mW — order 5 of each)

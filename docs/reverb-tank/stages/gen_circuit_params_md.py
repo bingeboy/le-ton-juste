@@ -283,7 +283,7 @@ def build_md():
     w("| BR1 bridge | W04G, 2A / 400V (model 4× 1N4007) | `pos_rect` = +ve unregulated bus, `neg_rect` = −ve bus |")
     w("| Unregulated bus | ≈ ±%gV (avg, settled) | ≈ peak %sV − 2 diode drops, held by bulk caps; ≈21mVpp ripple in model |" % (P.UNREG_BUS, P.VSEC_PEAK))
     w("| C11 / C12 filter | %s / 50V each | Main bulk filter per rail |" % farad(P.C11))
-    w("| R_bleed1 / R_bleed2 | %sΩ / 1W each | τ = 10k × 2200µF = 22s → <2V in ~110s after power-off (44mW dissipation) |" % ohm(P.R_BLEED1))
+    w("| R_bleed1 / R_bleed2 | %sΩ / 1W each | τ = 10k × 1000µF = 10s → <2V in ~50s after power-off (44mW dissipation) |" % ohm(P.R_BLEED1))
     w("| U4 / U5 regulators | LM7815 / LM7915 | Drop ≈5.4V (20.4V bus − 15V) at ~30–50mA → ≈0.15–0.3W each; heatsink + mica pad mandatory |")
     w("| C13 / C14 | %s / 25V each | Regulator output stability caps |" % farad(P.C13))
     w("| C17 / C18 | %s / 63V each | Regulator output HF bypass |" % farad(P.C17))

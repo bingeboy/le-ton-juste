@@ -26,7 +26,7 @@ must agree with it. To change a value: edit it HERE, then run
 circuit-params.md and re-validates. Never hand-edit a generated netlist or
 circuit-params.md.
 
-Values are SPICE-formatted strings (e.g. "6.8k", "100n", "2200u") because the
+Values are SPICE-formatted strings (e.g. "6.8k", "100n", "1000u") because the
 generator scripts emit them verbatim into netlist cards. Operating-point
 targets and tolerances are floats/tuples for programmatic checks.
 
@@ -101,10 +101,21 @@ C7 = DECOUPLE_VAL   # U3 +15V
 C8 = DECOUPLE_VAL   # U3 -15V
 
 # Power-supply caps
-C11 = "2200u"  # +ve unregulated bulk filter (50V part)
-C12 = "2200u"  # -ve unregulated bulk filter (50V part)
-C13 = "100u"   # U4 (LM7815) output cap
-C14 = "100u"   # U5 (LM7915) output cap
+# C11/C12 downsized 2200u -> 1000u (issue #95): at the ~40mA worst-case + rail
+# load, 1000u still holds the low-mains unregulated trough ~0.75V above the
+# 17V regulator-dropout floor (vs ~0.9V at 2200u) while halving can size,
+# power-on inrush, and bleed-down time (tau 10k*1000u = 10s -> <2V in ~50s).
+C11 = "1000u"  # +ve unregulated bulk filter (50V part)
+C12 = "1000u"  # -ve unregulated bulk filter (50V part)
+# C13/C14 are 3x 25u in parallel on the physical build (issue #94): 75u total.
+# These 25u parts are off the standard BOM and are sourced separately. Their
+# job is regulator stability (LM7915 datasheet floor: >=25u aluminum on the
+# output) plus local charge reservoir, NOT ripple filtering -- that happens at
+# C11/C12. Parallel caps need no balancing resistors. NOTE: C2 (Q1 emitter
+# bypass) stays 100u -- it shares the old BOM P/N but is a signal-path part
+# (sets the driver's bass corner), not a PSU cap.
+C13 = "75u"    # U4 (LM7815) output cap (physical: 3x 25u parallel)
+C14 = "75u"    # U5 (LM7915) output cap (physical: 3x 25u parallel)
 C15 = "10u"    # +15V board-entry bulk decoupling
 C16 = "10u"    # -15V board-entry bulk decoupling
 C17 = "100n"   # U4 output HF bypass

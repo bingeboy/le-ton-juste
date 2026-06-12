@@ -19,7 +19,7 @@ The assembly order below (visual → power → driver → transformer → input 
 
 > **Read this before any power-on.** For every stage on the bench supply (Stages 2–5), bring the supply up with the current limit set low (~100mA) and watch the meter as you switch on. The circuit draws roughly 30–50mA idle. If the supply jumps straight to its current limit, **switch off immediately** — you have a short or a backwards part. Do not "push through" a current-limited bring-up.
 
-> **Safety — PSU filter caps hold charge.** Once the on-board power supply (C11/C12, 2200µF) is built, those caps hold ~21V after power-off. The 10kΩ bleed resistors (R_bleed1/2) drain them, but it takes time: τ = 10kΩ × 2200µF = 22s, so ~110s to reach <2V. **Wait at least 1–2 minutes after switching off — or measure across the caps with the DMM — before touching the supply.** Until the PSU stage exists you are on the bench supply, which has no stored charge, but build the habit now.
+> **Safety — PSU filter caps hold charge.** Once the on-board power supply (C11/C12, 1000µF) is built, those caps hold ~21V after power-off. The 10kΩ bleed resistors (R_bleed1/2) drain them, but it takes time: τ = 10kΩ × 1000µF = 10s, so ~50s to reach <2V. **Wait at least 1 minute after switching off — or measure across the caps with the DMM — before touching the supply.** Until the PSU stage exists you are on the bench supply, which has no stored charge, but build the habit now.
 
 ---
 
@@ -145,7 +145,7 @@ Corresponds to SPICE **Stage 4** (`stage_04_input_protect.asc`): `.op` clamp rev
 
 ## Stage 6 — Power supply rails
 
-Corresponds to SPICE **Stage 5** (`stage_05_psu.asc`): the `op` (settled-DC) run measures the regulated rails (`rail_pos` 14.85–15.15V, `rail_neg` −15.15 to −14.85V), and the `tran` run measures post-regulator ripple over a 100–120ms window (`ripple_pos` < 10mVpp, `ripple_neg` < 10mVpp). This is the real ±15V linear supply that replaces the bench rails used through Stages 1–5: T1 (15‑0‑15VAC) → BR1 bridge → C11/C12 2200µF bulk + 10k bleed → U4 LM7815 / U5 LM7915 → C13/C14 100µF + C17/C18 100nF → F2/F3 polyfuses → +15V / −15V rails. The F2/F3 polyfuses sit on the **regulated DC output** (after the regulators), protecting the regulated rails from a downstream PCB short — they are **not** on the AC secondary.
+Corresponds to SPICE **Stage 5** (`stage_05_psu.asc`): the `op` (settled-DC) run measures the regulated rails (`rail_pos` 14.85–15.15V, `rail_neg` −15.15 to −14.85V), and the `tran` run measures post-regulator ripple over a 100–120ms window (`ripple_pos` < 10mVpp, `ripple_neg` < 10mVpp). This is the real ±15V linear supply that replaces the bench rails used through Stages 1–5: T1 (15‑0‑15VAC) → BR1 bridge → C11/C12 1000µF bulk + 10k bleed → U4 LM7815 / U5 LM7915 → C13/C14 75µF (3 × 25µF parallel) + C17/C18 100nF → F2/F3 polyfuses → +15V / −15V rails. The F2/F3 polyfuses sit on the **regulated DC output** (after the regulators), protecting the regulated rails from a downstream PCB short — they are **not** on the AC secondary.
 
 > **Mains warning.** This stage carries line voltage on the T1 primary. Verify all primary-side wiring, fusing (F1), and earth bonding before first power-on, and keep fingers clear of the primary and the bridge while live. All DMM probing below is on the *secondary/DC* side.
 
@@ -183,16 +183,16 @@ This is the only stage that has ever seen line voltage. Treat the very first swi
 
 | Test | Method | SPICE assertion | Expected | Fail action |
 |---|---|---|---|---|
-| Unregulated bus | DMM DC: pos_rect to GND, then neg_rect to GND (across C11 / C12) | `unreg_pos` / `unreg_neg` ≈ ±20.4V (avg) | ~+19 to +22V / −19 to −22V (peak ≈ 21.2V minus 2 diode drops, held up by the bulk cap) | Near 0V or only ~half: a bridge diode (DBR1a–d) is open/backwards, or a polyfuse (F2/F3) is open. Big AC component: C11/C12 (2200µF) open or wrong polarity |
+| Unregulated bus | DMM DC: pos_rect to GND, then neg_rect to GND (across C11 / C12) | `unreg_pos` / `unreg_neg` ≈ ±20.4V (avg) | ~+19 to +22V / −19 to −22V (peak ≈ 21.2V minus 2 diode drops, held up by the bulk cap) | Near 0V or only ~half: a bridge diode (DBR1a–d) is open/backwards, or a polyfuse (F2/F3) is open. Big AC component: C11/C12 (1000µF) open or wrong polarity |
 | +15V rail | DMM DC at U4 (LM7815) output / +15V rail | `rail_pos` 14.85–15.15V | +14.85 to +15.15V | Low (~+2V below bus): U4 dropout — bus too low, check unregulated bus first. Equal to bus: U4 shorted IN→OUT. 0V: U4 in backwards or no output cap |
 | −15V rail | DMM DC at U5 (LM7915) output / −15V rail | `rail_neg` −15.15 to −14.85V | −14.85 to −15.15V | Same checks as +15V but for U5 (LM7915) — note the 7915 pinout differs from the 7815, a common build error |
-| +15V ripple | AC-couple scope on +15V rail, 60Hz+ timebase | `ripple_pos` < 10mVpp | < 10mVpp (essentially flat; the reg rejects the bus ripple) | Visible 120Hz sawtooth >10mVpp: C13 (100µF) missing, or the regulator is dropping out on ripple troughs (bus headroom too low — check C11) |
+| +15V ripple | AC-couple scope on +15V rail, 60Hz+ timebase | `ripple_pos` < 10mVpp | < 10mVpp (essentially flat; the reg rejects the bus ripple) | Visible 120Hz sawtooth >10mVpp: C13 (75µF, 3 × 25µF parallel) missing, or the regulator is dropping out on ripple troughs (bus headroom too low — check C11) |
 | −15V ripple | AC-couple scope on −15V rail | `ripple_neg` < 10mVpp | < 10mVpp | Same as +15V but C14 / U5 |
 | HF bypass present | Visual / continuity: C17, C18 (100nF) directly at each regulator output pin to GND | n/a (models PSRR floor) | Fitted within ~1" of the reg pins | Missing: regulator can oscillate or pass HF trash; add the 100nF |
 
 > **What the simulated 0mVpp ripple means.** The behavioural 78xx/79xx model holds its output dead-flat at 15.0V as long as the unregulated bus stays above the ~17V dropout point — which it does (bus ≈ 20.4V with ≈21mVpp of its own ripple). So the *post*-regulator ripple computes as ~0, demonstrating the rail rejects the upstream ripple. On the bench you will see a few mV of real ripple/noise (finite PSRR, layout, load steps); the <10mVpp budget is what matters. The unregulated-bus ripple at C11/C12 (`unreg_pos_pp` ≈ 21mVpp in the model, far larger in reality under load) is the honest indicator that the rectifier and bulk caps are doing their job — probe *there* to confirm the supply is alive before trusting the flat regulated rails.
 
-> **Bleed resistors.** R_bleed1/R_bleed2 (10kΩ across C11/C12) discharge the 2200µF bulk caps after power-down — at ~20V they hold ~40mA·s of charge. With power off, the rails should sag to near 0V within a couple of seconds; if a rail stays charged, its bleed resistor is open (shock/measurement hazard on a big cap).
+> **Bleed resistors.** R_bleed1/R_bleed2 (10kΩ across C11/C12) discharge the 1000µF bulk caps after power-down — at ~20V they hold ~40mA·s of charge. With power off, the rails should sag to near 0V within a couple of seconds; if a rail stays charged, its bleed resistor is open (shock/measurement hazard on a big cap).
 
 ---
 
@@ -314,7 +314,8 @@ These are the parts that are directional and cost real bench time — or real pa
 | Part | Watch out for | Symptom / consequence if wrong |
 |---|---|---|
 | **LM7815 vs LM7915** | **The 7915 pinout is NOT a mirror of the 7815.** 7815 (TO-220, tab = OUT/+15V): pin1=IN, pin2=GND, pin3=OUT. 7915 (tab = IN/−15V): pin1=GND, pin2=IN(−), pin3=OUT(−15V). Do not assume symmetry | Dead or wrong-polarity negative rail; part may overheat. Single most common PSU build error |
-| **Electrolytics C11/C12 (2200µF)** | C11 sits on the **+** unregulated bus, C12 on the **−** bus. Get the can polarity right per rail | Backwards electrolytic on a 20V bus vents/explodes within seconds of power-on. This is why first power-on uses the bulb limiter |
+| **Electrolytics C11/C12 (1000µF)** | C11 sits on the **+** unregulated bus, C12 on the **−** bus. Get the can polarity right per rail | Backwards electrolytic on a 20V bus vents/explodes within seconds of power-on. This is why first power-on uses the bulb limiter |
+| **Electrolytics C13/C14 (3 × 25µF parallel per rail)** | All three cans on a rail in **parallel** (all + terminals to the rail, all − to GND), C13's trio on +15V, C14's trio on −15V. Never stack them in series | Series stacking gives 8.3µF — below the LM7915's ≥25µF stability floor — and invites the voltage-sharing problems parallel wiring doesn't have |
 | **Electrolytics C2, C13/C14, C15/C16** | C2 (+ toward Q1 emitter), C13/C15 on +15V, C14/C16 on −15V | Reversed cap heats, leaks, then vents |
 | **Bridge BR1 (W04G)** | The two ~ pins go to the transformer AC; **+** and **−** go to C11/C12. Don't swap AC pins for DC pins | Near-0V or half-wave bus; possible blown bridge if it shorts the transformer |
 | **D3, D_clamp+, D_clamp− (1N4148)** | Cathode = banded end. D3: anode→collector, cathode→+15V. D_clamp+: anode→U1(+), cathode→+15V. D_clamp−: anode→−15V, cathode→U1(+) | A reversed clamp reads ~0.6V forward at idle (Stage 5 diode-check catches it) and clamps the wrong polarity, leaving U1 unprotected |
@@ -322,3 +323,14 @@ These are the parts that are directional and cost real bench time — or real pa
 | **Op-amps U1–U3 (OPA2134)** | Pin-1 notch/dot toward the board's pin-1 mark | Backwards IC = supply pins swapped, op-amp pulls hard or cooks |
 | **Q1 (BD139)** | **BD139 standard pinout — printed/marked face toward you, leads pointing down: pin1 = Emitter, pin2 = Collector, pin3 = Base.** The metal tab is also the Collector (internally tied to pin 2). This is **not** the EBC/“flat-side” order of common TO-92 small-signal parts — confirm against the BD139 datasheet before soldering | Reversed Q1 = no bias, stone-cold device with the collector pinned at +15V. Easy to mis-wire by assuming a 2N-series pin order |
 | **Regulator tabs vs chassis** | Both LM78xx/79xx tabs **must** be isolated from the chassis with mica pads (7815 tab=+15V, 7915 tab=−15V) | No pad = rail shorted to chassis; both unpadded = +15V shorted to −15V through the chassis |
+
+## Design change log
+
+What changed from earlier revisions of this guide, and why. Full reasoning lives in the linked issues.
+
+| Date | Change | Why | Ref |
+|---|---|---|---|
+| 2026-06-12 | C11/C12 bulk filter: 2200µF → **1000µF/50V** | 2200µF was sized for amplifier-class loads; this unit draws ~40mA worst case. 1000µF keeps the low-mains brownout trough ~0.75V above the regulators' 17V floor, halves can size and inrush, and cuts bleed-down to <2V in ~50s | [#95](https://github.com/bingeboy/le-ton-juste/issues/95) |
+| 2026-06-12 | C13/C14 regulator output: single 100µF → **3 × 25µF in parallel** (75µF) per rail | These caps are for regulator *stability* (LM7915 floor: ≥25µF aluminum), not ripple filtering — 75µF clears the floor 3× over. Parallel wiring needs no balancing resistors; never wire them in series. The 25µF caps are off the standard BOM and are sourced for the build (see parts page) | [#94](https://github.com/bingeboy/le-ton-juste/issues/94) |
+| 2026-06-12 | C2 emitter bypass: **unchanged at 100µF** (boundary note) | C2 used to share a BOM line with C13/C14. It is a signal-path part — it sets the driver's bass corner into the tank — so the 25µF substitution does **not** apply to it | [#94](https://github.com/bingeboy/le-ton-juste/issues/94) |
+| 2026-06-12 | SPICE model only: Rwet_wire 0Ω → 1mΩ | LTspice 26 rejects zero-ohm resistors; 1mΩ is electrically identical to the hookup wire it models. **No wiring change** — this line is a model artifact, not a part | [PR #96](https://github.com/bingeboy/le-ton-juste/pull/96) |
