@@ -15,6 +15,7 @@ Installed-symbol pin offsets (rotation R0), from the .asy PIN records:
   voltage : ( 0,16) plus        , ( 0,96) minus
   UniversalOpamp2 : (-32,16) IN+ , (-32,-16) IN- , (0,-32) V+ , (0,32) V- , (32,0) OUT
 """
+import os
 
 OPA_PARAMS = "Avol=1Meg GBW=8Meg Slew=20Meg Ilimit=25m Rail=0 Rinc=1T"
 
@@ -141,7 +142,7 @@ a.res("Rdry", "10k", 640, 360, "u1_buf", "mix_dry")
 a.res("RV2a", "50k", 2300, 200, "mix_dry", "mix_node")     # CCW half of pot
 a.res("RV2b", "50k", 2300, 320, "mix_node", "mix_wet")     # CW half of pot
 a.cap("C_bright", "47p", 2420, 200, "mix_dry", "mix_wet")  # bright cap across full pot
-a.res("Rwet_wire", "0", 2300, 60, "rv3_wiper", "mix_wet")  # direct wire (tone wiper -> RV2 CW end)
+a.res("Rwet_wire", "1m", 2300, 60, "rv3_wiper", "mix_wet")  # direct hookup wire (tone wiper -> RV2 CW end); 1m not 0: LTspice rejects R=0
 a.opa("U3", 2560, 400, "mix_node", "u3_out", "+15V", "-15V", "u3_out")  # unity follower
 a.res("R7", "100", 2640, 344, "u3_out", "v_out")
 a.res("Rload", "47k", 2760, 344, "v_out", "0")
@@ -153,5 +154,5 @@ a.text(16, 1392, "!.meas AC gain_recovery MAX V(u2_out)", 2)
 a.text(16, 1424, "!.meas AC u2_stage_gain FIND V(u2_out)/V(u2_in_pos) AT=1k", 2)
 a.text(16, 1472, "Other analyses (.op, .tran 0 100m 0 1u) available - swap in for .ac as needed (one analysis at a time).", 2)
 
-a.dump("/Users/bubblegum/projects/le-ton-juste/docs/reverb-tank/stages/mvp_reverb.asc")
+a.dump(os.path.join(os.path.dirname(os.path.abspath(__file__)), "mvp_reverb.asc"))
 print("wrote mvp_reverb.asc")

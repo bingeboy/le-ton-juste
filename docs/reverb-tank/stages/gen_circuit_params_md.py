@@ -71,7 +71,7 @@ RESISTORS = [
     ("R6", ohm(P.R6), "Wet HPF resistor (with C4)", "`hpf_out` → `0`"),
     ("Rbias", ohm(P.RBIAS), "U2 non-inv (+) input bias / recovery input impedance", "`u2_in_pos` → `0`"),
     ("Rdry", ohm(P.RDRY), "Dry-path series R: U1 buffer → RV2 CCW end (dry end of Mix pot)", "`u1_buf` → `mix_dry`"),
-    ("Rwet_wire", "0Ω", "Wet-path direct wire: Tone wiper → RV2 CW end (wet end of Mix pot; 0Ω wire model)", "`rv3_wiper` → `mix_wet`"),
+    ("Rwet_wire", f"{P.RWET_WIRE}Ω", "Wet-path direct hookup wire: Tone wiper → RV2 CW end (wet end of Mix pot; modelled 1mΩ — LTspice rejects R=0)", "`rv3_wiper` → `mix_wet`"),
     ("R7", ohm(P.R7), "U3 output isolation (series to output jack / MC100)", "`u3_out` → `v_out`"),
     ("Rload", ohm(P.RLOAD), "MC100 RCA input load (model of downstream device, not a fitted part)", "`v_out` → `0`"),
     ("R_tank_in", ohm(P.R_TANK_IN), "Tank input impedance (8Ω side, lumped tank model)", "`tank_in` → `0`"),
