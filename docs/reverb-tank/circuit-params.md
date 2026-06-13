@@ -81,10 +81,10 @@ Signal-path caps: film (WIMA MKS2/MKP). C2/C13–C16 electrolytic; C11/C12 bulk 
 | C6 | 100nF / 63V | U1/U2 −15V supply decoupling | `-15V` → `0` |
 | C7 | 100nF / 63V | U3 +15V supply decoupling | `+15V` → `0` |
 | C8 | 100nF / 63V | U3 −15V supply decoupling | `-15V` → `0` |
-| C11 | 2200µF / 50V | +ve unregulated bulk filter (after bridge) | `pos_rect` → `0` |
-| C12 | 2200µF / 50V | −ve unregulated bulk filter | `neg_rect` → `0` |
-| C13 | 100µF / 25V | U4 (LM7815) output stability cap | `reg_pos` → `0` |
-| C14 | 100µF / 25V | U5 (LM7915) output stability cap | `reg_neg` → `0` |
+| C11 | 1000µF / 50V | +ve unregulated bulk filter (after bridge) | `pos_rect` → `0` |
+| C12 | 1000µF / 50V | −ve unregulated bulk filter | `neg_rect` → `0` |
+| C13 | 75µF / 25V | U4 (LM7815) output stability cap | `reg_pos` → `0` |
+| C14 | 75µF / 25V | U5 (LM7915) output stability cap | `reg_neg` → `0` |
 | C15 | 10µF / 25V | +15V board-entry bulk decoupling | `+15V` → `0` |
 | C16 | 10µF / 25V | −15V board-entry bulk decoupling | `-15V` → `0` |
 | C17 | 100nF / 63V | U4 output HF bypass (at reg pin) | `reg_pos` → `0` |
@@ -141,10 +141,10 @@ Signal-path caps: film (WIMA MKS2/MKP). C2/C13–C16 electrolytic; C11/C12 bulk 
 | T1 transformer | Triad F-219X, 30VA, 2×115VAC primary, 2×15VAC secondary (15-0-15) | Primaries parallel for 120V mains; secondaries series for center-tapped 15-0-15. Modelled as two anti-phase `SINE(0 21.2 60)` (21.2V peak = 15Vrms·√2) about a grounded center tap. |
 | BR1 bridge | W04G, 2A / 400V (model 4× 1N4007) | `pos_rect` = +ve unregulated bus, `neg_rect` = −ve bus |
 | Unregulated bus | ≈ ±20.4V (avg, settled) | ≈ peak 21.2V − 2 diode drops, held by bulk caps; ≈21mVpp ripple in model |
-| C11 / C12 filter | 2200µF / 50V each | Main bulk filter per rail |
-| R_bleed1 / R_bleed2 | 10kΩ / 1W each | τ = 10k × 2200µF = 22s → <2V in ~110s after power-off (44mW dissipation) |
+| C11 / C12 filter | 1000µF / 50V each | Main bulk filter per rail |
+| R_bleed1 / R_bleed2 | 10kΩ / 1W each | τ = 10k × 1000µF = 10s → <2V in ~50s after power-off (44mW dissipation) |
 | U4 / U5 regulators | LM7815 / LM7915 | Drop ≈5.4V (20.4V bus − 15V) at ~30–50mA → ≈0.15–0.3W each; heatsink + mica pad mandatory |
-| C13 / C14 | 100µF / 25V each | Regulator output stability caps |
+| C13 / C14 | 75µF / 25V each | Regulator output stability caps |
 | C17 / C18 | 100nF / 63V each | Regulator output HF bypass |
 | C15 / C16 | 10µF / 25V each | Board-entry bulk decoupling |
 | C5–C8 | 100nF / 63V (4 total) | Op-amp supply-pin decoupling |

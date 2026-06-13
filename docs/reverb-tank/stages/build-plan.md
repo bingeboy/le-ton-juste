@@ -127,8 +127,8 @@ Stages 2–5 each replace one idealized block of the MVP with its real hardware 
 
 | | |
 |---|---|
-| **What** | Replace the ideal `Vpos`/`Vneg` sources with the real linear supply: **T1** (Triad F-219X, 15-0-15 secondary — model as two 15 VAC sources), **BR1** (W04G bridge), **C11/C12** 2200 µF main filter, **U4 LM7815** / **U5 LM7915** regulators, **C13/C14** 100 µF output caps, **C17/C18** 100 nF HF bypass, **R_bleed1/R_bleed2** 10 kΩ bleeders, **F2/F3** MF-R050 polyfuses on each rail. |
-| **Why** | The op-amp stages and the driver run from ±15 V. This stage proves the regulators hold ±15 V within ±1 % and that ripple stays low enough not to leak into the 214× recovery stage. Bleed resistors discharge the 2200 µF caps for safe servicing; polyfuses current-limit each rail. |
+| **What** | Replace the ideal `Vpos`/`Vneg` sources with the real linear supply: **T1** (Triad F-219X, 15-0-15 secondary — model as two 15 VAC sources), **BR1** (W04G bridge), **C11/C12** 1000 µF main filter, **U4 LM7815** / **U5 LM7915** regulators, **C13/C14** 75 µF (3 × 25 µF parallel) output caps, **C17/C18** 100 nF HF bypass, **R_bleed1/R_bleed2** 10 kΩ bleeders, **F2/F3** MF-R050 polyfuses on each rail. |
+| **Why** | The op-amp stages and the driver run from ±15 V. This stage proves the regulators hold ±15 V within ±1 % and that ripple stays low enough not to leak into the 214× recovery stage. Bleed resistors discharge the 1000 µF caps for safe servicing; polyfuses current-limit each rail. |
 | **Starting schematic** | `stage_04_input_protect.asc` |
 | **Tests** | `.op` (rail voltages), `.tran` (ripple under load) |
 
